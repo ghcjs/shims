@@ -1,0 +1,15 @@
+js:
+  - src/node.js
+  - lib/closure-library/closure/goog/base.js
+  - lib/closure-library/closure/goog/string/string.js
+  - lib/closure-library/closure/goog/debug/error.js
+  - lib/closure-library/closure/goog/asserts/asserts.js
+  - lib/closure-library/closure/goog/array/array.js
+  - lib/closure-library/closure/goog/crypt/crypt.js
+  - lib/closure-library/closure/goog/crypt/hash.js
+  - lib/closure-library/closure/goog/crypt/md5.js
+  - src/md5.js
+  - src/arith.js
+  - src/io.js
+  - src/string.js
+
