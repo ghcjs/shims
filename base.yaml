@@ -8,8 +8,11 @@ js:
   - lib/closure-library/closure/goog/crypt/crypt.js
   - lib/closure-library/closure/goog/crypt/hash.js
   - lib/closure-library/closure/goog/crypt/md5.js
+  - lib/closure-library/closure/goog/math/integer.js
+  - lib/closure-library/closure/goog/math/long.js
   - src/md5.js
   - src/arith.js
   - src/io.js
   - src/string.js
-
+  - src/integer.js
+  - src/environment.js

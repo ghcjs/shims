@@ -5,3 +5,10 @@ var goog = {};
 goog.global = this;
 goog.global.goog = goog;
 
+/* SpiderMonkey support */
+
+// we don't have console, but we do have print
+if(this['console'] === undefined) {
+  this['console'] = { log: this['print'] };
+}
+
