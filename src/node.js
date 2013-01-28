@@ -12,3 +12,8 @@ if(this['console'] === undefined) {
   this['console'] = { log: this['print'] };
 }
 
+// jsbn checks this
+if(this['navigator'] === undefined) {
+  this['navigator'] = { appName: 'none' };
+}
+var navigator = { appName: 'none' };
