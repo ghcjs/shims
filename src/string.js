@@ -1,12 +1,19 @@
 function u_towupper(ch) {
-  return new String(ch).toUpperCase().charCodeAt(0);
+//  log("### u_towupper: " + ch);
+  var r = new String(ch).toUpperCase().charCodeAt(0);
+//  log("### result: " + r);
+  return r;
 }
 
 function u_towlower(ch) {
-  return new String(ch).toLowerCase().charCodeAt(0);
+//  log("### u_towlower: " + ch);
+  var r = new String(ch).toLowerCase().charCodeAt(0);
+//  log("### result: " + r);
+  return r;
 }
 
 function u_iswspace(ch) {
+//  log("### u_iswspace: " + ch);
   return /^\s$/.test(new String(ch)) ? 1 : 0;
 }
 
@@ -33,6 +40,7 @@ function u_iswupper(a) {
 }
 
 function localeEncoding() {
+//   log("### localeEncoding");
    ret1 = 0; // offset 0
    return encodeUtf8("UTF-8");
 }
@@ -79,6 +87,8 @@ function encodeUtf8(str) {
     }
   }
   v.setUint8(v.byteLength-1,0); // terminator
+//  log("### encodeUtf8: " + str);
+//  log(v);
   return v;
 }
 
@@ -116,6 +126,8 @@ function encodeUtf16(str) {
 // invalid characters are ignored
 // fixme encode big codepoints as surrogate pair
 function decodeUtf8(v,n0,start) {
+//  log("### decodeUtf8");
+//  log(v);
   var n = n0 || v.byteLength;
   var arr = [];
   var i = start || 0;
@@ -163,7 +175,7 @@ function decodeUtf16(v) {
 function hs_iconv_open(to,to_off,from,from_off) {
   var fromStr = decodeUtf8(from, from_off);
   var toStr = decodeUtf8(to, to_off);
-//  log("#### " + fromStr + " -> " + toStr);
+//  log("#### hs_iconv_open: " + fromStr + " -> " + toStr);
   return 1; // fixme?
 }
 
@@ -180,6 +192,7 @@ function hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
 //  var insiz       = insize.getUint32(insize_off);
 //  var outsiz      = outsize.getUint32(outsize_off);
   // fixme support other encodings
+//  log("### hs_iconv");
   return utf32leToUtf8(inbuf2, inbuf2_off, insize, insize_off,
                        outbuf2, outbuf2_off, outsize, outsize_off);
 }
@@ -298,20 +311,20 @@ function rtsSupportsBoundThreads() {
 function write(fd, buf, buf_offset, n) {
   return fds[fd].write(buf, buf_offset,n);
 }
-
+var ghczuwrapperZC17ZCbaseZCSystemziPosixziInternalsZCwrite = write;
+var ghczuwrapperZC16ZCbaseZCSystemziPosixziInternalsZCwrite = write;
 function writeConsole(buf, buf_offset, n) {
-//  console.log("###writeConsole");
+//  log("###writeConsole: " + n);
   var str = decodeUtf8(buf, n, buf_offset);
   if(typeof(process) !== 'undefined' && process && process.stdout) { /* node.js */
     process.stdout.write(str);
-//    console.log("\n###/writeConsole");
-    return n;
   } else if(typeof(putstr) !== 'undefined') { /* SpiderMonkey */
     putstr(str);
   } else if(typeof(console) !== 'undefined') {
-    // we print too many newlines her is, it possible to fix that?
+    // we print too many newlines here, is it possible to fix that?
     console.log(str);
   }
+  return n;
 }
 
 var stdout = { writable: true
