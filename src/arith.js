@@ -218,31 +218,32 @@ function hs_uncheckedShiftL64(a1,a2,n) {
 }
 
 // fixme: since we only supply the low 32 bit words, the multiplication can be done more efficiently
-function hs_mulInt32(a,b) {
+function $hs_mulInt32(a,b) {
   logArith("### hs_mulInt32: " + a + " " + b); // correct?
   var res = goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
   logArith("### result: " + res);
   return res;
 }
+var hs_mulInt32 = $hs_mulInt32;
 
-function hs_mulWord32(a,b) {
+function $hs_mulWord32(a,b) {
   logArith("### hs_mulWord32: " + a + " " + b); // correct?
   return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
 }
 
-function hs_mul2Word32(a,b) {
+function $hs_mul2Word32(a,b) {
   logArith("### hs_mul2Word32: " + a + " " + b); // correct?
   return new goog.math.Long(a,0).multiply(new goog.math.Long(b,0)).getLowBits();
 }
 
-function hs_quotWord32(a,b) {
+function $hs_quotWord32(a,b) {
   logArith("### hs_quotWord32: " + a + " " + b);
   var res = new goog.math.Long(a,0).div(new goog.math.Long(b,0)).getLowBits();
   logArith("### result: " + res);
   return res;
 }
 
-function hs_remWord32(a,b) {
+function $hs_remWord32(a,b) {
   logArith("### hs_remWord32: " + a + " " + b);
   var res = new goog.math.Long(a,0).modulo(new goog.math.Long(b,0)).getLowBits();
   logArith("### result: " + res);
@@ -250,7 +251,7 @@ function hs_remWord32(a,b) {
 }
 
 // this does an unsigned shift, is that ok?
-function hs_uncheckedShiftRL64(a1,a2,n) {
+function $hs_uncheckedShiftRL64(a1,a2,n) {
   logArith("### hs_uncheckedShiftRL64: " + a1 + " " + a2 + " >> " + n);
   if(n < 0) throw "unexpected right shift";
   n &= 63;
@@ -286,6 +287,16 @@ function isFloatInfinite(d) {
   return (d === Number.NEGATIVE_INFINITY || d === Number.POSITIVE_INFINITY) ? 1 : 0;
 }
 
+function isFloatFinite(d) {
+  logArith("### isFloatFinite: " + d);
+  return (d !== Number.NEGATIVE_INFINITY && d !== Number.POSITIVE_INFINITY && !isNaN(d)) ? 1 : 0;
+}
+
+function isDoubleFinite(d) {
+  logArith("### isDoubleFinite: " + d);
+  return (d !== Number.NEGATIVE_INFINITY && d !== Number.POSITIVE_INFINITY && !isNaN(d)) ? 1 : 0;
+}
+
 function isDoubleNaN(d) {
   logArith("### isDoubleNaN: " + d);
   return (isNaN(d)) ? 1 : 0;
@@ -297,24 +308,51 @@ function isFloatNaN(d) {
 }
 
 function $hs_decodeFloatInt(d) {
+    logArith("### $hs_decodeFloatInt: " + d);
     if( d < 0 ) {
-      return -$hs_decodeFloatInt(-d);
+      var r0 = -$hs_decodeFloatInt(-d);
+      logArith("### result: " + r0 + ", " + ret1);
+      return r0;
     }
-    var negExponent = 23-Math.floor(Math.log(d) * 1.4426950408889634); // 1/log(2)
-    ret1 = -negExponent;
-    return (d * Math.pow(2, negExponent)) | 0;
+    var exponent = Math.floor(Math.log(d) * 1.4426950408889634)-23; // 1/log(2)
+    ret1 = exponent;
+    var r = (d * Math.pow(2, -exponent)) | 0;
+    logArith("### result: " + r + ", " + ret1);
+    return r;
 }
 
 function $hs_decodeDouble2Int(d) {
+   logArith("### $hs_decodeDoubleInt: " + d);
    var sign = 1;
    if( d < 0 ) {
       d = -d;
       sign = -1;
     }
-    var negExponent = 52-Math.floor(Math.log(x) * 1.4426950408889634); // 1/log(2)
-    var mantissa = goog.math.Long.fromNumber(x * Math.pow(2, negExponent));
+    var exponent = Math.floor(Math.log(d) * 1.4426950408889634); // 1/log(2)
+    var mantissa = goog.math.Long.fromNumber(d * Math.pow(2, -exponent));
     ret1 = mantissa.getHighBits();
     ret2 = mantissa.getLowBits();
-    ret3 = -negExponent;
+    ret3 = -exponent;
+//    log("### result: " + sign + " " + ret1 + " " + ret2 + " " + ret3)
     return sign;
 }
+
+function rintDouble(a) {
+    return Math.round(a);
+}
+
+function rintFloat(a) {
+    return Math.round(a);
+}
+
+var $hs_popCntTab =
+   [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8];
+
+
