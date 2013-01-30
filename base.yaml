@@ -17,3 +17,4 @@ js:
   - src/string.js
   - src/integer.js
   - src/environment.js
+  - src/enum.js@
