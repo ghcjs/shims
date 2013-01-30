@@ -40,7 +40,7 @@ function u_iswupper(a) {
 }
 
 function localeEncoding() {
-//   log("### localeEncoding");
+    //   log("### localeEncoding");
    ret1 = 0; // offset 0
    return encodeUtf8("UTF-8");
 }
@@ -120,6 +120,18 @@ function encodeUtf16(str) {
   }
   v.setUint8(v.byteLength-1,0);  // terminator
   return v;
+}
+
+// decode a DataView with UTF-8 chars to a JS string
+// stop at the first zero
+function decodeUtf8z(v,start) {
+  var n = start;
+  var max = v.byteLength;
+  while(n < max) {
+    if(v.getUint8(n) === 0) { break; }
+    n++;
+  }
+  return decodeUtf8(v,n,start);
 }
 
 // decode a DataView with Utf8 chars to a JS string
