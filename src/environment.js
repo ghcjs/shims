@@ -20,6 +20,8 @@ function errorMsg(pat) {
   }
   if(typeof process !== 'undefined' && process && process.stderr) {
     process.stderr.write(str+"\n");
+  } else if (typeof printErr !== 'undefined') {
+    printErr(str);
   } else if (typeof putstr !== 'undefined') {
     putstr(str+"\n");
   } else if(typeof(console) !== 'undefined') {
