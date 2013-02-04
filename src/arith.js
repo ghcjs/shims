@@ -338,11 +338,19 @@ function $hs_decodeDouble2Int(d) {
 }
 
 function rintDouble(a) {
-    return Math.round(a);
+    if(a < 0) {
+      return -Math.round(-a);
+    } else {
+      return Math.round(a);
+    }
 }
 
 function rintFloat(a) {
-    return Math.round(a);
+    if(a < 0) {
+      return -Math.round(-a);
+    } else {
+      return Math.round(a);
+    }
 }
 
 var $hs_popCntTab =
