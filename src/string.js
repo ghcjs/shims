@@ -45,6 +45,15 @@ function localeEncoding() {
    return encodeUtf8("UTF-8");
 }
 
+function rawStringData(str) {
+    var v = new DataView(new ArrayBuffer(str.length+1));
+    for(var i=0;i<str.length;i++) {
+       v.setUint8(i, str[i]);
+    }
+    v.setUint8(str.length, 0);
+    return v;
+}
+
 // encode a javascript string to a zero terminated utf8 byte array
 // fixme, high code points are a surrogate pair in js strings
 function encodeUtf8(str) {
