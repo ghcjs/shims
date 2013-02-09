@@ -1,13 +1,13 @@
 function u_towupper(ch) {
 //  log("### u_towupper: " + ch);
-  var r = new String(ch).toUpperCase().charCodeAt(0);
+  var r = String.fromCharCode(ch).toUpperCase().charCodeAt(0);
 //  log("### result: " + r);
   return r;
 }
 
 function u_towlower(ch) {
 //  log("### u_towlower: " + ch);
-  var r = new String(ch).toLowerCase().charCodeAt(0);
+  var r = String.fromCharCode(ch).toLowerCase().charCodeAt(0);
 //  log("### result: " + r);
   return r;
 }
@@ -184,7 +184,7 @@ function decodeUtf8(v,n0,start) {
   var arr = [];
   var i = start || 0;
   var code;
-//  log("### decoding, starting at:  " + start);
+//  log("### decoding, starting at:  " + i);
   while(i < n) {
     var c = v.getUint8(i);
     while((c & 0xC0) === 0x80) {
