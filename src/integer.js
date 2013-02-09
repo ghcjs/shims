@@ -205,10 +205,9 @@ function $hs_gcd(a, b) {
     if(x.compareTo(y) < 0) {
         small = x;
         big = y;
-    }
-    else {
-        small = x;
-        big = y;
+    } else {
+        small = y;
+        big = x;
     }
     while(small.signum() !== 0) {
         var q = big.divide(small);
@@ -227,9 +226,10 @@ function integer_cmm_gcdIntegerzh(sa, abits, sb, bbits) {
 
 function integer_cmm_gcdIntegerIntzh(sa, abits, b) {
     logInt("### integer_cmm_gcdIntegerzh");
-    ret1 = $hs_gcd(abits, $hs_bigFromInt(b));
-    return 0; // ret1.getSign();
+    var r = $hs_gcd(abits, $hs_bigFromInt(b));
+    return r.intValue();
 }
+
 function integer_cmm_gcdIntzh(a, b) {
         logInt("### integer_cmm_gcdIntzh");
         var x = a<0 ? -a : a;
@@ -238,10 +238,9 @@ function integer_cmm_gcdIntzh(a, b) {
         if(x<y) {
             small = x;
             big = y;
-        }
-        else {
-            small = x;
-            big = y;
+        } else {
+            small = y;
+            big = x;
         }
         while(small!==0) {
             var r = big % small;
@@ -272,7 +271,7 @@ function integer_cmm_decodeDoublezh(x) {
       n = x * Math.pow(2,-exponent);
     }
     // fixup precision, do we also need the other way (exponent++) ?
-    if(Math.abs(n - 0.5 - Math.floor(n)) < 0.0001) {
+    if(Math.abs(n - Math.floor(n) - 0.5) < 0.0001) {
       exponent--;
       n *= 2;
     }
@@ -322,7 +321,7 @@ function integer_cmm_mul2ExpIntegerzh(sa, abits, b) {
 
 function integer_cmm_fdivQ2ExpIntegerzh(sa, abits, b) {
     logInt("### integer_cmm_fdivQ2Integerzh");
-    ret1 = abits.shiftRight(bbits);
+    ret1 = abits.shiftRight(b);
     return 0; // ret1.getSign();
 }
 
