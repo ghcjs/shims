@@ -217,6 +217,21 @@ function hs_uncheckedShiftL64(a1,a2,n) {
   }
 }
 
+function hs_uncheckedShiftRL64(a1,a2,n) {
+  logArith("### hs_uncheckedShiftL64: " + a1 + " " + a2 + " >>> " + n); // correct?
+  n &= 63;
+  if(n == 0) {
+    ret1 = a2;
+    return a1;
+  } else if(n < 32) {
+    ret1 = (a2 >>> n ) | (a1 << (32-n));
+    return a1 >>> n;
+  } else {
+    ret1 = a1 >>> (n-32);
+    return 0;
+  }
+}
+
 // fixme: since we only supply the low 32 bit words, the multiplication can be done more efficiently
 function $hs_mulInt32(a,b) {
   logArith("### hs_mulInt32: " + a + " " + b); // correct?
@@ -269,12 +284,12 @@ function $hs_uncheckedShiftRL64(a1,a2,n) {
 
 function isDoubleNegativeZero(d) {
   logArith("### isDoubleNegativeZero: " + d);
-  return (d===-0) ? 1 : 0;
+  return (d===0 && (1/d) === -Infinity) ? 1 : 0;
 }
 
 function isFloatNegativeZero(d) {
   logArith("### isFloatNegativeZero: " + d);
-  return (d===-0) ? 1 : 0;
+  return (d===0 && (1/d) === -Infinity) ? 1 : 0;
 }
 
 function isDoubleInfinite(d) {
@@ -299,12 +314,23 @@ function isDoubleFinite(d) {
 
 function isDoubleNaN(d) {
   logArith("### isDoubleNaN: " + d);
+  logArith("### " + ((isNaN(d)) ? 1 : 0));
   return (isNaN(d)) ? 1 : 0;
 }
 
 function isFloatNaN(d) {
   logArith("### isFloatNaN: " + d);
   return (isNaN(d)) ? 1 : 0;
+}
+
+function isDoubleDenormalized(d) {
+  logArith("### isDoubleDenormalized: " + d);
+  return (d !== 0 && Math.abs(d) < 2.2250738585072014e-308) ? 1 : 0;
+}
+
+function isFloatDenormalized(d) {
+  logArith("### isFloatDenormalized: " + d);
+  return (d !== 0 && Math.abs(d) < 2.2250738585072014e-308) ? 1 : 0;
 }
 
 function $hs_decodeFloatInt(d) {
@@ -363,4 +389,6 @@ var $hs_popCntTab =
     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8];
 
+function $hs_prim_SetByteArrayOp() {
 
+}

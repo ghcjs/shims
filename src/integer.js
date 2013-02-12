@@ -78,6 +78,13 @@ function $hs_bigFromNumber(n) {
 function $hs_encodeNumber(big,e) {
   logInt("### $hs_encodeNumber: " + big.toString() + " " + e);
   var m = Math.pow(2,e);
+  if(m === Infinity) {
+    switch(big.signum()) {
+      case 1: return Infinity;
+      case 0: return 0;
+      default: return -Infinity;
+    }
+  }
   var b = big.toByteArray();
   var l = b.length;
   var r = 0;
@@ -264,9 +271,9 @@ function integer_cmm_decodeDoublezh(x) {
     var n;
     // prevent overflow
     if(exponent < -1000) {
-      n = x * Math.pow(2,-exponent-64) * Math.pow(2,64);
+      n = x * Math.pow(2,-exponent-128) * Math.pow(2,128);
     } else if(exponent > 900) {
-      n = x * Math.pow(2,-exponent+64) * Math.pow(2,-64);
+      n = x * Math.pow(2,-exponent+128) * Math.pow(2,-128);
     } else {
       n = x * Math.pow(2,-exponent);
     }
