@@ -389,6 +389,17 @@ var $hs_popCntTab =
     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8];
 
-function $hs_prim_SetByteArrayOp() {
+// slice an array of heap objects
+var $hs_sliceArray = /* ArrayBuffer.prototype.slice ?
+  function(a, start, n) {
+    return new Int32Array(a.buffer.slice(start, n));
+  }
+  : */
+  function(a, start, n) {
+    var tgt = new Int32Array(new ArrayBuffer(n<<2));
+    for(var i=n-1;i>=0;i--) {
+      tgt[i] = a[start+i];
+    }
+    return tgt;
+  }
 
-}
