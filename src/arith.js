@@ -403,3 +403,25 @@ var $hs_sliceArray = /* ArrayBuffer.prototype.slice ?
     return tgt;
   }
 
+
+function memcpy() {
+  if(arguments.length === 3) {  // ByteArray# -> ByteArray# copy
+    var dst = arguments[0];
+    var src = arguments[1];
+    var n   = arguments[2];
+    for(var i=n-1;i>=0;i--) {
+      dst.setUint8(i, src.getUint8(i));
+    }
+  } else if(arguments.length === 5) { // Addr# -> Addr# copy
+    var dst = arguments[0];
+    var dst_off = arguments[1]
+    var src = arguments[2];
+    var src_off = arguments[3];
+    var n   = arguments[4];
+    for(var i=n-1;i>=0;i--) {
+      dst.setUint8(i+dst_off, src.getUint8(i+src_off));
+    }
+  } else {
+    throw "unexpected memcpy";
+  }
+}
