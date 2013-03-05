@@ -1,5 +1,7 @@
 js:
   - src/node.js
+  - lib/harmony-collections/harmony-collections.js
+  - src/node-exports.js
   - lib/closure-library/closure/goog/base.js
   - lib/closure-library/closure/goog/string/string.js
   - lib/closure-library/closure/goog/debug/error.js

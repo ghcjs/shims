@@ -17,3 +17,4 @@ if(this['navigator'] === undefined) {
   this['navigator'] = { appName: 'none' };
 }
 var navigator = { appName: 'none' };
+

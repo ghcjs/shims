@@ -37,3 +37,15 @@ function performMajorGC() {
   // fixme
 }
 
+
+function ghczuwrapperZC1ZCbaseZCSystemziCPUTimeZCgetrusage() {
+  return 0;
+}
+
+function gettimeofday() {
+  console.log("### gettimeofday: " + arguments[0]);
+  console.log("### gettimeofday: " + arguments[1]);
+  console.log("### gettimeofday: " + arguments[2]);
+  console.log("### gettimeofday: " + arguments[3]);
+  return 0;
+}

@@ -9,28 +9,28 @@
 // var logInt = log;
 var logInt = function() { }
 
-$hs_bigOne = new BigInteger([1]);
+h$bigOne = new BigInteger([1]);
 
 // convert a value to a BigInt
 // fixme make faster conversion stuff if we know how many bits each digit has
-function $hs_bigFromInt(v) {
-  logInt("### $hs_bigFromInt: " + v);
+function h$bigFromInt(v) {
+  logInt("### h$bigFromInt: " + v);
   var v0 = v|0;
   var r = new BigInteger([v0 >> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
   logInt("### result: " + r.toString());
   return r;
 }
 
-function $hs_bigFromWord(v) {
-  logInt("### $hs_bigFromInt: " + v);
+function h$bigFromWord(v) {
+  logInt("### h$bigFromInt: " + v);
   var v0 = v|0;
   var r = new BigInteger([0, v0 >>> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
   logInt("### result: " + r.toString());
   return r;
 }
 
-function $hs_bigFromInt64(v1,v2) {
-  logInt("### $hs_bigFromInt64: " + v1 + " " + v2);
+function h$bigFromInt64(v1,v2) {
+  logInt("### h$bigFromInt64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var r = new BigInteger([ v10 >>  24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
@@ -40,8 +40,8 @@ function $hs_bigFromInt64(v1,v2) {
   return r;
 }
 
-function $hs_bigFromWord64(v1,v2) {
-  logInt("### $hs_bigFromWord64: " + v1 + " " + v2);
+function h$bigFromWord64(v1,v2) {
+  logInt("### h$bigFromWord64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var arr = [ 0, v10 >>> 24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
@@ -55,8 +55,8 @@ function $hs_bigFromWord64(v1,v2) {
   return r;
 }
 
-function $hs_bigFromNumber(n) {
-  logInt("### $hs_bigFromNumber: " + n);
+function h$bigFromNumber(n) {
+  logInt("### h$bigFromNumber: " + n);
   var ra = [];
   var s = 0;
   if(n < 0) {
@@ -75,8 +75,8 @@ function $hs_bigFromNumber(n) {
   return r;
 }
 
-function $hs_encodeNumber(big,e) {
-  logInt("### $hs_encodeNumber: " + big.toString() + " " + e);
+function h$encodeNumber(big,e) {
+  logInt("### h$encodeNumber: " + big.toString() + " " + e);
   var m = Math.pow(2,e);
   if(m === Infinity) {
     switch(big.signum()) {
@@ -111,7 +111,7 @@ function integer_cmm_cmpIntegerzh(sa, abits, sb, bbits) {
 
 function integer_cmm_cmpIntegerIntzh(sa, abits, b) {
   logInt("### integer_cmm_cmpIntegerIntzh: " + abits.toString() + " " + b);
-  var res = abits.compareTo($hs_bigFromInt(b));
+  var res = abits.compareTo(h$bigFromInt(b));
   logInt("### result: " + res);
   return res;
 }
@@ -167,7 +167,7 @@ function integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         // Take one off d and add b onto m
-        d = d.subtract($hs_bigOne);
+        d = d.subtract(h$bigOne);
         m = m.add(b);
     }
     ret1 = d;
@@ -182,7 +182,7 @@ function integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         // Take one off d and add b onto m
-        d = d.subtract($hs_bigOne);
+        d = d.subtract(h$bigOne);
     }
     ret1 = d;
     return 0; // d.getSign();
@@ -205,7 +205,7 @@ function integer_cmm_divExactIntegerzh(sa, abits, sb, bbits) {
     return 0; // ret1.getSign();
 }
 
-function $hs_gcd(a, b) {
+function h$gcd(a, b) {
     var x = a.abs();
     var y = b.abs();
     var big, small;
@@ -227,13 +227,13 @@ function $hs_gcd(a, b) {
 
 function integer_cmm_gcdIntegerzh(sa, abits, sb, bbits) {
     logInt("### integer_cmm_gcdIntegerzh");
-    ret1 = $hs_gcd(abits, bbits);
+    ret1 = h$gcd(abits, bbits);
     return 0; // ret1.getSign();
 }
 
 function integer_cmm_gcdIntegerIntzh(sa, abits, b) {
     logInt("### integer_cmm_gcdIntegerzh");
-    var r = $hs_gcd(abits, $hs_bigFromInt(b));
+    var r = h$gcd(abits, h$bigFromInt(b));
     return r.intValue();
 }
 
@@ -257,7 +257,7 @@ function integer_cmm_gcdIntzh(a, b) {
         return big;
 }
 
-var $hs_oneOverLog2 = 1 / Math.log(2);
+var h$oneOverLog2 = 1 / Math.log(2);
 
 function integer_cmm_decodeDoublezh(x) {
     logInt("### integer_cmm_decodeDoublezh: " + x);
@@ -267,7 +267,7 @@ function integer_cmm_decodeDoublezh(x) {
         ret1 = ret2.signum();
         return result;
     }
-    var exponent = Math.floor(Math.log(x) * $hs_oneOverLog2)-52;
+    var exponent = Math.floor(Math.log(x) * h$oneOverLog2)-52;
     var n;
     // prevent overflow
     if(exponent < -1000) {
@@ -282,21 +282,21 @@ function integer_cmm_decodeDoublezh(x) {
       exponent--;
       n *= 2;
     }
-    ret2 = $hs_bigFromNumber(n);
+    ret2 = h$bigFromNumber(n);
     ret1 = 0;
     return exponent;
 }
 
 function integer_cmm_int2Integerzh(i) {
     logInt("### integer_cmm_int2Integerzh: " + i);
-    ret1 = $hs_bigFromInt(i);
+    ret1 = h$bigFromInt(i);
     logInt("result: " + ret1.toString());
     return 0; // ret1.getSign();
 }
 
 function integer_cmm_word2Integerzh(i) {
     logInt("### integer_cmm_word2Integerzh: " + i);
-    ret1 = $hs_bigFromWord(i);
+    ret1 = h$bigFromWord(i);
     logInt("result: " + ret1.toString());
     return 0; // ret1.getSign();
 }
@@ -340,14 +340,14 @@ function integer_cmm_complementIntegerzh(sa, abits) {
 
 function integer_cmm_int64ToIntegerzh(a0, a1) {
     logInt("### integer_cmm_int64ToIntegerzh: " + a0 + " " + a1);
-    ret1 = $hs_bigFromInt64(a0,a1);
+    ret1 = h$bigFromInt64(a0,a1);
     logInt("### result: " + ret1.toString());
     return 0; // ret1.getSign();
 }
 
 function integer_cmm_word64ToIntegerzh(a0, a1) {
     logInt("### integer_cmm_word64ToIntegerzh: " + a0 + " " + a1);
-    ret1 = $hs_bigFromWord64(a0,a1); //new BigInteger(a1,a0); // [a1,a0], 0);
+    ret1 = h$bigFromWord64(a0,a1); //new BigInteger(a1,a0); // [a1,a0], 0);
     logInt("### result: " + ret1.toString());
     return 0; // ret1.getSign();
 }
@@ -371,7 +371,7 @@ function integer_cmm_integer2Intzh(as, abits) {
 
 function integer_cbits_encodeDouble(as,abits,e) {
    logInt("### integer_cbits_encodeDouble: " + abits.toString() + " " + e);
-   var r = $hs_encodeNumber(abits,e);
+   var r = h$encodeNumber(abits,e);
 //   var r = abits.toNumber() * Math.pow(2,e);
    logInt("### result: " + r);
    return r;
@@ -380,7 +380,7 @@ function integer_cbits_encodeDouble(as,abits,e) {
 function integer_cbits_encodeFloat(as,abits,e) {
    logInt("### integer_cbits_encodeFloat: " + abits.toString() + " " + e);
 //   var r = abits.toNumber() * Math.pow(2,e);
-   var r = $hs_encodeNumber(abits,e);
+   var r = h$encodeNumber(abits,e);
    logInt("### result: " + r);
    return r;
 }

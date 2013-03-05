@@ -256,10 +256,12 @@ function decodeUtf16(v) {
 
 
 function hs_iconv_open(to,to_off,from,from_off) {
-  var fromStr = decodeUtf8(from, from_off);
-  var toStr = decodeUtf8(to, to_off);
+  h$errno = h$EINVAL; // no encodings supported
+  return -1;
+//  var fromStr = decodeUtf8(from, from_off);
+//  var toStr = decodeUtf8(to, to_off);
 //  log("#### hs_iconv_open: " + fromStr + " -> " + toStr);
-  return 1; // fixme?
+//  return 1; // fixme?
 }
 
 function hs_iconv_close(iconv) {
@@ -425,24 +427,24 @@ function utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
 //  return 0; // all conversions are reversible return (in_off - inbuf_off) / 4;
   if(partial) {
     inbuf0.arr[inbuf_off0][1] = in_off;
-    $hs_errno = $hs_E2BIG;
+    h$errno = h$E2BIG;
     return -1;
   } else {
     return 0;
   }
 }
-
-function $hs_prim_WriteOffAddrOp_Addr(a,o,i,av,ov) {
+/*
+function h$prim_WriteOffAddrOp_Addr(a,o,i,av,ov) {
   if(!a.arr) a.arr = [];
   a.arr[o+i] = [av,ov];
 }
 
-function $hs_prim_ReadOffAddrOp_Addr(a,o,i) {
+function h$prim_ReadOffAddrOp_Addr(a,o,i) {
   var addr = a.arr[o+i];
   ret1 = addr[1];
   return addr[0];
 }
-
+*/
 function fdReady(fd, write) {
 //  console.log("### fdReady");
   if(write && fds[fd].writable) return 1;

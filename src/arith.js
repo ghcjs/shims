@@ -81,6 +81,11 @@ function hs_eqInt64(a1,a2,b1,b2) {
   return (a1 === b1 && a2 === b2) ? 1 : 0;
 }
 
+function hs_neInt64(a1,a2,b1,b2) {
+  logArith("### hs_eqInt64: " + a1 + " " + a2 + " == " + b1 + " " + b2);
+  return (a1 !== b1 || a2 !== b2) ? 1 : 0;
+}
+
 function hs_leInt64(a1,a2,b1,b2) {
   logArith("### hs_leInt64: " + a1 + " " + a2 + " <= " + b1 + " " + b2);
   if(a1 === b1) {
@@ -233,32 +238,32 @@ function hs_uncheckedShiftRL64(a1,a2,n) {
 }
 
 // fixme: since we only supply the low 32 bit words, the multiplication can be done more efficiently
-function $hs_mulInt32(a,b) {
+function h$mulInt32(a,b) {
   logArith("### hs_mulInt32: " + a + " " + b); // correct?
   var res = goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
   logArith("### result: " + res);
   return res;
 }
-var hs_mulInt32 = $hs_mulInt32;
+var hs_mulInt32 = h$mulInt32;
 
-function $hs_mulWord32(a,b) {
+function h$mulWord32(a,b) {
   logArith("### hs_mulWord32: " + a + " " + b); // correct?
   return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
 }
 
-function $hs_mul2Word32(a,b) {
+function h$mul2Word32(a,b) {
   logArith("### hs_mul2Word32: " + a + " " + b); // correct?
   return new goog.math.Long(a,0).multiply(new goog.math.Long(b,0)).getLowBits();
 }
 
-function $hs_quotWord32(a,b) {
+function h$quotWord32(a,b) {
   logArith("### hs_quotWord32: " + a + " " + b);
   var res = new goog.math.Long(a,0).div(new goog.math.Long(b,0)).getLowBits();
   logArith("### result: " + res);
   return res;
 }
 
-function $hs_remWord32(a,b) {
+function h$remWord32(a,b) {
   logArith("### hs_remWord32: " + a + " " + b);
   var res = new goog.math.Long(a,0).modulo(new goog.math.Long(b,0)).getLowBits();
   logArith("### result: " + res);
@@ -266,7 +271,7 @@ function $hs_remWord32(a,b) {
 }
 
 // this does an unsigned shift, is that ok?
-function $hs_uncheckedShiftRL64(a1,a2,n) {
+function h$uncheckedShiftRL64(a1,a2,n) {
   logArith("### hs_uncheckedShiftRL64: " + a1 + " " + a2 + " >> " + n);
   if(n < 0) throw "unexpected right shift";
   n &= 63;
@@ -333,10 +338,10 @@ function isFloatDenormalized(d) {
   return (d !== 0 && Math.abs(d) < 2.2250738585072014e-308) ? 1 : 0;
 }
 
-function $hs_decodeFloatInt(d) {
-    logArith("### $hs_decodeFloatInt: " + d);
+function h$decodeFloatInt(d) {
+    logArith("### h$decodeFloatInt: " + d);
     if( d < 0 ) {
-      var r0 = -$hs_decodeFloatInt(-d);
+      var r0 = -h$decodeFloatInt(-d);
       logArith("### result: " + r0 + ", " + ret1);
       return r0;
     }
@@ -347,8 +352,8 @@ function $hs_decodeFloatInt(d) {
     return r;
 }
 
-function $hs_decodeDouble2Int(d) {
-   logArith("### $hs_decodeDoubleInt: " + d);
+function h$decodeDouble2Int(d) {
+   logArith("### h$decodeDoubleInt: " + d);
    var sign = 1;
    if( d < 0 ) {
       d = -d;
@@ -379,7 +384,15 @@ function rintFloat(a) {
     }
 }
 
-var $hs_popCntTab =
+function sin(d) {
+  return Math.sin(d);
+}
+
+function cos(d) {
+  return Math.cos(d);
+}
+
+var h$popCntTab =
    [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
@@ -390,14 +403,14 @@ var $hs_popCntTab =
     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8];
 
 // slice an array of heap objects
-var $hs_sliceArray = /* ArrayBuffer.prototype.slice ?
+var h$sliceArray = /* ArrayBuffer.prototype.slice ?
   function(a, start, n) {
     return new Int32Array(a.buffer.slice(start, n));
   }
   : */
   function(a, start, n) {
-    var tgt = new Int32Array(new ArrayBuffer(n<<2));
-    for(var i=n-1;i>=0;i--) {
+    var tgt = [];
+    for(var i=0;i<n;i++) {
       tgt[i] = a[start+i];
     }
     return tgt;
@@ -425,3 +438,21 @@ function memcpy() {
     throw "unexpected memcpy";
   }
 }
+
+function h$newArray(len,e) {
+  var r = [];
+  for(var i=0;i<len;i++) { r[i] = e; }
+  return r;
+}
+
+var h$stableNameN = 0;
+var h$stableNames = new WeakMap();
+function h$stableNameInt(s) {
+  if(h$stableNames.has(s)) {
+    return h$stableNames.get(s);
+  } else {
+    h$stableNameN = (h$stableNameN+1)|0;
+    h$stableNames.set(s, h$stableNameN);
+  }
+}
+
