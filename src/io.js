@@ -124,12 +124,12 @@ function __hscore_open(filename, filename_off, h, mode) {
     }
 }
 
-var ghczuwrapperZC29ZCbaseZCSystemziPosixziInternalsZCSzuISDIR = __hscore_s_isdir;
-var ghczuwrapperZC28ZCbaseZCSystemziPosixziInternalsZCSzuISFIFO = __hscore_s_isfifo;
-var ghczuwrapperZC27ZCbaseZCSystemziPosixziInternalsZCSzuISSOCK = __hscore_s_issock;
-var ghczuwrapperZC31ZCbaseZCSystemziPosixziInternalsZCSzuISCHR = __hscore_s_ischr;
-var ghczuwrapperZC32ZCbaseZCSystemziPosixziInternalsZCSzuISREG = __hscore_s_isreg;
-var ghczuwrapperZC22ZCbaseZCSystemziPosixziInternalsZCread = h$read;
+var baseZCSystemziPosixziInternalsZCSzuISDIR = __hscore_s_isdir;
+var baseZCSystemziPosixziInternalsZCSzuISFIFO = __hscore_s_isfifo;
+var baseZCSystemziPosixziInternalsZCSzuISSOCK = __hscore_s_issock;
+var baseZCSystemziPosixziInternalsZCSzuISCHR = __hscore_s_ischr;
+var baseZCSystemziPosixziInternalsZCSzuISREG = __hscore_s_isreg;
+var baseZCSystemziPosixziInternalsZCread = h$read;
 
 function lockFile(fd, dev, ino, for_writing) {
     log("### lockFile");
@@ -157,10 +157,7 @@ function h$read(fd, buf, buf_offset, n) {
   return f.file.read(f, buf, buf_offset, n);
 }
 
-// fixme remove wrappers
-var ghczuwrapperZC17ZCbaseZCSystemziPosixziInternalsZCwrite = h$write;
-var ghczuwrapperZC16ZCbaseZCSystemziPosixziInternalsZCwrite = h$write;
-var ghczuwrapperZC19ZCbaseZCSystemziPosixziInternalsZCwrite = h$write;
+var baseZCSystemziPosixziInternalsZCwrite = h$write;
 function h$writeConsole(fd, buf, buf_offset, n) {
 //  log("###writeConsole: " + n);
   var str = decodeUtf8(buf, n, buf_offset);

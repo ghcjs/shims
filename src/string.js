@@ -1,15 +1,21 @@
+var h$toUpper = null;
 function u_towupper(ch) {
 //  log("### u_towupper: " + ch);
-  var r = String.fromCharCode(ch).toUpperCase().charCodeAt(0);
+//  var r = String.fromCharCode(ch).toUpperCase().charCodeAt(0);
 //  log("### result: " + r);
-  return r;
+  if(h$toUpper == null) { h$toUpper = h$decodeMapping(h$toUpperMapping); }
+  var r = h$toUpper[ch];
+  return (r !== null && r !== undefined) ? r : ch;
 }
 
+var h$toLower = null;
 function u_towlower(ch) {
 //  log("### u_towlower: " + ch);
-  var r = String.fromCharCode(ch).toLowerCase().charCodeAt(0);
+//  var r = String.fromCharCode(ch).toLowerCase().charCodeAt(0);
 //  log("### result: " + r);
-  return r;
+  if(h$toLower == null) { h$toLower = h$decodeMapping(h$toLowerMapping); }
+  var r = h$toLower[ch];
+  return (r !== null && r !== undefined) ? r : ch;
 }
 
 function u_iswspace(ch) {
@@ -69,6 +75,17 @@ function h$decodeRle(arr) {
     for(var j=start;j<start+length;j++) {
       r[j] = 1;
     }
+  }
+  return r;
+}
+
+// decode a mapping array of from/to pairs
+function h$decodeMapping(arr) {
+  var r = [];
+  for(var i=0;i<arr.length;i+=2) {
+    var from = arr[i];
+    var to   = arr[i+1];
+    r[from] = to;
   }
   return r;
 }
