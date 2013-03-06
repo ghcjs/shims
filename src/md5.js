@@ -1,18 +1,18 @@
 
-function MD5Init(ctx) {
-  ctx.md5ctx = new goog.crypt.Md5();
+function MD5Init(ctx, ctx_off) {
+  if(!ctx.arr) { ctx.arr = []; }
+  ctx.arr[ctx_off] = new goog.crypt.Md5();
 }
 
-function MD5Update(ctx, data, len) {
-  ctx.md5ctx.update(new Uint8Array(data), len);
+function MD5Update(ctx, ctx_off, data, data_off, len) {
+  var arr = new Uint8Array(data.buffer, data_off);
+  ctx.arr[ctx_off].update(arr, len);
 }
 
-function MD5Final(dst, ctx) {
-  var digest = ctx.md5ctx.digest();
-  var dv = new DataView(digest);
-  dst.putUint32(0,  dv.getUint32(0));
-  dst.putUint32(4,  dv.getUint32(4));
-  dst.putUint32(8,  dv.getUint32(8));
-  dst.putUint32(12, dv.getUint32(12));
+function MD5Final(dst, dst_off, ctx, ctx_off) {
+  var digest = ctx.arr[ctx_off].digest();
+  for(var i=0;i<16;i++) {
+    dst.setUint8(dst_off+i, digest[i]);
+  }
 }
 

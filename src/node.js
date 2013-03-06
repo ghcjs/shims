@@ -1,4 +1,7 @@
 /* node.js support for GHCJS */
+if(typeof require !== 'undefined') {
+  var h$nodeFs = require('fs');
+}
 
 // node.js global objects don't work as Closure Library expects
 var goog = {};

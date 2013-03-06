@@ -152,6 +152,13 @@ function hs_quotInt64(a1,a2,b1,b2) {
   return c.getHighBits();
 }
 
+function hs_remInt64(a1,a2,b1,b2) {
+  logArith("### remInt64: " + a1 + " " + a2 + " % " + b1 + " " + b2);
+  var c = goog.math.Long.fromBits(a2,a1).modulo(goog.math.Long.fromBits(b2,b1));
+  ret1 = c.getLowBits();
+  return c.getHighBits();
+}
+
 function hs_plusInt64(a1,a2,b1,b2) {
   logArith("### hs_plusInt64: " + a1 + " " + a2 + " + " + b1 + " " + b2);
   var c = goog.math.Long.fromBits(a2,a1).add(goog.math.Long.fromBits(b2,b1));
@@ -454,5 +461,14 @@ function h$stableNameInt(s) {
     h$stableNameN = (h$stableNameN+1)|0;
     h$stableNames.set(s, h$stableNameN);
   }
+}
+
+function hs_free_stable_ptr(stable) {
+
+}
+
+function malloc(n) {
+  ret1 = 0;
+  return new DataView(new ArrayBuffer(n));
 }
 

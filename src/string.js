@@ -17,13 +17,17 @@ function u_iswspace(ch) {
   return /^\s$/.test(new String(ch)) ? 1 : 0;
 }
 
-
+var h$alpha = null;
 function u_iswalpha(a) {
-    return goog.string.isAlpha(String.fromCharCode(a)) ? 1 : 0;
+  if(h$alpha == null) { h$alpha = h$decodeRle(h$alphaRanges); }
+  return h$alpha[a] == 1 ? 1 : 0;
+
 }
 
+var h$alnum = null;
 function u_iswalnum(a) {
-    return goog.string.isAlphaNumeric(String.fromCharCode(a)) ? 1 : 0;
+  if(h$alnum == null) { h$alnum = h$decodeRle(h$alnumRanges); }
+  return h$alnum[a] == 1 ? 1 : 0;
 }
 
 function u_iswspace(a) {
@@ -31,12 +35,42 @@ function u_iswspace(a) {
         .indexOf(String.fromCharCode(a)) !== -1 ? 1 : 0;
 }
 
+var h$lower = null;
 function u_iswlower(a) {
-    return a !== u_towupper(a) ? 1 : 0;
+  if(h$lower == null) { h$lower = h$decodeRle(h$lowerRanges); }
+  return h$lower[a] == 1 ? 1 : 0;
 }
 
+var h$upper = null;
 function u_iswupper(a) {
-    return a !== u_towlower(a) ? 1 : 0;
+  if(h$upper == null) { h$upper = h$decodeRle(h$upperRanges); }
+  return h$upper[a] == 1 ? 1 : 0;
+}
+
+
+var h$cntrl = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159];
+function u_iswcntrl(a) {
+  return (h$cntrl.indexOf(a) !== -1) ? 1 : 0;
+}
+
+// rle: start,length pairs
+var h$print = null;
+function u_iswprint(a) {
+  if(h$print == null) { h$print = h$decodeRle(h$printRanges); }
+  return h$print[a] === 1 ? 1 : 0;
+}
+
+// decode rle array of start/length pairs
+function h$decodeRle(arr) {
+  var r = [];
+  for(var i=0;i<arr.length;i+=2) {
+    var start = arr[i];
+    var length = arr[i+1];
+    for(var j=start;j<start+length;j++) {
+      r[j] = 1;
+    }
+  }
+  return r;
 }
 
 function localeEncoding() {
@@ -433,23 +467,6 @@ function utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
     return 0;
   }
 }
-/*
-function h$prim_WriteOffAddrOp_Addr(a,o,i,av,ov) {
-  if(!a.arr) a.arr = [];
-  a.arr[o+i] = [av,ov];
-}
-
-function h$prim_ReadOffAddrOp_Addr(a,o,i) {
-  var addr = a.arr[o+i];
-  ret1 = addr[1];
-  return addr[0];
-}
-*/
-function fdReady(fd, write) {
-//  console.log("### fdReady");
-  if(write && fds[fd].writable) return 1;
-  return 0;
-};
 
 function rtsSupportsBoundThreads() {
     return 1;
@@ -457,43 +474,5 @@ function rtsSupportsBoundThreads() {
 
 // function ghc_wrapper_d2ep_
 
-function write(fd, buf, buf_offset, n) {
-  return fds[fd].write(buf, buf_offset,n);
-}
-
-// fixme remove wrappers
-var ghczuwrapperZC17ZCbaseZCSystemziPosixziInternalsZCwrite = write;
-var ghczuwrapperZC16ZCbaseZCSystemziPosixziInternalsZCwrite = write;
-var ghczuwrapperZC19ZCbaseZCSystemziPosixziInternalsZCwrite = write;
-function writeConsole(buf, buf_offset, n) {
-//  log("###writeConsole: " + n);
-  var str = decodeUtf8(buf, n, buf_offset);
-  if(typeof(process) !== 'undefined' && process && process.stdout) { /* node.js */
-    process.stdout.write(str);
-  } else if(typeof(putstr) !== 'undefined') { /* SpiderMonkey */
-    putstr(str);
-  } else if(typeof(console) !== 'undefined') {
-    // we print too many newlines here, is it possible to fix that?
-    console.log(str);
-  }
-  return n;
-}
-
-var stdout = { writable: true
-             , readable: false
-             , write: writeConsole
-             };
-
-var stdin = { writable: false
-            , readable: true
-            , read: function() { throw "unimplemented read: stdin"; }
-            };
-
-var stderr = { writable: true
-             , readable: false
-             , write: writeConsole
-             };
-
-var fds = [stdin, stdout, stderr];
 
 
