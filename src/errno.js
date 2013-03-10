@@ -6,22 +6,21 @@ var h$EILSEQ = 92;
 
 var h$errno = 0;
 
-function __hscore_get_errno() {
+function h$__hscore_get_errno() {
 //  log("### __hscore_get_errno: " + h$errno);
   return h$errno;
 }
 
-function strerror(err) {
+function h$strerror(err) {
   ret1 = 0;
   if(err === h$E2BIG) {
-    return encodeUtf8("too big");
+    return h$encodeUtf8("too big");
   } else if(err === h$EACCES) {
-    return encodeUtf8("no access");
+    return h$encodeUtf8("no access");
   } else if(err === h$EINVAL) {
-    return encodeUtf8("invalid");
+    return h$encodeUtf8("invalid");
   } else {
-    return encodeUtf8("unknown error");
+    return h$encodeUtf8("unknown error");
   }
 }
-
 

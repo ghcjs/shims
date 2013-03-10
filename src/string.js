@@ -1,5 +1,5 @@
 var h$toUpper = null;
-function u_towupper(ch) {
+function h$u_towupper(ch) {
 //  log("### u_towupper: " + ch);
 //  var r = String.fromCharCode(ch).toUpperCase().charCodeAt(0);
 //  log("### result: " + r);
@@ -9,7 +9,7 @@ function u_towupper(ch) {
 }
 
 var h$toLower = null;
-function u_towlower(ch) {
+function h$u_towlower(ch) {
 //  log("### u_towlower: " + ch);
 //  var r = String.fromCharCode(ch).toLowerCase().charCodeAt(0);
 //  log("### result: " + r);
@@ -18,50 +18,50 @@ function u_towlower(ch) {
   return (r !== null && r !== undefined) ? r : ch;
 }
 
-function u_iswspace(ch) {
+function h$u_iswspace(ch) {
 //  log("### u_iswspace: " + ch);
   return /^\s$/.test(new String(ch)) ? 1 : 0;
 }
 
 var h$alpha = null;
-function u_iswalpha(a) {
+function h$u_iswalpha(a) {
   if(h$alpha == null) { h$alpha = h$decodeRle(h$alphaRanges); }
   return h$alpha[a] == 1 ? 1 : 0;
 
 }
 
 var h$alnum = null;
-function u_iswalnum(a) {
+function h$u_iswalnum(a) {
   if(h$alnum == null) { h$alnum = h$decodeRle(h$alnumRanges); }
   return h$alnum[a] == 1 ? 1 : 0;
 }
 
-function u_iswspace(a) {
+function h$u_iswspace(a) {
     return '\t\n\v\f\r \u0020\u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000'
         .indexOf(String.fromCharCode(a)) !== -1 ? 1 : 0;
 }
 
 var h$lower = null;
-function u_iswlower(a) {
+function h$u_iswlower(a) {
   if(h$lower == null) { h$lower = h$decodeRle(h$lowerRanges); }
   return h$lower[a] == 1 ? 1 : 0;
 }
 
 var h$upper = null;
-function u_iswupper(a) {
+function h$u_iswupper(a) {
   if(h$upper == null) { h$upper = h$decodeRle(h$upperRanges); }
   return h$upper[a] == 1 ? 1 : 0;
 }
 
 
 var h$cntrl = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159];
-function u_iswcntrl(a) {
+function h$u_iswcntrl(a) {
   return (h$cntrl.indexOf(a) !== -1) ? 1 : 0;
 }
 
 // rle: start,length pairs
 var h$print = null;
-function u_iswprint(a) {
+function h$u_iswprint(a) {
   if(h$print == null) { h$print = h$decodeRle(h$printRanges); }
   return h$print[a] === 1 ? 1 : 0;
 }
@@ -90,13 +90,13 @@ function h$decodeMapping(arr) {
   return r;
 }
 
-function localeEncoding() {
+function h$localeEncoding() {
     //   log("### localeEncoding");
-   ret1 = 0; // offset 0
-   return encodeUtf8("UTF-8");
+   h$ret1 = 0; // offset 0
+   return h$encodeUtf8("UTF-8");
 }
 
-function rawStringData(str) {
+function h$rawStringData(str) {
     var v = new DataView(new ArrayBuffer(str.length+1));
     for(var i=0;i<str.length;i++) {
        v.setUint8(i, str[i]);
@@ -106,8 +106,7 @@ function rawStringData(str) {
 }
 
 // encode a javascript string to a zero terminated utf8 byte array
-// fixme, high code points are a surrogate pair in js strings
-function encodeUtf8(str) {
+function h$encodeUtf8(str) {
   var i, low;
   var n = 0;
   for(i=0;i<str.length;i++) {
@@ -185,7 +184,7 @@ function encodeUtf8(str) {
 }
 
 // encode a javascript string to a zero terminated utf16 byte array
-function encodeUtf16(str) {
+function h$encodeUtf16(str) {
   var n = 0;
   var i;
   for(i=0;i<str.length;i++) {
@@ -216,19 +215,19 @@ function encodeUtf16(str) {
 
 // decode a DataView with UTF-8 chars to a JS string
 // stop at the first zero
-function decodeUtf8z(v,start) {
+function h$decodeUtf8z(v,start) {
   var n = start;
   var max = v.byteLength;
   while(n < max) {
     if(v.getUint8(n) === 0) { break; }
     n++;
   }
-  return decodeUtf8(v,n,start);
+  return h$decodeUtf8(v,n,start);
 }
 
 // decode a DataView with Utf8 chars to a JS string
 // invalid characters are ignored
-function decodeUtf8(v,n0,start) {
+function h$decodeUtf8(v,n0,start) {
 //  log("### decodeUtf8");
 //  log(v);
   var n = n0 || v.byteLength;
@@ -294,7 +293,7 @@ function decodeUtf8(v,n0,start) {
 }
 
 // fixme what if terminator, then we read past end
-function decodeUtf16(v) {
+function h$decodeUtf16(v) {
   var n = v.byteLength;
   var arr = [];
   for(var i=0;i<n;i+=2) {
@@ -306,7 +305,7 @@ function decodeUtf16(v) {
 // var charsets = ["UTF-8"] -> UTF-32LE 
 
 
-function hs_iconv_open(to,to_off,from,from_off) {
+function h$hs_iconv_open(to,to_off,from,from_off) {
   h$errno = h$EINVAL; // no encodings supported
   return -1;
 //  var fromStr = decodeUtf8(from, from_off);
@@ -315,12 +314,12 @@ function hs_iconv_open(to,to_off,from,from_off) {
 //  return 1; // fixme?
 }
 
-function hs_iconv_close(iconv) {
+function h$hs_iconv_close(iconv) {
   return 0;
 }
 
-function hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
-                         outbuf, outbuf_off, outsize, outsize_off) {
+function h$hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
+                           outbuf, outbuf_off, outsize, outsize_off) {
 //  var inbuf2      = derefPtrA(inbuf, inbuf_off);
 //  var inbuf2_off  = derefPtrO(inbuf, inbuf_off);
 //  var outbuf2     = derefPtrA(outbuf, outbuf_off);
@@ -334,16 +333,16 @@ function hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
 }
 
 // ptr* -> ptr (array)
-function derefPtrA(ptr, ptr_off) {
+function h$derefPtrA(ptr, ptr_off) {
   return ptr.arr[ptr_off][0];
 }
 // ptr* -> ptr (offset)
-function derefPtrO(ptr, ptr_off) {
+function h$derefPtrO(ptr, ptr_off) {
   return ptr.arr[ptr_off][1];
 }
 
 // word** -> word    ptr[x][y]
-function readPtrPtrU32(ptr, ptr_off, x, y) {
+function h$readPtrPtrU32(ptr, ptr_off, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off + 4 * x];
@@ -351,7 +350,7 @@ function readPtrPtrU32(ptr, ptr_off, x, y) {
 }
 
 // char** -> char   ptr[x][y]
-function readPtrPtrU8(ptr, ptr_off, x, y) {
+function h$readPtrPtrU8(ptr, ptr_off, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off + 4 * x];
@@ -359,7 +358,7 @@ function readPtrPtrU8(ptr, ptr_off, x, y) {
 }
 
 // word**   ptr[x][y] = v
-function writePtrPtrU32(ptr, ptr_off, v, x, y) {
+function h$writePtrPtrU32(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off+ 4 * x];
@@ -367,7 +366,7 @@ function writePtrPtrU32(ptr, ptr_off, v, x, y) {
 }
 
 // unsigned char** ptr[x][y] = v
-function writePtrPtrU8(ptr, ptr_off, v, x, y) {
+function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off+ 4 * x];
@@ -380,13 +379,13 @@ function writePtrPtrU8(ptr, ptr_off, v, x, y) {
  * since utf8 is the most used interchange format and utf32
  * is used by haskell internally, utf16 for the Text package
  */
-function utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
+function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
                        outbuf0, outbuf_off0, outsize, outsize_off) {
 
-  var inbuf      = derefPtrA(inbuf0, inbuf_off0);
-  var inbuf_off  = derefPtrO(inbuf0, inbuf_off0);
-  var outbuf     = derefPtrA(outbuf0, outbuf_off0);
-  var outbuf_off = derefPtrO(outbuf0, outbuf_off0);
+  var inbuf      = h$derefPtrA(inbuf0, inbuf_off0);
+  var inbuf_off  = h$derefPtrO(inbuf0, inbuf_off0);
+  var outbuf     = h$derefPtrA(outbuf0, outbuf_off0);
+  var outbuf_off = h$derefPtrO(outbuf0, outbuf_off0);
 
   var inbuf_left = insize.getUint32(insize_off);
   var outbuf_left = outsize.getUint32(outsize_off);
@@ -485,7 +484,7 @@ function utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
   }
 }
 
-function rtsSupportsBoundThreads() {
+function h$rtsSupportsBoundThreads() {
     return 1;
 }
 

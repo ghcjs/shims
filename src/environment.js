@@ -1,22 +1,28 @@
-function getProgArgv(pid,pio,psd,pso) {
+// fixme node argv
+function h$getProgArgv(pid,pio,psd,pso) {
+/*  if( ) {
+    pid.setInt32(pio, 0);
+  } else if {
+    pid.setInt32(pio, 0);
+  } */
   pid.setInt32(pio, 0);
 }
 
 
-function errorBelch() {
+function h$errorBelch() {
   log("### errorBelch: do we need to handle a vararg function here?");
 }
 
-function errorBelch2(buf1, buf_offset1, buf2, buf_offset2) {
+function h$errorBelch2(buf1, buf_offset1, buf2, buf_offset2) {
 //  log("### errorBelch2");
-  errorMsg(decodeUtf8z(buf1, buf_offset1), decodeUtf8z(buf2, buf_offset2));
+  h$errorMsg(h$decodeUtf8z(buf1, buf_offset1), h$decodeUtf8z(buf2, buf_offset2));
 }
 
-function debugBelch2(buf1, buf_offset1, buf2, buf_offset2) {
-  errorMsg(decodeUtf8z(buf1, buf_offset1), decodeUtf8z(buf2, buf_offset2));
+function h$debugBelch2(buf1, buf_offset1, buf2, buf_offset2) {
+  h$errorMsg(h$decodeUtf8z(buf1, buf_offset1), h$decodeUtf8z(buf2, buf_offset2));
 }
 
-function errorMsg(pat) {
+function h$errorMsg(pat) {
   // poor man's vprintf
   var str = pat;
   for(var i=1;i<arguments.length;i++) {
@@ -33,19 +39,19 @@ function errorMsg(pat) {
   }
 }
 
-function performMajorGC() {
+function h$performMajorGC() {
   // fixme
 }
 
 
-function ghczuwrapperZC1ZCbaseZCSystemziCPUTimeZCgetrusage() {
+function h$baseZCSystemziCPUTimeZCgetrusage() {
   return 0;
 }
 
-function gettimeofday() {
-  console.log("### gettimeofday: " + arguments[0]);
-  console.log("### gettimeofday: " + arguments[1]);
-  console.log("### gettimeofday: " + arguments[2]);
-  console.log("### gettimeofday: " + arguments[3]);
+function h$gettimeofday() {
+  log("### gettimeofday: " + arguments[0]);
+  log("### gettimeofday: " + arguments[1]);
+  log("### gettimeofday: " + arguments[2]);
+  log("### gettimeofday: " + arguments[3]);
   return 0;
 }

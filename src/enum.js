@@ -11,7 +11,7 @@ h$initStatic.push(h$initEnums);
 
 function h$makeEnum(tag) {
   var f = function() {
-    return stack[sp];
+    return h$stack[h$sp];
   }
   h$setObjInfo(f, 2, "Enum", [], tag+1, 0, [1], null);
   return { f: f, d: null };

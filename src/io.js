@@ -79,41 +79,54 @@ function h$findFile(path) {
   return h$filesMap[path];
 }
 
-function isatty(d) {
+function h$isatty(d) {
   return 0;
 }
 
-function __hscore_bufsiz() { return 4096; }
-function __hscore_seek_cur() { return 1; }
-function __hscore_seek_set() { return 0; }
-function __hscore_seek_end() { return 2; }
+function h$__hscore_bufsiz() { return 4096; }
+function h$__hscore_seek_cur() { return 1; }
+function h$__hscore_seek_set() { return 0; }
+function h$__hscore_seek_end() { return 2; }
 
-function __hscore_o_binary() { return 0; }
-function __hscore_o_rdonly() { return 0; }
-function __hscore_o_wronly() { return 0x0001; }
-function __hscore_o_rdwr() { return 0x0002; }
-function __hscore_o_append() { return 0x0008; }
-function __hscore_o_creat() { return 0x0200; }
-function __hscore_o_excl() { return 0x0800; }
-function __hscore_o_trunc() { return 0x0400; }
-function __hscore_o_noctty() { return 0x20000; }
-function __hscore_o_nonblock() { return 0x0004; }
-function __hscore_sizeof_stat() { return 4; }
-function __hscore_s_isdir() { return 0; }
-function __hscore_s_isfifo() { return 0; }
-function __hscore_s_isblk() { return 0; }
-function __hscore_s_ischr() { return 0; }
-function __hscore_s_issock() { return 0; }
-function __hscore_s_isreg() { return 1; }
+function h$__hscore_o_binary() { return 0; }
+function h$__hscore_o_rdonly() { return 0; }
+function h$__hscore_o_wronly() { return 0x0001; }
+function h$__hscore_o_rdwr() { return 0x0002; }
+function h$__hscore_o_append() { return 0x0008; }
+function h$__hscore_o_creat() { return 0x0200; }
+function h$__hscore_o_excl() { return 0x0800; }
+function h$__hscore_o_trunc() { return 0x0400; }
+function h$__hscore_o_noctty() { return 0x20000; }
+function h$__hscore_o_nonblock() { return 0x0004; }
+function h$__hscore_s_isdir() { return 0; }
+function h$__hscore_s_isfifo() { return 0; }
+function h$__hscore_s_isblk() { return 0; }
+function h$__hscore_s_ischr() { return 0; }
+function h$__hscore_s_issock() { return 0; }
+function h$__hscore_s_isreg() { return 1; }
 
-function __hscore_fstat(fd, buf) { return 0; }
-function __hscore_st_mode(st) { return 0; }
-function __hscore_st_dev() { return 0; }
-function __hscore_st_ino() { return 0; }
+/*
+ partial fstat emulation, only set the size
+ */
+function h$__hscore_sizeof_stat() { return 4; }
+function h$__hscore_fstat(fd, buf, off) {
+  var f = h$fds[fd]
+//  log('__hscore_fstat: (bytelen): ' + f.file.data.byteLength);
+  buf.setUint32(off, f.file.data.byteLength);
+  return 0;
+}
+function h$__hscore_st_mode(st) { return 0; }
+function h$__hscore_st_dev() { return 0; }
+function h$__hscore_st_ino() { return 0; }
+function h$__hscore_st_size(st,off) {
+    // return 64 bit
+    h$ret1 = st.getUint32(off);
+    return 0;
+}
 
-function __hscore_open(filename, filename_off, h, mode) {
-    var p = decodeUtf8(filename, filename_off);
-    log('__hscore_open '+p);
+function h$__hscore_open(filename, filename_off, h, mode) {
+    var p = h$decodeUtf8(filename, filename_off);
+//    log('__hscore_open '+p);
     var f = h$findFile(p);
     if(!f) {
       var d = h$loadFileData(p);
@@ -124,22 +137,22 @@ function __hscore_open(filename, filename_off, h, mode) {
     }
 }
 
-var baseZCSystemziPosixziInternalsZCSzuISDIR = __hscore_s_isdir;
-var baseZCSystemziPosixziInternalsZCSzuISFIFO = __hscore_s_isfifo;
-var baseZCSystemziPosixziInternalsZCSzuISSOCK = __hscore_s_issock;
-var baseZCSystemziPosixziInternalsZCSzuISCHR = __hscore_s_ischr;
-var baseZCSystemziPosixziInternalsZCSzuISREG = __hscore_s_isreg;
-var baseZCSystemziPosixziInternalsZCread = h$read;
+var h$baseZCSystemziPosixziInternalsZCSzuISDIR = h$__hscore_s_isdir;
+var h$baseZCSystemziPosixziInternalsZCSzuISFIFO = h$__hscore_s_isfifo;
+var h$baseZCSystemziPosixziInternalsZCSzuISSOCK = h$__hscore_s_issock;
+var h$baseZCSystemziPosixziInternalsZCSzuISCHR = h$__hscore_s_ischr;
+var h$baseZCSystemziPosixziInternalsZCSzuISREG = h$__hscore_s_isreg;
+var h$baseZCSystemziPosixziInternalsZCread = h$read;
 
-function lockFile(fd, dev, ino, for_writing) {
-    log("### lockFile");
+function h$lockFile(fd, dev, ino, for_writing) {
+//    log("### lockFile");
     return 0;
 }
-function unlockFile(fd) {
-    log("### unlockFile");
+function h$unlockFile(fd) {
+//    log("### unlockFile");
     return 0;
 }
-function fdReady(fd, write) {
+function h$fdReady(fd, write) {
 //  console.log("### fdReady");
   if(write && h$fds[fd].file.writable) return 1;
   return 0;
@@ -157,10 +170,11 @@ function h$read(fd, buf, buf_offset, n) {
   return f.file.read(f, buf, buf_offset, n);
 }
 
-var baseZCSystemziPosixziInternalsZCwrite = h$write;
+var h$baseZCSystemziPosixziInternalsZCwrite = h$write;
+
 function h$writeConsole(fd, buf, buf_offset, n) {
 //  log("###writeConsole: " + n);
-  var str = decodeUtf8(buf, n, buf_offset);
+  var str = h$decodeUtf8(buf, n, buf_offset);
   if(typeof(process) !== 'undefined' && process && process.stdout) { /* node.js */
     process.stdout.write(str);
   } else if(typeof(putstr) !== 'undefined') { /* SpiderMonkey */
@@ -173,7 +187,7 @@ function h$writeConsole(fd, buf, buf_offset, n) {
 }
 
 function h$readFile(fd, buf, buf_offset, n) {
-  log("h$readFile: " + n);
+//  log("h$readFile: " + n);
   var fbuf = fd.file.data;
   var pos = fd.pos;
   n = Math.min(n, fbuf.byteLength - pos);
@@ -181,12 +195,12 @@ function h$readFile(fd, buf, buf_offset, n) {
     buf.setUint8(buf_offset+i, fbuf.getUint8(pos+i));
   }
   fd.pos += n;
-  log("h$readFile read: " + n);
+//  log("h$readFile read: " + n);
   return n;
 }
 
 function h$writeFile(fd, buf, buf_offset, n) {
-  log("h$writeFile write: " + n);
+//  log("h$writeFile write: " + n);
   return n; // fixme
 }
 

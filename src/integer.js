@@ -1,62 +1,61 @@
-/* Integer and integer-gmp support
+/* 
+   Integer and integer-gmp support
    partial GMP emulation
 
    note: sign behaves different from real gmp sign,
          value is always zero, don't use it for comparisons
-
 */
 
 // var logInt = log;
-var logInt = function() { }
+var h$logInt = function() { }
 
 h$bigOne = new BigInteger([1]);
 
 // convert a value to a BigInt
 // fixme make faster conversion stuff if we know how many bits each digit has
 function h$bigFromInt(v) {
-  logInt("### h$bigFromInt: " + v);
+//  h$logInt("### h$bigFromInt: " + v);
   var v0 = v|0;
   var r = new BigInteger([v0 >> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
-  logInt("### result: " + r.toString());
+//  h$logInt("### result: " + r.toString());
   return r;
 }
 
 function h$bigFromWord(v) {
-  logInt("### h$bigFromInt: " + v);
+//  h$logInt("### h$bigFromInt: " + v);
   var v0 = v|0;
   var r = new BigInteger([0, v0 >>> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
-  logInt("### result: " + r.toString());
+//  h$logInt("### result: " + r.toString());
   return r;
 }
 
 function h$bigFromInt64(v1,v2) {
-  logInt("### h$bigFromInt64: " + v1 + " " + v2);
+//  h$logInt("### h$bigFromInt64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var r = new BigInteger([ v10 >>  24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ]);
-  logInt("### result: " + r.toString());
+//  h$logInt("### result: " + r.toString());
   return r;
 }
 
 function h$bigFromWord64(v1,v2) {
-  logInt("### h$bigFromWord64: " + v1 + " " + v2);
+//  h$logInt("### h$bigFromWord64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var arr = [ 0, v10 >>> 24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ];
-  logInt(arr);
+//  h$logInt(arr);
   var r = new BigInteger([ 0, v10 >>> 24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ]);
-  logInt("### result: " + r.toString());
+//  h$logInt("### result: " + r.toString());
   return r;
 }
 
 function h$bigFromNumber(n) {
-  logInt("### h$bigFromNumber: " + n);
   var ra = [];
   var s = 0;
   if(n < 0) {
@@ -69,14 +68,10 @@ function h$bigFromNumber(n) {
     b *= 256;
   }
   ra.unshift(s);
-  logInt(ra);
-  var r = new BigInteger(ra);
-  logInt("### result: " + r.toString());
-  return r;
+  return new BigInteger(ra);
 }
 
 function h$encodeNumber(big,e) {
-  logInt("### h$encodeNumber: " + big.toString() + " " + e);
   var m = Math.pow(2,e);
   if(m === Infinity) {
     switch(big.signum()) {
@@ -88,121 +83,104 @@ function h$encodeNumber(big,e) {
   var b = big.toByteArray();
   var l = b.length;
   var r = 0;
-//  logInt(b);
+//  h$logInt(b);
   for(var i=l-1;i>=1;i--) {
-    logInt("### i: " + i + " b[i] " + b[i]);
+//    h$logInt("### i: " + i + " b[i] " + b[i]);
     r += m * Math.pow(2,(l-i-1)*8) * (b[i] & 0xff);
-    logInt(r);
+//    h$logInt(r);
   }
   // last one signed
   if(b[0] != 0) {
     r += m * Math.pow(2,(l-1)*8) * b[0];
   }
-  logInt(r);
-  logInt("### result: " + r);
+//  h$logInt(r);
+//  h$logInt("### result: " + r);
   return r;
 }
 
-function integer_cmm_cmpIntegerzh(sa, abits, sb, bbits) {
-  logInt("### integer_cmm_cmpIntegerzh:" + abits.toString() + " " + bbits.toString());
+function h$integer_cmm_cmpIntegerzh(sa, abits, sb, bbits) {
   var c = abits.compareTo(bbits);
   return c == 0 ? 0 : c > 0 ? 1 : -1;
 }
 
-function integer_cmm_cmpIntegerIntzh(sa, abits, b) {
-  logInt("### integer_cmm_cmpIntegerIntzh: " + abits.toString() + " " + b);
+function h$integer_cmm_cmpIntegerIntzh(sa, abits, b) {
   var res = abits.compareTo(h$bigFromInt(b));
-  logInt("### result: " + res);
   return res;
 }
 
-function integer_cmm_plusIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_plusIntegerzh");
-    ret1 = abits.add(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_plusIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.add(bbits);
+    return 0;
 }
 
-function integer_cmm_minusIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_minusIntegerzh: " + abits.toString() + " " + bbits.toString());
-    ret1 = abits.subtract(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_minusIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.subtract(bbits);
+    return 0;
 }
 
-function integer_cmm_timesIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_timesIntegerzh: " + abits.toString() + " " + bbits.toString());
-    ret1 = abits.multiply(bbits);
-    logInt("### result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_timesIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.multiply(bbits);
+    return 0;
 }
 
 // fixme make more efficient, divideRemainder
-function integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_quotRemIntegerzh: " + abits.toString() + " " + bbits.toString());
+function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
     var q = abits.divide(bbits);
-    logInt("### q: " + q.toString());
+//    h$logInt("### q: " + q.toString());
     var r = abits.subtract(q.multiply(bbits));
-    logInt("### r: " + r.toString());
-    ret1 = q;
-    ret2 = 0; // r.getSign();
-    ret3 = r;
-    return 0; // q.getSign();
+//    h$logInt("### r: " + r.toString());
+    h$ret1 = q;
+    h$ret2 = 0;
+    h$ret3 = r;
+    return 0;
 }
 
-function integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_quotIntegerzh: " + abits.toString() + " " + bbits.toString());
-    ret1 = abits.divide(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.divide(bbits);
+    return 0;
 }
 
-function integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_remIntegerzh: " + abits.toString() + " " + bbits.toString());
-    ret1 = abits.mod(bbits);
-    logInt("### result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.mod(bbits);
+//    h$logInt("### result: " + ret1.toString());
+    return 0;
 }
 
-function integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_divModIntegerzh");
+function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        // Take one off d and add b onto m
         d = d.subtract(h$bigOne);
         m = m.add(b);
     }
-    ret1 = d;
-    ret2 = 0; // m.getSign();
-    ret3 = m;
-    return 0; // d.getSign();
+    h$ret1 = d;
+    h$ret2 = 0;
+    h$ret3 = m;
+    return 0;
 }
 
-function integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_divIntegerzh");
+function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        // Take one off d and add b onto m
         d = d.subtract(h$bigOne);
     }
-    ret1 = d;
-    return 0; // d.getSign();
+    h$ret1 = d;
+    return 0;
 }
 
-function integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_modIntegerzh");
+function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        // Take one off d and add b onto m
         m = m.add(bbits);
     }
-    ret1 = m;
-    return 0; // m.getSign();
+    h$ret1 = m;
+    return 0;
 }
-function integer_cmm_divExactIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_divExactIntegerzh");
-    ret1 = abits.divide(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_divExactIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.divide(bbits);
+    return 0;
 }
 
 function h$gcd(a, b) {
@@ -225,20 +203,17 @@ function h$gcd(a, b) {
     return big;
 }
 
-function integer_cmm_gcdIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_gcdIntegerzh");
-    ret1 = h$gcd(abits, bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_gcdIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = h$gcd(abits, bbits);
+    return 0;
 }
 
-function integer_cmm_gcdIntegerIntzh(sa, abits, b) {
-    logInt("### integer_cmm_gcdIntegerzh");
+function h$integer_cmm_gcdIntegerIntzh(sa, abits, b) {
     var r = h$gcd(abits, h$bigFromInt(b));
     return r.intValue();
 }
 
-function integer_cmm_gcdIntzh(a, b) {
-        logInt("### integer_cmm_gcdIntzh");
+function h$integer_cmm_gcdIntzh(a, b) {
         var x = a<0 ? -a : a;
         var y = b<0 ? -b : b;
         var big, small;
@@ -259,12 +234,11 @@ function integer_cmm_gcdIntzh(a, b) {
 
 var h$oneOverLog2 = 1 / Math.log(2);
 
-function integer_cmm_decodeDoublezh(x) {
-    logInt("### integer_cmm_decodeDoublezh: " + x);
+function h$integer_cmm_decodeDoublezh(x) {
     if( x < 0 ) {
-        var result = integer_cmm_decodeDoublezh(-x);
-        ret2 = ret2.negate();
-        ret1 = ret2.signum();
+        var result = h$integer_cmm_decodeDoublezh(-x);
+        h$ret2 = h$ret2.negate();
+        h$ret1 = h$ret2.signum();
         return result;
     }
     var exponent = Math.floor(Math.log(x) * h$oneOverLog2)-52;
@@ -282,121 +256,89 @@ function integer_cmm_decodeDoublezh(x) {
       exponent--;
       n *= 2;
     }
-    ret2 = h$bigFromNumber(n);
-    ret1 = 0;
+    h$ret2 = h$bigFromNumber(n);
+    h$ret1 = 0;
     return exponent;
 }
 
-function integer_cmm_int2Integerzh(i) {
-    logInt("### integer_cmm_int2Integerzh: " + i);
-    ret1 = h$bigFromInt(i);
-    logInt("result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_int2Integerzh(i) {
+    h$ret1 = h$bigFromInt(i);
+    return 0;
 }
 
-function integer_cmm_word2Integerzh(i) {
-    logInt("### integer_cmm_word2Integerzh: " + i);
-    ret1 = h$bigFromWord(i);
-    logInt("result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_word2Integerzh(i) {
+    h$ret1 = h$bigFromWord(i);
+    return 0;
 }
 
-function integer_cmm_andIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_andIntegerzh");
-    ret1 = abits.and(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_andIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.and(bbits);
+    return 0;
 }
 
-function integer_cmm_orIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_orIntegerzh: " + abits.toString() + " " + bbits.toString());
-    ret1 = abits.or(bbits);
-    logInt("### result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_orIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.or(bbits);
+    return 0;
 }
 
-function integer_cmm_xorIntegerzh(sa, abits, sb, bbits) {
-    logInt("### integer_cmm_xorIntegerzh");
-    ret1 = abits.xor(bbits);
-    return 0; // ret1.getSign();
+function h$integer_cmm_xorIntegerzh(sa, abits, sb, bbits) {
+    h$ret1 = abits.xor(bbits);
+    return 0;
 }
 
-function integer_cmm_mul2ExpIntegerzh(sa, abits, b) {
-    logInt("### integer_cmm_mul2ExpIntegerzh: " + abits.toString() + " " + b);
-    ret1 = abits.shiftLeft(b);
-    return 0; // ret1.getSign();
+function h$integer_cmm_mul2ExpIntegerzh(sa, abits, b) {
+    h$ret1 = abits.shiftLeft(b);
+    return 0;
 }
 
-function integer_cmm_fdivQ2ExpIntegerzh(sa, abits, b) {
-    logInt("### integer_cmm_fdivQ2Integerzh");
-    ret1 = abits.shiftRight(b);
-    return 0; // ret1.getSign();
+function h$integer_cmm_fdivQ2ExpIntegerzh(sa, abits, b) {
+    h$ret1 = abits.shiftRight(b);
+    return 0;
 }
 
-function integer_cmm_complementIntegerzh(sa, abits) {
-    logInt("### integer_cmm_complementIntegerzh");
-    ret1 = abits.not();
-    return 0; // ret1.getSign();
+function h$integer_cmm_complementIntegerzh(sa, abits) {
+    h$ret1 = abits.not();
+    return 0;
 }
 
-function integer_cmm_int64ToIntegerzh(a0, a1) {
-    logInt("### integer_cmm_int64ToIntegerzh: " + a0 + " " + a1);
-    ret1 = h$bigFromInt64(a0,a1);
-    logInt("### result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_int64ToIntegerzh(a0, a1) {
+    h$ret1 = h$bigFromInt64(a0,a1);
+    return 0;
 }
 
-function integer_cmm_word64ToIntegerzh(a0, a1) {
-    logInt("### integer_cmm_word64ToIntegerzh: " + a0 + " " + a1);
-    ret1 = h$bigFromWord64(a0,a1); //new BigInteger(a1,a0); // [a1,a0], 0);
-    logInt("### result: " + ret1.toString());
-    return 0; // ret1.getSign();
+function h$integer_cmm_word64ToIntegerzh(a0, a1) {
+    h$ret1 = h$bigFromWord64(a0,a1);
+    return 0;
 }
 
-function hs_integerToInt64(as, abits) {
-    logInt("### integer_cmm_integerToInt64zh: " + abits.toString());
-    ret1 = abits.intValue();
+function h$hs_integerToInt64(as, abits) {
+    h$ret1 = abits.intValue();
     return abits.shiftRight(32).intValue();
 }
 
-function hs_integerToWord64(as, abits) {
-    logInt("### integer_cmm_integerToWord64zh: " + abits.toString());
-    ret1 = abits.intValue();
+function h$hs_integerToWord64(as, abits) {
+    h$ret1 = abits.intValue();
     return abits.shiftRight(32).intValue();
 }
 
-function integer_cmm_integer2Intzh(as, abits) {
-   logInt("### integer_cmm_integer2Intzh: " + abits.toString() + " -> " + abits.intValue());
+function h$integer_cmm_integer2Intzh(as, abits) {
    return abits.intValue();
 }
 
-function integer_cbits_encodeDouble(as,abits,e) {
-   logInt("### integer_cbits_encodeDouble: " + abits.toString() + " " + e);
-   var r = h$encodeNumber(abits,e);
-//   var r = abits.toNumber() * Math.pow(2,e);
-   logInt("### result: " + r);
-   return r;
+function h$integer_cbits_encodeDouble(as,abits,e) {
+   return h$encodeNumber(abits,e);
 }
 
-function integer_cbits_encodeFloat(as,abits,e) {
-   logInt("### integer_cbits_encodeFloat: " + abits.toString() + " " + e);
-//   var r = abits.toNumber() * Math.pow(2,e);
-   var r = h$encodeNumber(abits,e);
-   logInt("### result: " + r);
-   return r;
+function h$integer_cbits_encodeFloat(as,abits,e) {
+   return h$encodeNumber(abits,e);
 }
 
-function __int_encodeDouble(i,e) {
-   logInt("### __int_encodeDouble: " + i + " " + e);
-   var r = i * Math.pow(2,e);
-   logInt("### result: " + r);
-   return r;
+function h$__int_encodeDouble(i,e) {
+   return i * Math.pow(2,e);
 }
 
-function __int_encodeFloat(i,e) {
-   logInt("### __int_encodeFloat: " + i + " " + e);
-   var r = i * Math.pow(2,e);
-   logInt("### result: " + r);
-   return r;
+function h$__int_encodeFloat(i,e) {
+   return i * Math.pow(2,e);
 }
 
 
