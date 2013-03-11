@@ -330,13 +330,35 @@ function h$rintFloat(a) {
     }
 }
 
-function h$sin(d) {
-  return Math.sin(d);
-}
+function h$acos(d) { return Math.acos(d); }
+function h$acosf(f) { return Math.acos(f); }
 
-function h$cos(d) {
-  return Math.cos(d);
-}
+function h$asin(d) { return Math.asin(d); }
+function h$asinf(f) { return Math.asin(f); }
+
+function h$atan(d) { return Math.atan(d); }
+function h$atanf(f) { return Math.atan(f); }
+
+function h$atan2(x,y) { return Math.atan2(x,y); }
+function h$atan2f(x,y) { return Math.atan2(x,y); }
+
+function h$cos(d) { return Math.cos(d); }
+function h$cosf(f) { return Math.cos(f); }
+
+function h$sin(d) { return Math.sin(d); }
+function h$sinf(f) { return Math.sin(f); }
+
+function h$tan(d) { return Math.tan(d); }
+function h$tanf(f) { return Math.tan(f); }
+
+function h$cosh(d) { return (Math.exp(d)+Math.exp(-d))/2; }
+function h$coshf(f) { return h$cosh(f); }
+
+function h$sinh(d) { return (Math.exp(d)-Math.exp(-d))/2; }
+function h$sinhf(f) { return h$sinh(f); }
+
+function h$tanh(d) { return (Math.exp(2*d)-1)/(Math.exp(2*d)+1); }
+function h$tanhf(f) { return h$tanh(f); }
 
 var h$popCntTab =
    [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
