@@ -22,7 +22,14 @@ var h$filesMap = {}; // new Map(); // path -> file
 
 // fixme remove file from h$filesMap?
 function h$close(fd) {
-  delete h$fds[fd];
+  var f = h$fds[fd];
+  if(f) {
+    delete h$fds[fd];
+    return 0;
+  } else {
+    h$errno = h$EBADF;
+    return -1;
+  }
 }
 
 function h$newFd(file) {
@@ -84,8 +91,8 @@ function h$isatty(d) {
 }
 
 function h$__hscore_bufsiz() { return 4096; }
-function h$__hscore_seek_cur() { return 1; }
 function h$__hscore_seek_set() { return 0; }
+function h$__hscore_seek_cur() { return 1; }
 function h$__hscore_seek_end() { return 2; }
 
 function h$__hscore_o_binary() { return 0; }
@@ -137,6 +144,39 @@ function h$__hscore_open(filename, filename_off, h, mode) {
     }
 }
 
+function h$baseZCSystemziPosixziInternalsZClseek(fd, offset1, offset2, whence) {
+  var offset = goog.math.Long.fromBits(offset2,offset1).toNumber();
+//  log("### lseek: " + fd + ", " + offset + ", " + whence);
+  var f = h$fds[fd];
+  if(!f) {
+    h$errno = h$EBADF;
+    return -1;
+  }
+  var newOff;
+  if(whence === 0) { // seek_set
+    newOff = offset;
+  } else if(whence === 1) { // seek_cur
+    newOff = f.pos + offset;
+  } else if(whence === 2) { // seek_end
+    newOff = f.file.data.byteLength + offset;
+  } else {
+    h$errno = h$EINVAL;
+    return -1;
+  }
+  if(newOff < 0) {
+    h$errno = h$EINVAL;
+    return -1;
+  } else {
+    f.pos = newOff;
+    var no = goog.math.Long.fromNumber(newOff);
+    h$ret1 = no.getLowBits();
+    return no.getHighBits();
+  }
+}
+
+var h$baseZCSystemziPosixziInternalsZCSEEKzuCUR = h$__hscore_seek_cur;
+var h$baseZCSystemziPosixziInternalsZCSEEKzuSET = h$__hscore_seek_set;
+var h$baseZCSystemziPosixziInternalsZCSEEKzuEND = h$__hscore_seek_end;
 var h$baseZCSystemziPosixziInternalsZCSzuISDIR = h$__hscore_s_isdir;
 var h$baseZCSystemziPosixziInternalsZCSzuISFIFO = h$__hscore_s_isfifo;
 var h$baseZCSystemziPosixziInternalsZCSzuISSOCK = h$__hscore_s_issock;
@@ -204,5 +244,9 @@ function h$writeFile(fd, buf, buf_offset, n) {
   return n; // fixme
 }
 
+// fixme: why is this not escaped
+var enabled_capabilities = 1;
 
-
+function h$prim_ReadOffAddrOp_Int32(x,y) {
+  return 1;
+}
