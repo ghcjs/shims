@@ -1,5 +1,6 @@
 js:
   - src/node.js
+  - lib/typedarray/typedarray.js
   - lib/harmony-collections/harmony-collections.js
   - src/node-exports.js
   - lib/closure-library/closure/goog/base.js
@@ -11,6 +12,11 @@ js:
   - lib/closure-library/closure/goog/crypt/hash.js
   - lib/closure-library/closure/goog/crypt/md5.js
   - lib/closure-library/closure/goog/math/long.js
+  - lib/closure-library/closure/goog/object/object.js
+  - lib/closure-library/closure/goog/array/array.js
+  - lib/closure-library/closure/goog/structs/node.js
+  - lib/closure-library/closure/goog/structs/heap.js
+  - lib/closure-library/closure/goog/structs/queue.js
   - lib/jsbn/jsbn.js
   - lib/jsbn/jsbn2.js
   - src/errno.js
