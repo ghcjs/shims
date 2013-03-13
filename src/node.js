@@ -7,6 +7,7 @@ if(typeof require !== 'undefined') {
 var goog = {};
 goog.global = this;
 goog.global.goog = goog;
+goog.global.CLOSURE_NO_DEPS = true;
 
 /* SpiderMonkey support */
 
