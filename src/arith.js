@@ -217,7 +217,7 @@ function h$hs_uncheckedShiftRL64(a1,a2,n) {
 function h$mulInt32(a,b) {
   return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
 }
-var hs_mulInt32 = h$mulInt32;
+// var hs_mulInt32 = h$mulInt32;
 
 function h$mulWord32(a,b) {
   return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
@@ -370,6 +370,24 @@ var h$popCntTab =
     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8];
 
+function h$popCnt32(x) {
+   return h$popCntTab[x&0xFF] +
+          h$popCntTab[(x>>>8)&0xFF] +
+          h$popCntTab[(x>>>16)&0xFF] +
+          h$popCntTab[(x>>>24)&0xFF]
+}
+
+function h$popCnt64(x1,x2) {
+   return h$popCntTab[x1&0xFF] +
+          h$popCntTab[(x1>>>8)&0xFF] +
+          h$popCntTab[(x1>>>16)&0xFF] +
+          h$popCntTab[(x1>>>24)&0xFF] +
+          h$popCntTab[x2&0xFF] +
+          h$popCntTab[(x2>>>8)&0xFF] +
+          h$popCntTab[(x2>>>16)&0xFF] +
+          h$popCntTab[(x2>>>24)&0xFF];
+}
+
 // slice an array of heap objects
 var h$sliceArray = /* ArrayBuffer.prototype.slice ?
   function(a, start, n) {
@@ -431,5 +449,25 @@ function h$hs_free_stable_ptr(stable) {
 function h$malloc(n) {
   h$ret1 = 0;
   return new DataView(new ArrayBuffer(n));
+}
+
+function h$memset() {
+  var buf_v, buf_off, chr, n;
+  buf_v = arguments[0];
+  if(arguments.length == 4) { // Addr#
+    buf_off = arguments[1];
+    chr     = arguments[2];
+    n       = arguments[3];
+  } else if(arguments.length == 3) { // ByteString#
+    buf_off = 0;
+    chr     = arguments[1];
+    n       = arguments[2];
+  } else {
+    throw("h$memset: unexpected argument")
+  }
+  var end = buf_off + n;
+  for(var i=buf_off;i<end;i++) {
+    buf_v.setUint8(i, chr);
+  }
 }
 
