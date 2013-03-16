@@ -64,6 +64,7 @@ function h$newFd(file) {
 function h$newFile(path, data) {
   var f = { path: path
           , data: data
+          , len: data.byteLength // number of bytes in the file (migh be smaller than data.byteLength later)
           , read: h$readFile
           , write: h$writeFile
           };
@@ -156,7 +157,7 @@ function h$__hscore_sizeof_stat() { return 4; }
 function h$__hscore_fstat(fd, buf, off) {
   var f = h$fds[fd]
 //  log('__hscore_fstat: (bytelen): ' + f.file.data.byteLength);
-  buf.setUint32(off, f.buf.data.byteLength);
+  buf.setUint32(off, f.buf.len);
   return 0;
 }
 function h$__hscore_st_mode(st) { return 0; }
@@ -195,7 +196,7 @@ function h$baseZCSystemziPosixziInternalsZClseek(fd, offset1, offset2, whence) {
   } else if(whence === 1) { // seek_cur
     newOff = f.pos + offset;
   } else if(whence === 2) { // seek_end
-    newOff = f.buf.data.byteLength + offset;
+    newOff = f.buf.len + offset;
   } else {
     h$errno = h$EINVAL;
     return -1;
@@ -267,7 +268,7 @@ function h$readFile(fd, buf, buf_offset, n) {
 //  log("h$readFile: " + n);
   var fbuf = fd.buf.data;
   var pos = fd.pos;
-  n = Math.min(n, fbuf.byteLength - pos);
+  n = Math.min(n, fd.buf.len - pos);
   for(var i=0;i<n;i++) {
     buf.setUint8(buf_offset+i, fbuf.getUint8(pos+i));
   }
@@ -276,9 +277,25 @@ function h$readFile(fd, buf, buf_offset, n) {
   return n;
 }
 
+// write file just in memory
 function h$writeFile(fd, buf, buf_offset, n) {
-//  log("h$writeFile write: " + n);
-  return n; // fixme
+//  log("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
+  if(fd.pos + n >= fd.buf.data.byteLength) {
+    var od = fd.buf.data;
+    var d = new DataView(new ArrayBuffer(Math.round(1.3*od.byteLength)+100));
+    for(var i=0;i<od.byteLength;i++) {
+      d.setUint8(i, od.getUint8(i));
+    }
+    fd.buf.data = d;
+  }
+  var offset = buf_offset + fd.pos;
+  var bd = fd.buf.data;
+  for(var i=0;i<n;i++) {
+    bd.setUint8(offset+i,buf.getUint8(buf_offset+i));
+  }
+  fd.pos += n;
+  fd.buf.len = Math.max(fd.buf.len, fd.pos);
+  return n;
 }
 
 
