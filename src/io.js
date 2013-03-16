@@ -1,29 +1,38 @@
 
-var h$stdout = { writable: true
-               , readable: false
+var h$stdout = { read: function() { throw "can't read from stdout"; }
                , write: h$writeConsole
                };
 
-var h$stdin = { writable: false
-              , readable: true
+var h$stdin = { write: function() { throw "can't write to stdin"; }
               , read: function() { throw "unimplemented read: stdin"; }
               };
 
-var h$stderr = { writable: true
-               , readable: false
+var h$stderr = { read: function () { throw "can't read from stderr"; }
                , write: h$writeConsole
                };
 
-function h$stdFd(n,file) { return { pos: 0, file: file, fd: n }; }
+function h$stdFd(n,readable,writable,buf) { 
+  return new h$Fd(buf,readable,writable,n);
+}
 
 var h$fdN = 3;
-var h$fds = { '0': h$stdFd(0,h$stdin), '1': h$stdFd(1,h$stdout), '2': h$stdFd(2,h$stderr) };
+var h$fds = { '0': h$stdFd(0, true, false, h$stdin)
+            , '1': h$stdFd(1, false, true, h$stdout)
+            , '2': h$stdFd(2, false, true, h$stderr)
+            };
+
 var h$filesMap = {}; // new Map(); // path -> file
 
 // fixme remove file from h$filesMap?
 function h$close(fd) {
   var f = h$fds[fd];
   if(f) {
+    for(var i=0;i<f.waitRead.length;i++) {
+      h$throwTo(f.waitRead[i], h$IOException);
+    }
+    for(var i=0;i<f.waitWrite.length;i++) {
+      h$throwTo(f.waitWrite[i], h$IOException);
+    }
     delete h$fds[fd];
     return 0;
   } else {
@@ -32,18 +41,29 @@ function h$close(fd) {
   }
 }
 
+function h$Fd(buf, readable, writable, n) {
+  if(n !== undefined) {
+    this.fd = n;
+  } else {
+    this.fd  = h$fdN++;
+  }
+  this.pos = 0;
+  this.buf = buf;
+  this.waitRead = [];
+  this.waidWrite = [];
+  this.readable = readable;
+  this.writable = writable;
+}
+
 function h$newFd(file) {
-  var n = h$fdN++;
-  var fd = { fd: n, pos: 0, file: file };
-  h$fds[n] = fd;
+  var fd = new h$Fd(file, true, true);
+  h$fds[fd.fd] = fd;
   return fd;
 }
 
 function h$newFile(path, data) {
   var f = { path: path
           , data: data
-          , writable: true
-          , readable: true
           , read: h$readFile
           , write: h$writeFile
           };
@@ -51,6 +71,23 @@ function h$newFile(path, data) {
   return f;
 }
 
+// notify threads waiting, call after new data for fd comes in
+function h$notifyRead(fd) {
+  var a = fd.waitRead;
+  for(var i=0;i<a.length;i++) {
+    h$wakeupThread(a[i]);
+  }
+  a.length = 0;
+}
+
+// notify threads waiting, call when we can write more
+function h$notifyWrite(fd) {
+  var a = fd.waitWrite;
+  for(var i=0;i<a.length;i++) {
+    h$wakupThread(a[i]);
+  }
+  fd.waitRead.length = 0;
+}
 
 function h$readFile() {
 
@@ -119,7 +156,7 @@ function h$__hscore_sizeof_stat() { return 4; }
 function h$__hscore_fstat(fd, buf, off) {
   var f = h$fds[fd]
 //  log('__hscore_fstat: (bytelen): ' + f.file.data.byteLength);
-  buf.setUint32(off, f.file.data.byteLength);
+  buf.setUint32(off, f.buf.data.byteLength);
   return 0;
 }
 function h$__hscore_st_mode(st) { return 0; }
@@ -158,7 +195,7 @@ function h$baseZCSystemziPosixziInternalsZClseek(fd, offset1, offset2, whence) {
   } else if(whence === 1) { // seek_cur
     newOff = f.pos + offset;
   } else if(whence === 2) { // seek_end
-    newOff = f.file.data.byteLength + offset;
+    newOff = f.buf.data.byteLength + offset;
   } else {
     h$errno = h$EINVAL;
     return -1;
@@ -194,20 +231,20 @@ function h$unlockFile(fd) {
 }
 function h$fdReady(fd, write) {
 //  console.log("### fdReady");
-  if(write && h$fds[fd].file.writable) return 1;
+  if(write && h$fds[fd].writable) return 1;
   return 0;
 };
 
 function h$write(fd, buf, buf_offset, n) {
 //  log("h$write: fd: " + fd + " (" + n + ")");
   var f = h$fds[fd];
-  return f.file.write(f, buf, buf_offset, n);
+  return f.buf.write(f, buf, buf_offset, n);
 }
 
 function h$read(fd, buf, buf_offset, n) {
-  log("h$read: fd: " + fd + " (" + n + ")");
+//  log("h$read: fd: " + fd + " (" + n + ")");
   var f = h$fds[fd];
-  return f.file.read(f, buf, buf_offset, n);
+  return f.buf.read(f, buf, buf_offset, n);
 }
 
 var h$baseZCSystemziPosixziInternalsZCwrite = h$write;
@@ -228,7 +265,7 @@ function h$writeConsole(fd, buf, buf_offset, n) {
 
 function h$readFile(fd, buf, buf_offset, n) {
 //  log("h$readFile: " + n);
-  var fbuf = fd.file.data;
+  var fbuf = fd.buf.data;
   var pos = fd.pos;
   n = Math.min(n, fbuf.byteLength - pos);
   for(var i=0;i<n;i++) {
@@ -244,9 +281,4 @@ function h$writeFile(fd, buf, buf_offset, n) {
   return n; // fixme
 }
 
-// fixme: why is this not escaped
-var enabled_capabilities = 1;
 
-function h$prim_ReadOffAddrOp_Int32(x,y) {
-  return 1;
-}

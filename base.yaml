@@ -28,3 +28,5 @@ js:
   - src/integer.js
   - src/environment.js
   - src/enum.js@
+  - src/weak.js
+  - src/thread.js

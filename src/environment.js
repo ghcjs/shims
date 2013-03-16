@@ -66,10 +66,27 @@ function h$baseZCSystemziCPUTimeZCgetrusage() {
   return 0;
 }
 
-function h$gettimeofday() {
-  log("### gettimeofday: " + arguments[0]);
-  log("### gettimeofday: " + arguments[1]);
-  log("### gettimeofday: " + arguments[2]);
-  log("### gettimeofday: " + arguments[3]);
+function h$gettimeofday(tv_v,tv_o,tz_v,tz_o) {
+  var now = Date.now();
+  tv_v.setUint32(tv_o,     now / 1000);
+  tv_v.setUint32(tv_o + 4, (now % 1000) * 1000);
   return 0;
 }
+var h$__hscore_gettimeofday = h$gettimeofday;
+
+function h$localtime_r(timep_v, timep_o, result_v, result_o) {
+  var t = timep_v.getUint32(timep_o);
+  var d = new Date(t * 1000);
+  result_v.setInt32(result_o     , d.getSeconds());
+  result_v.setInt32(result_o + 4 , d.getMinutes());
+  result_v.setInt32(result_o + 8 , d.getHours());
+  result_v.setInt32(result_o + 12, d.getDate());
+  result_v.setInt32(result_o + 16, d.getMonth());
+  result_v.setInt32(result_o + 24, d.getFullYear()-1900);
+  result_v.setInt32(result_o + 28, d.getDay());
+  result_v.setInt32(result_o + 32, 0); // fixme yday 1-365 (366?)
+  result_v.setInt32(result_o + 36, -1); // dst information unknown
+  h$ret1 = result_o;
+  return result_v;
+}
+var h$__hscore_localtime_r = h$localtime_r;

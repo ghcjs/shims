@@ -432,7 +432,7 @@ function h$newArray(len,e) {
 }
 
 var h$stableNameN = 0;
-var h$stableNames = new WeakMap();
+// var h$stableNames = new WeakMap();
 function h$stableNameInt(s) {
   if(h$stableNames.has(s)) {
     return h$stableNames.get(s);
@@ -440,6 +440,13 @@ function h$stableNameInt(s) {
     h$stableNameN = (h$stableNameN+1)|0;
     h$stableNames.set(s, h$stableNameN);
   }
+}
+
+function h$makeStablePtr(v) {
+  var buf = new DataView(new ArrayBuffer(4));
+  buf.arr = [v];
+  h$ret1 = 0;
+  return buf;
 }
 
 function h$hs_free_stable_ptr(stable) {
@@ -458,7 +465,7 @@ function h$memset() {
     buf_off = arguments[1];
     chr     = arguments[2];
     n       = arguments[3];
-  } else if(arguments.length == 3) { // ByteString#
+  } else if(arguments.length == 3) { // ByteString#, fixme shouldn't be necessary anymore
     buf_off = 0;
     chr     = arguments[1];
     n       = arguments[2];
@@ -471,3 +478,16 @@ function h$memset() {
   }
 }
 
+function h$memcmp(a_v, a_o, b_v, b_o, n) {
+  for(var i=0;i<n;i++) {
+    var a = a_v.getUint8(a_o+i);
+    var b = b_v.getUint8(b_o+i);
+    var c = b-a;
+    if(c !== 0) { return c; }
+  }
+  return 0;
+}
+
+function h$isInstanceOf(o,c) {
+  return o instanceof c;
+}
