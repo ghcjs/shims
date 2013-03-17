@@ -20,7 +20,7 @@ function h$Thread() {
   this.tid = ++h$threadIdN;
   this.status = h$threadRunning;
   this.stack = [h$done, 0, h$baseZCGHCziConcziSynczireportError, h$catch_e];
-  this.sp = 2;
+  this.sp = 3;
   this.mask = 0;         // async exceptions masked (0 unmask, 1: uninterruptible, 2: interruptible)
   this.interruptible = false; // currently in an interruptible operation
   this.excep = [];       // async exceptions waiting for unmask of this thread
@@ -106,7 +106,6 @@ function h$killThread(t, ex) {
   } else {
     h$logSched("killthread mask: " + t.mask);
     if(t.mask === 0 || (t.mask === 2 && t.interruptible)) {
-      h$logSched("t:" + h$collectProps(t));
       if(t.stack) {  // finished threads don't have a stack anymore
         t.sp += 2;
         t.stack[t.sp-1] = ex;
@@ -158,6 +157,7 @@ function h$unmaskAsync(a) {
 // this thread, restore frame is in thread if alreadySuspended
 function h$postAsync(alreadySuspended,next) {
   if(h$currentThread.excep.length > 0) {
+    h$logSched("posting async to " + h$threadString(h$currentThread));
     var v = h$currentThread.excep.shift();
     var tposter = v[0]; // posting thread, blocked
     var ex      = v[1]; // the exception
@@ -373,11 +373,11 @@ function h$mainLoop() {
         return h$yieldRun();
       }
     }
-    // preemptively schedule threads after 99990 calls
+    // preemptively schedule threads after 9990 calls
     // but not earlier than after 25ms
     while(c !== h$reschedule && Date.now() - scheduled < 25) {
       count = 0;
-      while(c !== h$reschedule && ++count < 10000) {
+      while(c !== h$reschedule && ++count < 1000) {
 //        h$logCall(c);
 //        h$logStack();
         c = c();
@@ -525,11 +525,11 @@ function h$atomicModifyMutVar(mv, fun) {
 // Black holes and updates
 // caller must save registers on stack
 function h$blockOnBlackhole(c) {
-  //h$logSched("blackhole, blocking: " + h$collectProps(c));
+  h$logSched("blackhole, blocking: " + h$collectProps(c));
   if(c.d1 === h$currentThread.tid) {
     throw "<<loop>>";
   }
-  //h$logSched("blackhole, blocking thread: " + h$threadString(h$currentThread));
+  h$logSched("blackhole, blocking thread: " + h$threadString(h$currentThread));
   if(c.d2 === null) {
     c.d2 = [h$currentThread];
   } else {
@@ -542,15 +542,12 @@ function h$blockOnBlackhole(c) {
 // async exception happened in a black hole, make a thunk
 // to resume the computation
 function h$makeResumable(bh,start,end,extra) {
-  var s = [];
-  for(var i=start;i<=end;i++) {
-    s.push(h$stack[i]);
-  }
+  var s = h$stack.slice(start,end+1);
   if(extra) {
-    for(var i=0;i<extra.length;i++) {
-      s.push(extra[i]);
-    }
+    s = s.concat(extra);
   }
+  //h$logSched("making resumable, stack: ");
+  // h$dumpStackTop(s,0,s.length-1);
   bh.f = h$resume_e;
   bh.d1 = s;
   bh.d2 = null;
