@@ -560,3 +560,13 @@ function h$rtsSupportsBoundThreads() {
     return 0;
 }
 
+// async foreign calls
+function h$mkForeignCallback(x) {
+  return function() {
+    if(x.mv === null) { // callback called synchronously
+      x.mv = arguments;
+    } else {
+      h$notifyMVarFull(x.mv, { f: h$data1_e, d1: arguments, d2: null });
+    }
+  }
+}
