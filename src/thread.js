@@ -26,6 +26,7 @@ function h$Thread() {
   this.excep = [];       // async exceptions waiting for unmask of this thread
   this.delayed = false;  // waiting for threadDelay
   this.blockedOn = null;
+  this.m = 0;
 }
 
 // description of the thread, if unlabeled then just the thread id
@@ -268,7 +269,7 @@ function h$blockThread(t,o) {
 // returns null if nothing to do, otherwise
 // the next function to run
 function h$scheduler(next) {
-  //h$logSched("sched: scheduler");
+  h$logSched("sched: scheduler: " + h$sp);
   h$wakeupDelayed();
   // find the next runnable thread in the run queue
   // remove non-runnable threads
@@ -279,6 +280,13 @@ function h$scheduler(next) {
   // if no other runnable threads, just continue current (if runnable)
   if(t === undefined) {
     if(h$currentThread && h$currentThread.status === h$threadRunning) {
+      // fixme do gc after a while
+      if(true) { // doGc
+        h$suspendCurrentThread(next);
+        next = h$stack[h$sp];
+        h$gc(h$currentThread);
+        h$stack = h$currentThread.stack;
+      }
       if(h$postAsync(next === h$reschedule, next)) {
         h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)");
         return h$stack[h$sp];  // async exception posted, jump to the new stack top
@@ -289,6 +297,7 @@ function h$scheduler(next) {
     } else {
       h$logSched("sched: pausing");
       h$currentThread = null;
+      h$gc(null);
       return null; // pause the haskell runner
     }
   } else { // runnable thread in t, switch to it
@@ -309,6 +318,8 @@ function h$scheduler(next) {
     } else {
       h$logSched("sched: no suspend needed, no running thread");
     }
+    // gc if needed
+    h$gc(t);
     // schedule new one
     h$currentThread = t;
     h$stack = t.stack;
@@ -377,7 +388,7 @@ function h$mainLoop() {
     // but not earlier than after 25ms
     while(c !== h$reschedule && Date.now() - scheduled < 25) {
       count = 0;
-      while(c !== h$reschedule && ++count < 1000) {
+      while(c !== h$reschedule && ++count < 10000) {
 //        h$logCall(c);
 //        h$logStack();
         c = c();
@@ -427,6 +438,7 @@ function h$MVar() {
   this.val     = null;
   this.readers = new goog.structs.Queue();
   this.writers = new goog.structs.Queue();
+  this.m = 0;
 }
 
 // set the MVar to empty unless there are writers
@@ -514,12 +526,13 @@ function h$tryPutMVar(mv,val) {
 // IORef support
 function h$MutVar(v) {
   this.val = v;
+  this.m = 0;
 }
 
 function h$atomicModifyMutVar(mv, fun) {
-  var thunk = { f: h$ap1_e, d1: fun, d2: mv.val };
-  mv.val = { f: h$select1_e, d1: thunk, d2: null };
-  return { f: h$select2_e, d1: thunk, d2: null };
+  var thunk = { f: h$ap1_e, d1: fun, d2: mv.val, m: 0 };
+  mv.val = { f: h$select1_e, d1: thunk, d2: null, m: 0 };
+  return { f: h$select2_e, d1: thunk, d2: null, m: 0 };
 }
 
 // Black holes and updates
@@ -566,7 +579,7 @@ function h$mkForeignCallback(x) {
     if(x.mv === null) { // callback called synchronously
       x.mv = arguments;
     } else {
-      h$notifyMVarFull(x.mv, { f: h$data1_e, d1: arguments, d2: null });
+      h$notifyMVarFull(x.mv, { f: h$data1_e, d1: arguments, d2: null, m: 0 });
     }
   }
 }

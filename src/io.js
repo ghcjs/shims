@@ -11,7 +11,7 @@ var h$stderr = { read: function () { throw "can't read from stderr"; }
                , write: h$writeConsole
                };
 
-function h$stdFd(n,readable,writable,buf) { 
+function h$stdFd(n,readable,writable,buf) {
   return new h$Fd(buf,readable,writable,n);
 }
 
@@ -50,7 +50,7 @@ function h$Fd(buf, readable, writable, n) {
   this.pos = 0;
   this.buf = buf;
   this.waitRead = [];
-  this.waidWrite = [];
+  this.waitWrite = [];
   this.readable = readable;
   this.writable = writable;
 }

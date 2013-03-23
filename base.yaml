@@ -14,11 +14,17 @@ js:
   - lib/closure-library/closure/goog/math/long.js
   - lib/closure-library/closure/goog/object/object.js
   - lib/closure-library/closure/goog/array/array.js
+  - lib/closure-library/closure/goog/iter/iter.js
+  - lib/closure-library/closure/goog/structs/structs.js
+  - lib/closure-library/closure/goog/structs/collection.js
   - lib/closure-library/closure/goog/structs/node.js
   - lib/closure-library/closure/goog/structs/heap.js
   - lib/closure-library/closure/goog/structs/queue.js
+  - lib/closure-library/closure/goog/structs/map.js
+  - lib/closure-library/closure/goog/structs/set.js
   - lib/jsbn/jsbn.js
   - lib/jsbn/jsbn2.js
+  - src/gc.js
   - src/errno.js
   - src/md5.js
   - src/arith.js
