@@ -48,11 +48,13 @@ function h$gcQuick(t) {
     for(i=0;i<runnable.length;i++) {
       h$resetThread(runnable[i]);
     }
-    for(i in h$blocked) {
-      if(h$blocked.hasOwnProperty(i)) {
-        h$resetThread(h$blocked[i]);
+    var iter = h$blocked.__iterator__();
+    try {
+      while(true) {
+        t = iter.next();
+        h$resetThread(t, work, weaks);
       }
-    }
+    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
   }
   var time = Date.now() - start;
   h$gcTime += time;
@@ -84,11 +86,14 @@ function h$gc(t) {
   for(i=0;i<runnable.length;i++) {
     h$markThread(runnable[i], work, weaks);
   }
-  for(i in h$blocked) {
-    if(h$blocked.hasOwnProperty(i)) {
-      h$markThread(h$blocked[i], work, weaks);
+  var iter = h$blocked.__iterator__();
+  try {
+    while(true) {
+      t = iter.next();
+      h$markThread(t, work, weaks);
     }
-  }
+  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+
   // we now have a bunch of weak refs, mark their finalizers and
   // values, both should not keep the key alive
   while(weaks.length > 0) {

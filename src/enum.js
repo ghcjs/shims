@@ -14,7 +14,7 @@ function h$makeEnum(tag) {
     return h$stack[h$sp];
   }
   h$setObjInfo(f, 2, "Enum", [], tag+1, 0, [1], null);
-  return { f: f, d: null };
+  return h$c0(f);
 }
 
 function h$tagToEnum(tag) {

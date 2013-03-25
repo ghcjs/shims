@@ -62,11 +62,11 @@ function h$makeWeakNoFinalizer(key, val) {
   return new h$Weak(key, val, null);
 }
 
-function h$finalizeWeak(e) {
-  traceWeak("h$finalizeWeak");
+function h$finalizeWeak(w) {
   if(w.finalizer === null) {
     return 0;
   } else {
+    h$weaks.remove(w);
     h$ret1 = w.finalizer;
     w.finalizer = null;
     return 1;

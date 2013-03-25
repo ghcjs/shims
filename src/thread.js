@@ -11,10 +11,10 @@ var h$threadIdN = 0;
 // all threads except h$currentThread
 // that are not finished/died can be found here
 var h$threads = new goog.structs.Queue();
-var h$blocked = [];
+var h$blocked = new goog.structs.Set();
 
 function h$logSched() { return; }
-// var h$logSched = log;
+// function h$logSched() { log(arguments); }
 
 function h$Thread() {
   this.tid = ++h$threadIdN;
@@ -95,6 +95,14 @@ function h$delayThread(time) {
   h$stack[h$sp] = h$return;
   h$currentThread.delayed = true;
   h$blockThread(h$currentThread, h$delayed);
+  return h$reschedule;
+}
+
+function h$yield() {
+  h$sp += 2;
+  h$stack[h$sp-1] = h$r1;
+  h$stack[h$sp] = h$return;
+  h$currentThread.sp = h$sp;
   return h$reschedule;
 }
 
@@ -185,7 +193,7 @@ function h$wakeupThread(t) {
   if(t.status === h$threadBlocked) {
     t.blockedOn = null;
     t.status = h$threadRunning;
-    delete h$blocked[t.tid];
+    h$blocked.remove(t);
   }
   t.interruptible = false;
   h$threads.enqueue(t);
@@ -249,7 +257,7 @@ function h$removeFromArray(a,o) {
 function h$finishThread(t) {
   h$logSched("sched: finishing: " + h$threadString(t));
   t.status = h$threadFinished;
-  delete h$blocked[t.tid];
+  h$blocked.remove(t);
   t.stack = null;
   t.mask = 0;
 }
@@ -262,7 +270,7 @@ function h$blockThread(t,o) {
   t.status = h$threadBlocked;
   t.blockedOn = o;
   t.sp = h$sp;
-  h$blocked[t.tid] = t;
+  h$blocked.add(t);
 }
 
 // the main scheduler, called from h$mainLoop
@@ -333,7 +341,6 @@ function h$scheduler(next) {
 
 // untility function: yield h$run to browser to do layout or
 // other JavaScript
-
 var h$yieldRun;
 if(typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
@@ -377,8 +384,8 @@ function h$mainLoop() {
         while(c === null) { c = h$scheduler(c); }
       }
     }
-    // yield to js after 500ms
-    if(Date.now() - start > 500) {
+    // yield to js after 100ms
+    if(Date.now() - start > 100) {
       if(h$yieldRun) {
         h$next = c;
         return h$yieldRun();
@@ -388,7 +395,7 @@ function h$mainLoop() {
     // but not earlier than after 25ms
     while(c !== h$reschedule && Date.now() - scheduled < 25) {
       count = 0;
-      while(c !== h$reschedule && ++count < 10000) {
+      while(c !== h$reschedule && ++count < 1000) {
 //        h$logCall(c);
 //        h$logStack();
         c = c();
@@ -410,8 +417,9 @@ function h$mainLoop() {
 // returns immediately, thread is started in background
 function h$run(a) {
   //h$logSched("sched: starting thread");
-  h$fork(a);
+  var t = h$fork(a);
   h$startMainLoop();
+  return t;
 }
 
 // run the supplied IO action in a main thread
@@ -430,6 +438,7 @@ function h$main(a) {
   t.label = [h$encodeUtf8("main"), 0];
   h$wakeupThread(t);
   h$startMainLoop();
+  return t;
 }
 
 // MVar support
@@ -449,7 +458,10 @@ function h$notifyMVarEmpty(mv) {
     var thread = w[0];
     var val    = w[1];
     mv.val = val;
-    h$wakeupThread(thread);
+    // thread is null if some JavaScript outside Haskell wrote to the MVar
+    if(thread !== null) {
+      h$wakeupThread(thread);
+    }
   } else {
     h$logSched("notifyMVarEmpty: no writers");
     mv.val = null;
@@ -523,6 +535,25 @@ function h$tryPutMVar(mv,val) {
   }
 }
 
+// box up a javascript value and write it to the MVar synchronously
+function h$writeMVarJs1(mv,val) {
+  var v = h$c1(h$data1_e, val);
+  if(mv.val !== null) {
+    mv.writers.enqueue([null,v]);
+  } else {
+    h$notifyMVarFull(mv,v);
+  }
+}
+
+function h$writeMVarJs2(mv,val1,val2) {
+  var v = h$c2(h$data1_e, val1, val2);
+  if(mv.val !== null) {
+    mv.writers.enqueue([null,v]);
+  } else {
+    h$notifyMVarFull(mv,v);
+  }
+}
+
 // IORef support
 function h$MutVar(v) {
   this.val = v;
@@ -530,9 +561,9 @@ function h$MutVar(v) {
 }
 
 function h$atomicModifyMutVar(mv, fun) {
-  var thunk = { f: h$ap1_e, d1: fun, d2: mv.val, m: 0 };
-  mv.val = { f: h$select1_e, d1: thunk, d2: null, m: 0 };
-  return { f: h$select2_e, d1: thunk, d2: null, m: 0 };
+  var thunk = h$c2(h$ap1_e, fun, mv.val);
+  mv.val = h$c1(h$select1_e, thunk);
+  return h$c1(h$select2_e, thunk);
 }
 
 // Black holes and updates
@@ -579,7 +610,15 @@ function h$mkForeignCallback(x) {
     if(x.mv === null) { // callback called synchronously
       x.mv = arguments;
     } else {
-      h$notifyMVarFull(x.mv, { f: h$data1_e, d1: arguments, d2: null, m: 0 });
+      h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
     }
   }
 }
+
+// event listeners through MVar
+function h$makeMVarListener(mv) {
+  return function(event) {
+    h$writeMVarJs1(mv,event);
+  }
+}
+
