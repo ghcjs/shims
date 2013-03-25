@@ -597,8 +597,8 @@ function h$makeResumable(bh,start,end,extra) {
   bh.d2 = null;
 }
 
-// fixme: why is this not escaped
-var enabled_capabilities = 0;
+var h$enabled_capabilities = new DataView(new ArrayBuffer(4));
+h$enabled_capabilities.setUint32(0,0);
 
 function h$rtsSupportsBoundThreads() {
     return 0;

@@ -27,6 +27,11 @@ function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
   }
 }
 
+function h$getenv() {
+  h$ret1 = 0;
+  return null;
+}
+
 function h$errorBelch() {
   log("### errorBelch: do we need to handle a vararg function here?");
 }
@@ -72,6 +77,11 @@ function h$gettimeofday(tv_v,tv_o,tz_v,tz_o) {
   tv_v.setUint32(tv_o + 4, (now % 1000) * 1000);
   return 0;
 }
+
+function h$traceEvent(ev_v,ev_o) {
+  h$errorMsg(h$decodeUtf8z(ev_v, ev_o));
+}
+
 var h$__hscore_gettimeofday = h$gettimeofday;
 
 function h$localtime_r(timep_v, timep_o, result_v, result_o) {

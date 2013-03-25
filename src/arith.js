@@ -432,14 +432,15 @@ function h$newArray(len,e) {
 }
 
 var h$stableNameN = 0;
-// var h$stableNames = new WeakMap();
+var h$stableNames = new WeakMap();
 function h$stableNameInt(s) {
-  if(h$stableNames.has(s)) {
+/*  if(h$stableNames.has(s)) {
     return h$stableNames.get(s);
   } else {
     h$stableNameN = (h$stableNameN+1)|0;
     h$stableNames.set(s, h$stableNameN);
-  }
+  } */
+  return goog.getUid(s);
 }
 
 function h$makeStablePtr(v) {
@@ -456,6 +457,10 @@ function h$hs_free_stable_ptr(stable) {
 function h$malloc(n) {
   h$ret1 = 0;
   return new DataView(new ArrayBuffer(n));
+}
+
+function h$free() {
+
 }
 
 function h$memset() {
@@ -486,6 +491,12 @@ function h$memcmp(a_v, a_o, b_v, b_o, n) {
     if(c !== 0) { return c; }
   }
   return 0;
+}
+
+function h$mkFunctionPtr(f) {
+  var d = new DataView(new ArrayBuffer(4));
+  d.arr = [f];
+  return d;
 }
 
 function h$isInstanceOf(o,c) {
