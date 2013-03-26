@@ -14,7 +14,13 @@ var h$threads = new goog.structs.Queue();
 var h$blocked = new goog.structs.Set();
 
 function h$logSched() { return; }
-// function h$logSched() { log(arguments); }
+// var h$logSched = h$logSched0;
+function h$logSched0() { if(arguments.length == 1) {
+                          log("sched: " + h$threadString(h$currentThread) + " -> " + arguments[0]);
+                        } else {
+                          log.apply(log,arguments);
+                        }
+                      }
 
 function h$Thread() {
   this.tid = ++h$threadIdN;
@@ -31,7 +37,9 @@ function h$Thread() {
 
 // description of the thread, if unlabeled then just the thread id
 function h$threadString(t) {
-  if(t.label) {
+  if(t === null) {
+    return "<no thread>";
+  } else if(t.label) {
     var str = h$decodeUtf8z(t.label[0], t.label[1]);
     return str + " (" + t.tid + ")";
   } else {
@@ -73,8 +81,7 @@ function h$waitWrite(fd) {
 
 // threadDelay support:
 var h$delayed = new goog.structs.Heap();
-function h$wakeupDelayed() {
-  var now = Date.now();
+function h$wakeupDelayed(now) {
   while(h$delayed.getCount() > 0 && h$delayed.peekKey() < now) {
     var t = h$delayed.remove();
     // might have been woken up early, don't wake up again in that case
@@ -276,9 +283,12 @@ function h$blockThread(t,o) {
 // the main scheduler, called from h$mainLoop
 // returns null if nothing to do, otherwise
 // the next function to run
+var h$lastGc = Date.now();
+var h$gcInterval = 1000; // ms
 function h$scheduler(next) {
   h$logSched("sched: scheduler: " + h$sp);
-  h$wakeupDelayed();
+  var now = Date.now();
+  h$wakeupDelayed(now);
   // find the next runnable thread in the run queue
   // remove non-runnable threads
   var t;
@@ -289,18 +299,25 @@ function h$scheduler(next) {
   if(t === undefined) {
     if(h$currentThread && h$currentThread.status === h$threadRunning) {
       // fixme do gc after a while
-      if(true) { // doGc
-        h$suspendCurrentThread(next);
-        next = h$stack[h$sp];
+      if(now - h$lastGc > h$gcInterval) { // doGc
+        if(next !== h$reschedule) {
+          h$suspendCurrentThread(next);
+          next = h$stack[h$sp];
+        }
         h$gc(h$currentThread);
         h$stack = h$currentThread.stack;
+        h$lastGc = Date.now();
       }
       if(h$postAsync(next === h$reschedule, next)) {
         h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)");
         return h$stack[h$sp];  // async exception posted, jump to the new stack top
       } else {
         h$logSched("sched: continuing: " + h$threadString(h$currentThread));
-        return next; // just continue
+        if(next === h$reschedule) {
+          return h$stack[h$sp];
+        } else {
+          return next; // just continue
+        }
       }
     } else {
       h$logSched("sched: pausing");
@@ -327,7 +344,10 @@ function h$scheduler(next) {
       h$logSched("sched: no suspend needed, no running thread");
     }
     // gc if needed
-    h$gc(t);
+    if(now - h$lastGc > h$gcInterval) {
+      h$gc(t);
+      h$lastGc = Date.now();
+    }
     // schedule new one
     h$currentThread = t;
     h$stack = t.stack;
@@ -598,7 +618,7 @@ function h$makeResumable(bh,start,end,extra) {
 }
 
 var h$enabled_capabilities = new DataView(new ArrayBuffer(4));
-h$enabled_capabilities.setUint32(0,0);
+h$enabled_capabilities.setUint32(0,1);
 
 function h$rtsSupportsBoundThreads() {
     return 0;

@@ -18,10 +18,8 @@
 
 /*
   fixme, todo:
-  mark readers/writers, value in MVar
-  mark posted exceptions to thread
-  mark value in ioref
-  mark values in array
+  - tag unreachable MVar# so that JavaScript can stop posting events
+  - mark posted exceptions to thread
 */
 
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
@@ -30,8 +28,6 @@ var h$gcTime = 0;
 var h$retainCAFs = false;
 var h$CAFs = [];
 var h$CAFsReset = [];
-
-var h$lastGc = Date.now();
 
 // var traceGc = log;
 function traceGc() { return; }
@@ -67,9 +63,9 @@ var h$marked = 0;
 function h$gc(t) {
   h$marked = 0;
   var now = Date.now();
-  if(now - h$lastGc < 1000) {
-    return;
-  }
+//  if(now - h$lastGc < 1000) {
+//    return;
+//  }
   h$lastGc = now;
   traceGc("gc: " + (t!==null?h$threadString(t):"null"));
   var start = Date.now();

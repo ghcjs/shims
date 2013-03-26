@@ -125,7 +125,7 @@ function h$findFile(path) {
 }
 
 function h$isatty(d) {
-  return 0;
+  return (d===1||d===2)?1:0;
 }
 
 function h$__hscore_bufsiz() { return 4096; }
