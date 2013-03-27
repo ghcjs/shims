@@ -431,16 +431,52 @@ function h$newArray(len,e) {
   return r;
 }
 
-var h$stableNameN = 0;
-var h$stableNames = new WeakMap();
-function h$stableNameInt(s) {
-/*  if(h$stableNames.has(s)) {
-    return h$stableNames.get(s);
+// try to compute a reasonably unique int key from object data
+// used to calculate the StableName int
+// note: be careful to not use any mutable properties for this
+// - numbers directly on the heap shouldn't change
+// - o.m >> 2 shouldn't change if it's nonzero
+h$stableNameN = 1;
+// semi-unique in the upper 14 bits of the .m thing
+function h$getObjectKey(o) {
+  var x = o.m;
+  if(o.m >> 18 === 0) {
+    o.m |= ++h$stableNameN << 18;
+  }
+  return o.m >> 18;
+}
+
+function h$getObjectHash(o) {
+  if(o === null) {
+    return 230948;
+  } if(typeof o === 'number') {
+    return o|0;
+  } else if(typeof o === 'object' && o.hasOwnProperty('m') && typeof o.m === 'number') {
+    return h$getObjectKey(o);
   } else {
-    h$stableNameN = (h$stableNameN+1)|0;
-    h$stableNames.set(s, h$stableNameN);
-  } */
-  return goog.getUid(s);
+    return 3456333333;
+  }
+}
+
+function h$makeStableName(x) {
+  return [x,x.f];
+}
+
+function h$stableNameInt(s) {
+  return 0; // fixme
+/*  var hash = 23;
+  hash = (hash * 37 + h$getObjectKey(s.f))|0;
+  hash = (hash * 37 + h$getObjectHash(s.d1))|0;
+  hash = (hash * 37 + h$getObjectHash(s.d2))|0;
+  return hash; */
+}
+
+function h$eqStableName(s1o,s2o) {
+  var s1 = s1o[0];
+  var s2 = s2o[0];
+  var s1f = s1o[1];
+  var s2f = s2o[1];
+  return (s1f === s2f && (s1 === s2 || (s1.f === s2.f && s1.d1 === s2.d1 && s1.d2 === s2.d2)))?1:0;
 }
 
 function h$makeStablePtr(v) {
