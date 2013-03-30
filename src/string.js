@@ -1,8 +1,5 @@
 var h$toUpper = null;
 function h$u_towupper(ch) {
-//  log("### u_towupper: " + ch);
-//  var r = String.fromCharCode(ch).toUpperCase().charCodeAt(0);
-//  log("### result: " + r);
   if(h$toUpper == null) { h$toUpper = h$decodeMapping(h$toUpperMapping); }
   var r = h$toUpper[ch];
   return (r !== null && r !== undefined) ? r : ch;
@@ -10,9 +7,6 @@ function h$u_towupper(ch) {
 
 var h$toLower = null;
 function h$u_towlower(ch) {
-//  log("### u_towlower: " + ch);
-//  var r = String.fromCharCode(ch).toLowerCase().charCodeAt(0);
-//  log("### result: " + r);
   if(h$toLower == null) { h$toLower = h$decodeMapping(h$toLowerMapping); }
   var r = h$toLower[ch];
   return (r !== null && r !== undefined) ? r : ch;
@@ -212,6 +206,68 @@ function h$encodeUtf16(str) {
   v.setUint8(v.byteLength-1,0);  // terminator
   return v;
 }
+
+// convert a string to a DataView buffer, set second field in
+// Addr# to length
+function h$fromStr(s) {
+  var b = new DataView(new ArrayBuffer(s.length * 2));
+  var l = s.length;
+  for(var i=l-1;i>=0;i--) {
+    b.setUint16(i<<1, s.charCodeAt(i));
+  }
+  h$ret1 = l;
+  return b;
+}
+
+// convert a Data.Text DataView buffer with offset/length to a
+// JS string
+function h$toStr(b,o,l) {
+  var a = [];
+  var end = 2*(o+l);
+  var k = 0;
+  for(var i=2*o;i<end;i+=2) {
+    var cc = b.getUint16(i);
+    a[k++] = cc;
+  }
+  return String.fromCharCode.apply(this, a);
+}
+
+/*
+function h$encodeUtf16(str) {
+  var b = new DataView(new ArrayBuffer(str.length * 2));
+  for(var i=str.length-1;i>=0;i--) {
+    b.setUint16(i<<1, str.charCodeAt(i));
+  }
+  h$ret1 = 0;
+  return b;
+}
+var h$eU16 = h$encodeUtf16;
+
+function h$decodeUtf16(v,start) {
+  return h$decodeUtf16(v, v.byteLength - start, start);
+}
+
+function h$decodeUtf16z(v,start) {
+  var len = v.byteLength - start;
+  for(var i=start;i<l;i+=2) {
+    if(v.getUint16(i) === 0) {
+      len = i;
+      break;
+    }
+  }
+  return h$decodeUtf16l(v,l,start)
+}
+*/
+
+function h$decodeUtf16l(v, byteLen, start) {
+  // perhaps we can apply it with an Uint16Array view, but that might give us endianness problems
+  var a = [];
+  for(var i=0;i<byteLen;i+=2) {
+    a[i>>1] = v.getUint16(i+start);
+  }
+  return String.fromCharCode.apply(this, a);
+}
+var h$dU16 = h$decodeUtf16;
 
 // decode a DataView with UTF-8 chars to a JS string
 // stop at the first zero
