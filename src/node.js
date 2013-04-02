@@ -9,7 +9,7 @@ goog.global = this;
 goog.global.goog = goog;
 goog.global.CLOSURE_NO_DEPS = true;
 
-/* SpiderMonkey support */
+// SpiderMonkey support
 
 // we don't have console, but we do have print
 if(this['console'] === undefined) {
@@ -18,7 +18,6 @@ if(this['console'] === undefined) {
 
 // jsbn checks this
 if(this['navigator'] === undefined) {
-  this['navigator'] = { appName: 'none' };
+  navigator = { appName: 'none' };
 }
-var navigator = { appName: 'none' };
 
