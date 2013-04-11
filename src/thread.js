@@ -364,9 +364,14 @@ function h$scheduler(next) {
 var h$yieldRun;
 if(typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
-  window.addEventListener("message", function(ev) {
+  var handler = function(ev) {
     if(ev.data === "h$mainLoop") { h$mainLoop(); }
-  });
+  };
+  if(window.addEventListener) {
+    window.addEventListener("message", handler);
+  } else {
+    window.attachEvent("message", handler);
+  }
   h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
 } else if(typeof setTimeout !== 'undefined') {
   h$yieldRun = function() { h$running = false; setTimeout(h$mainLoop, 0); }
@@ -624,6 +629,10 @@ function h$rtsSupportsBoundThreads() {
     return 0;
 }
 
+function h$rts_getThreadId(t) {
+  return t.tid;
+}
+
 // async foreign calls
 function h$mkForeignCallback(x) {
   return function() {
@@ -636,9 +645,12 @@ function h$mkForeignCallback(x) {
 }
 
 // event listeners through MVar
-function h$makeMVarListener(mv) {
+function h$makeMVarListener(mv, stopProp, stopImmProp, preventDefault) {
   return function(event) {
     h$writeMVarJs1(mv,event);
+    if(stopProp) { event.stopPropagation(); }
+    if(stopImmProp) { event.stopImmediatePropagation(); }
+    if(preventDefault) { event.preventDefault(); }
   }
 }
 

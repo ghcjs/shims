@@ -27,6 +27,11 @@ function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
   }
 }
 
+function h$__hscore_environ() {
+  h$ret1 = 0;
+  return null;
+}
+
 function h$getenv() {
   h$ret1 = 0;
   return null;

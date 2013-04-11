@@ -75,7 +75,7 @@ function h$hs_leInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s < b2s || (a2s === b2s && (a2&1 <= b2&1))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
   } else {
     return (a1 < b1) ? 1 : 0;
   }
@@ -85,7 +85,7 @@ function h$hs_ltInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s < b2s || (a2s === b2s && (a2&1 < b2&1))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
   } else {
     return (a1 < b1) ? 1 : 0;
   }
@@ -95,7 +95,7 @@ function h$hs_geInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s > b2s || (a2s === b2s && (a2&1 >= b2&1))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
   } else {
     return (a1 > b1) ? 1 : 0;
   }
@@ -105,7 +105,7 @@ function h$hs_gtInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s > b2s || (a2s === b2s && (a2&1 > b2&1))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
   } else {
     return (a1 > b1) ? 1 : 0;
   }
@@ -213,14 +213,34 @@ function h$hs_uncheckedShiftRL64(a1,a2,n) {
   }
 }
 
-// fixme: since we only supply the low 32 bit words, the multiplication can be done more efficiently
-function h$mulInt32(a,b) {
-  return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
+function h$imul_shim(a, b) {
+    if(a < 0) {
+      if(b < 0) {
+        return h$imul_shim(-a,-b);
+      } else {
+        return -h$imul_shim(-a,b);
+      }
+    } else if(b < 0) {
+        return -h$imul_shim(a,-b);
+    }
+    var ah  = (a >>> 16) & 0xffff;
+    var al = a & 0xffff;
+    var bh  = (b >>> 16) & 0xffff;
+    var bl = b & 0xffff;
+    // the shift by 0 fixes the sign on the high part
+    // the final |0 converts the unsigned value into a signed value
+    return (((al * bl)|0) + (((ah * bl + al * bh) << 16) >>> 0)|0);
 }
+
+var h$mulInt32 = Math.imul ? Math.imul : h$imul_shim;
+
+// function h$mulInt32(a,b) {
+//  return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
+// }
 // var hs_mulInt32 = h$mulInt32;
 
 function h$mulWord32(a,b) {
-  return goog.math.Long.fromInt(a).multiply(goog.math.Long.fromInt(b)).getLowBits();
+  return new goog.math.Long(a,0).multiply(new goog.math.Long(b,0)).getLowBits();
 }
 
 function h$mul2Word32(a,b) {
@@ -411,6 +431,8 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.setUint8(i, src.getUint8(i));
     }
+    ret1 = 0;
+    return dst;
   } else if(arguments.length === 5) { // Addr# -> Addr# copy
     var dst = arguments[0];
     var dst_off = arguments[1]
@@ -420,9 +442,74 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.setUint8(i+dst_off, src.getUint8(i+src_off));
     }
+    ret1 = dst_off;
+    return dst;
   } else {
-    throw "unexpected memcpy";
+    throw "memcpy: unexpected argument";
   }
+}
+
+function h$memchr(a_v, a_o, c, n) {
+  for(var i=0;i<n;i++) {
+    if(a_v.getUint8(a_o+i) === c) {
+      h$ret1 = a_o+i;
+      return a_v;
+    }
+  }
+  h$ret1 = 0;
+  return null;
+}
+
+function h$strlen(a_v, a_o) {
+  var i=0;
+  while(true) {
+    if(a_v.getUint8(a_o+i) === 0) { return i; }
+    i++;
+  }
+}
+
+function h$fps_reverse(a_v, a_o, b_v, b_o, n) {
+  for(var i=0;i<n;i++) {
+    a_v.setUint8(a_o+n-i-1, b_v.getUint8(b_o+i));
+  }
+}
+
+function h$fps_intersperse(a_v,a_o,b_v,b_o,n,c) {
+  var dst_o = a_o;
+  for(var i=0;i<n-1;i++) {
+    a_v.setUint8(dst_o, b_v.getUint8(b_o+i));
+    a_v.setUint8(dst_o+1, c);
+    dst_o += 2;
+  }
+  if(n > 0) {
+    a_v.setUint8(dst_o, b_v.getUint8(b_o+n-1));
+  }
+}
+
+function h$fps_maximum(a_v,a_o,n) {
+  var max = a_v.getUint8(a_o);
+  for(var i=1;i<n;i++) {
+    var c = a_v.getUint8(a_o+i);
+    if(c > max) { max = c; }
+  }
+  return max;
+}
+
+function h$fps_minimum(a_v,a_o,n) {
+  var min = a_v.getUint8(a_o);
+  for(var i=1;i<n;i++) {
+    var c = a_v.getUint8(a_o+i);
+    if(c < min) { min = c; }
+  }
+  return min;
+}
+
+function h$fps_count(a_v,a_o,n,c) {
+  var count = 0;
+  for(var i=0;i<n;i++) {
+    if(a_v.getUint8(a_o+i) === c) { count++; }
+  }
+  return count|0;
 }
 
 function h$newArray(len,e) {
@@ -506,7 +593,7 @@ function h$memset() {
     buf_off = arguments[1];
     chr     = arguments[2];
     n       = arguments[3];
-  } else if(arguments.length == 3) { // ByteString#, fixme shouldn't be necessary anymore
+  } else if(arguments.length == 3) { // ByteString#
     buf_off = 0;
     chr     = arguments[1];
     n       = arguments[2];
@@ -517,13 +604,15 @@ function h$memset() {
   for(var i=buf_off;i<end;i++) {
     buf_v.setUint8(i, chr);
   }
+  ret1 = buf_off;
+  return buf_v;
 }
 
 function h$memcmp(a_v, a_o, b_v, b_o, n) {
   for(var i=0;i<n;i++) {
     var a = a_v.getUint8(a_o+i);
     var b = b_v.getUint8(b_o+i);
-    var c = b-a;
+    var c = a-b;
     if(c !== 0) { return c; }
   }
   return 0;

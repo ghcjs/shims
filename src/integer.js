@@ -6,25 +6,73 @@
          value is always zero, don't use it for comparisons
 */
 
-// var logInt = log;
-var h$logInt = function() { }
+var h$logInt = function() { log.apply(log,arguments); }
+// var h$logInt = function() { }
+BigInteger.prototype.am = am3;
+dbits = 28;
+DV = (1<<dbits);
+BigInteger.prototype.DB = dbits;
+BigInteger.prototype.DM = ((1<<dbits)-1);
+BigInteger.prototype.DV = (1<<dbits);
+var BI_FP = 52;
+BigInteger.prototype.FV = Math.pow(2,BI_FP);
+BigInteger.prototype.F1 = BI_FP-dbits;
+BigInteger.prototype.F2 = 2*dbits-BI_FP;
 
-h$bigOne = new BigInteger([1]);
-
+h$bigZero = nbv(0);
+h$bigOne = nbv(1); // new BigInteger([1]);
+h$bigCache = [];
+for(var i=0;i<=100;i++) {
+  h$bigCache.push(nbv(i));
+}
 // convert a value to a BigInt
-// fixme make faster conversion stuff if we know how many bits each digit has
 function h$bigFromInt(v) {
 //  h$logInt("### h$bigFromInt: " + v);
   var v0 = v|0;
-  var r = new BigInteger([v0 >> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
-//  h$logInt("### result: " + r.toString());
-  return r;
+  if(v0 >= 0) {
+    if(v0 <= 100) {
+      return h$bigCache[v0];
+    } else if(v0 < 268435456) { // 67108864) { // guaranteed to fit in one digit
+      return nbv(v0);
+    }
+    var r1 = nbv(v0 >>> 16);
+    var r2 = nbi();
+    r1.lShiftTo(16,r2);
+    r1.fromInt(v0 & 0xffff);
+    var r3 = r1.or(r2);
+//    h$logInt("### result: " + r3.toString());
+    return r3;
+  } else {
+    v0 = -v0;
+    if(v0 < 268435456) { // 67108864) {
+      return nbv(v0).negate();
+    }
+    var r1 = nbv(v0 >>> 16);
+    var r2 = nbi();
+    r1.lShiftTo(16,r2);
+    r1.fromInt(v0 & 0xffff);
+    var r3 = r1.or(r2);
+    BigInteger.ZERO.subTo(r3,r2);
+//    h$logInt("### result: " + r2.toString());
+    return r2;
+  }
 }
 
 function h$bigFromWord(v) {
-//  h$logInt("### h$bigFromInt: " + v);
+//  h$logInt("### h$bigFromWord: " + v);
   var v0 = v|0;
-  var r = new BigInteger([0, v0 >>> 24, (v0&0xff0000) >> 16, (v0 & 0xff00) >> 8, v0 & 0xff]);
+  if(v0 >= 0) {
+    if(v0 <= 100) {
+      return h$bigCache[v0];
+    } else if(v0 < 268435456) { // 67108864) { // guaranteed to fit in one digit
+      return nbv(v0);
+    }
+  }
+  var r1 = nbv(v0 & 0xffff);
+  var r2 = nbv(0);
+  r1.lShiftTo(16,r2);
+  r1.fromInt(v0 >>> 16);
+  var r = r1.or(r2);
 //  h$logInt("### result: " + r.toString());
   return r;
 }
