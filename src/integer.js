@@ -59,7 +59,6 @@ function h$bigFromInt(v) {
 }
 
 function h$bigFromWord(v) {
-//  h$logInt("### h$bigFromWord: " + v);
   var v0 = v|0;
   if(v0 >= 0) {
     if(v0 <= 100) {
@@ -68,13 +67,11 @@ function h$bigFromWord(v) {
       return nbv(v0);
     }
   }
-  var r1 = nbv(v0 & 0xffff);
+  var r1 = nbv(v0 >>> 16);
   var r2 = nbv(0);
   r1.lShiftTo(16,r2);
-  r1.fromInt(v0 >>> 16);
-  var r = r1.or(r2);
-//  h$logInt("### result: " + r.toString());
-  return r;
+  r1.fromInt(v0 & 0xffff);
+  return r1.or(r2);
 }
 
 function h$bigFromInt64(v1,v2) {
