@@ -97,8 +97,11 @@ function h$readFile() {
 // use the system specific way to load the file (either AJAX or directly)
 // return a DataView with the contents
 function h$loadFileData(path) {
+  if(path.charCodeAt(path.length-1) === 0) {
+    path = path.substring(0,path.length-1);
+  }
   if(typeof h$nodeFs !== 'undefined' && h$nodeFs.readFileSync) { // node.js
-    return new DataView(h$nodeFs.readFileSync(path));
+    return h$fromNodeBuffer(h$nodeFs.readFileSync(path));
   } else if(typeof snarf !== 'undefined') { // SpiderMonkey
     return new DataView(snarf(path, "binary"));
   } else {
@@ -113,6 +116,17 @@ function h$loadFileData(path) {
       return null; // fixme proper error
     }
   }
+}
+
+// node buffer to DataView
+function h$fromNodeBuffer(buf) {
+  var l = buf.length;
+  var buf2 = new ArrayBuffer(l);
+  var u8 = new Uint8Array(buf2);
+  for(var i=0;i<l;i++) {
+    u8[i] = buf[i];
+  }
+  return new DataView(buf2);
 }
 
 function h$pathUrl(path) {
@@ -251,7 +265,6 @@ function h$read(fd, buf, buf_offset, n) {
 var h$baseZCSystemziPosixziInternalsZCwrite = h$write;
 
 function h$writeConsole(fd, buf, buf_offset, n) {
-//  log("###writeConsole: " + n);
   var str = h$decodeUtf8(buf, n, buf_offset);
   if(typeof(process) !== 'undefined' && process && process.stdout) { /* node.js */
     process.stdout.write(str);

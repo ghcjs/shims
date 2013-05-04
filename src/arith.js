@@ -618,6 +618,17 @@ function h$memcmp(a_v, a_o, b_v, b_o, n) {
   return 0;
 }
 
+function h$memmove(a_v, a_o, b_v, b_o, n) {
+  if(n > 0) {
+    var tmp = new Uint8Array(b_v.buffer.slice(b_o,b_o+n));
+    for(var i=0;i<n;i++) {
+      a_v.setUint8(a_o+i, tmp[i]);
+    }
+  }
+  h$ret1 = a_o;
+  return a_v;
+}
+
 function h$mkFunctionPtr(f) {
   var d = new DataView(new ArrayBuffer(4));
   d.arr = [f];
