@@ -1,24 +1,105 @@
 
-var h$stdout = { read: function() { throw "can't read from stdout"; }
-               , write: h$writeConsole
-               };
-
-var h$stdin = { write: function() { throw "can't write to stdin"; }
-              , read: function() { throw "unimplemented read: stdin"; }
-              };
-
-var h$stderr = { read: function () { throw "can't read from stderr"; }
-               , write: h$writeConsole
-               };
-
-function h$stdFd(n,readable,writable,buf) {
-  return new h$Fd(buf,readable,writable,n);
+function h$stdFd(n,readReady,writeReady,buf) {
+  return new h$Fd(buf, readReady, writeReady, n);
 }
 
+var h$stdinBuf = { write: function() { throw "can't write to stdin"; } };
+var h$stdoutBuf = { read: function() { throw "can't read from stdout"; } };
+var h$stderrBuf = { read: function () { throw "can't read from stderr"; } };
+
+function h$initStdioBufs() {
+  if(typeof process !== 'undefined' && process && process.stdin) { // node.js
+    h$stdinBuf.isATTY  = process.stdin.isTTY;
+    h$stdoutBuf.isATTY = process.stdout.isTTY;
+    h$stderrBuf.isATTY = process.stderr.isTTY;
+
+    // stdin
+    h$stdinBuf.chunks = new goog.structs.Queue();
+    h$stdinBuf.chunkOff = 0;
+    h$stdinBuf.eof = false;
+    h$stdinBuf.readReady = false;
+    h$stdinBuf.writeReady = false;
+    process.stdin.on('data', function(chunk) {
+      h$stdinBuf.chunks.enqueue(chunk);
+      h$stdin.readReady = true;
+      h$notifyRead(h$stdin);
+    });
+    process.stdin.on('end', function() {
+      h$stdinBuf.eof = true;
+      h$stdin.readReady = true; // for eof, the fd is ready but read returns 0 bytes
+      h$notifyRead(h$stdin);
+    });
+    h$stdinBuf.read = function(fd, buf, buf_offset, n) {
+      if(fd.buf.chunks.getCount() === 0) {
+        return 0;
+      } else {
+        var h = fd.buf.chunks.peek();
+        var o = fd.buf.chunkOff;
+        var left = h.length - o;
+        if(left < n) {
+          for(var i=0;i<n;i++) {
+            buf.setUint8(buf_offset+i,h[o+i]);
+          }
+          fd.buf.chunkOff += n;
+          return n;
+        } else {
+          for(var i=0;i<left;i++) {
+            buf.setUint8(buf_offset+i,h[o+i]);
+          }
+          fd.buf.chunkOff = 0;
+          fd.buf.chunks.dequeue();
+          if(fd.buf.chunks.getCount() === 0 && !fd.buf.eof) {
+            h$stdin.readReady = false;
+          }
+          return left;
+        }
+      }
+    }
+
+    // stdout, stderr
+    h$stdoutBuf.write  = function(fd, buf, buf_offset, n) {
+      process.stdout.write(h$decodeUtf8(buf, n, buf_offset));
+    };
+    h$stderrBuf.write  = function(fd, buf, buf_offset, n) {
+      process.stderr.write(h$decodeUtf8(buf, n, buf_offset));
+    };
+  } else if(typeof putstr !== 'undefined') { // SpiderMonkey
+    h$stdoutBuf.isATTY = true;
+    h$stderrBuf.isATTY = true;
+    h$stdinBuf.isATTY = false;
+    h$stdinBuf.readReady = true;
+    h$stdinBuf.read = function() { return 0; } // eof
+    h$stdoutBuf.write = function(fd, buf, buf_offset, n) {
+     putstr(h$decodeUtf8(buf, n, buf_offset));
+    }
+    h$stderrBuf.write = function(fd, buf, buf_offset, n) {
+      printErr(h$decodeUtf8(buf, n, buf_offset)); // prints too many newlines
+    }
+  } else { // browser or fallback
+    h$stdoutBuf.isATTY = true;
+    h$stderrBuf.isATTY = true;
+    h$stdinBuf.isATTY = false;
+    h$stdinBuf.readReady = true;
+    h$stdinBuf.read = function() { return 0; } // eof
+    var writeConsole = function(fd, buf, buf_offset, n) {
+      if(typeof console !== 'undefined' && console && console.log) {
+        console.log(h$decodeUtf8(buf, n, buf_offset));
+      }
+    }
+    h$stdoutBuf.write = writeConsole;
+    h$stderrBuf.write = writeConsole;
+  }
+}
+h$initStdioBufs();
+
+var h$stdin  = h$stdFd(0, false, false, h$stdinBuf);
+var h$stdout = h$stdFd(1, false, true, h$stdoutBuf);
+var h$stderr = h$stdFd(2, false, true, h$stderrBuf);
+
 var h$fdN = 3;
-var h$fds = { '0': h$stdFd(0, true, false, h$stdin)
-            , '1': h$stdFd(1, false, true, h$stdout)
-            , '2': h$stdFd(2, false, true, h$stderr)
+var h$fds = { '0': h$stdin
+            , '1': h$stdout
+            , '2': h$stderr
             };
 
 var h$filesMap = {}; // new Map(); // path -> file
@@ -41,7 +122,7 @@ function h$close(fd) {
   }
 }
 
-function h$Fd(buf, readable, writable, n) {
+function h$Fd(buf, readReady, writeReady, isATTY, n) {
   if(n !== undefined) {
     this.fd = n;
   } else {
@@ -51,12 +132,13 @@ function h$Fd(buf, readable, writable, n) {
   this.buf = buf;
   this.waitRead = [];
   this.waitWrite = [];
-  this.readable = readable;
-  this.writable = writable;
+  this.readReady = readReady;
+  this.writeReady = writeReady;
+  this.isATTY = isATTY;
 }
 
 function h$newFd(file) {
-  var fd = new h$Fd(file, true, true);
+  var fd = new h$Fd(file, true, true, false);
   h$fds[fd.fd] = fd;
   return fd;
 }
@@ -67,6 +149,7 @@ function h$newFile(path, data) {
           , len: data.byteLength // number of bytes in the file (migh be smaller than data.byteLength later)
           , read: h$readFile
           , write: h$writeFile
+          , isATTY: false
           };
   h$filesMap[path] = f;
   return f;
@@ -139,7 +222,7 @@ function h$findFile(path) {
 }
 
 function h$isatty(d) {
-  return (d===1||d===2)?1:0;
+  return h$fds[d].buf.isATTY?1:0;
 }
 
 function h$__hscore_bufsiz() { return 4096; }
@@ -244,11 +327,26 @@ function h$unlockFile(fd) {
 //    log("### unlockFile");
     return 0;
 }
-function h$fdReady(fd, write) {
-//  console.log("### fdReady");
-  if(write && h$fds[fd].writable) return 1;
-  return 0;
-};
+function h$fdReady(fd, write, msecs, isSock) {
+  var f = h$fds[fd];
+  if(write) {
+    if(f.writeReady) {
+      return 1;
+    } else if(msecs === 0) {
+      return 0;
+    } else {
+      throw "h$fdReady: blocking not implemented";
+    }
+  } else {
+    if(f.readReady) {
+      return 1;
+    } else if(msecs === 0) {
+      return 0;
+    } else {
+      throw "h$fdReady: blocking not implemented";
+    }
+  }
+}
 
 function h$write(fd, buf, buf_offset, n) {
 //  log("h$write: fd: " + fd + " (" + n + ")");
@@ -263,19 +361,6 @@ function h$read(fd, buf, buf_offset, n) {
 }
 
 var h$baseZCSystemziPosixziInternalsZCwrite = h$write;
-
-function h$writeConsole(fd, buf, buf_offset, n) {
-  var str = h$decodeUtf8(buf, n, buf_offset);
-  if(typeof(process) !== 'undefined' && process && process.stdout) { /* node.js */
-    process.stdout.write(str);
-  } else if(typeof(putstr) !== 'undefined') { /* SpiderMonkey */
-    putstr(str);
-  } else if(typeof(console) !== 'undefined') {
-    // we print too many newlines here, is it possible to fix that?
-    console.log(str);
-  }
-  return n;
-}
 
 function h$readFile(fd, buf, buf_offset, n) {
 //  log("h$readFile: " + n);
