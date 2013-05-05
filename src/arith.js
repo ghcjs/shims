@@ -213,16 +213,8 @@ function h$hs_uncheckedShiftRL64(a1,a2,n) {
   }
 }
 
+// fixme this function appears to deoptimize a lot due to smallint overflows
 function h$imul_shim(a, b) {
-    if(a < 0) {
-      if(b < 0) {
-        return h$imul_shim(-a,-b);
-      } else {
-        return -h$imul_shim(-a,b);
-      }
-    } else if(b < 0) {
-        return -h$imul_shim(a,-b);
-    }
     var ah  = (a >>> 16) & 0xffff;
     var al = a & 0xffff;
     var bh  = (b >>> 16) & 0xffff;
