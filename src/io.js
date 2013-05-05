@@ -186,7 +186,7 @@ function h$loadFileData(path) {
   if(typeof h$nodeFs !== 'undefined' && h$nodeFs.readFileSync) { // node.js
     return h$fromNodeBuffer(h$nodeFs.readFileSync(path));
   } else if(typeof snarf !== 'undefined') { // SpiderMonkey
-    return new DataView(snarf(path, "binary"));
+    return new DataView(snarf(path, "binary").buffer);
   } else {
     var url = h$pathUrl(path);
     var transport = new XMLHttpRequest();
@@ -279,7 +279,7 @@ function h$__hscore_open(filename, filename_off, h, mode) {
     }
 }
 
-function h$baseZCSystemziPosixziInternalsZClseek(fd, offset1, offset2, whence) {
+function h$lseek(fd, offset1, offset2, whence) {
   var offset = goog.math.Long.fromBits(offset2,offset1).toNumber();
 //  log("### lseek: " + fd + ", " + offset + ", " + whence);
   var f = h$fds[fd];
@@ -308,7 +308,7 @@ function h$baseZCSystemziPosixziInternalsZClseek(fd, offset1, offset2, whence) {
     return no.getHighBits();
   }
 }
-
+var h$baseZCSystemziPosixziInternalsZClseek = h$lseek;
 var h$baseZCSystemziPosixziInternalsZCSEEKzuCUR = h$__hscore_seek_cur;
 var h$baseZCSystemziPosixziInternalsZCSEEKzuSET = h$__hscore_seek_set;
 var h$baseZCSystemziPosixziInternalsZCSEEKzuEND = h$__hscore_seek_end;
