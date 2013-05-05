@@ -57,7 +57,7 @@ function h$errorMsg(pat) {
     str = str.replace(/%s/, arguments[i]);
   }
   if(typeof process !== 'undefined' && process && process.stderr) {
-    process.stderr.write(str+"\n");
+    process.stderr.write(str);
   } else if (typeof printErr !== 'undefined') {
     printErr(str);
   } else if (typeof putstr !== 'undefined') {
