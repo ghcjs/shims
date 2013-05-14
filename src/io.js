@@ -59,9 +59,11 @@ function h$initStdioBufs() {
     // stdout, stderr
     h$stdoutBuf.write  = function(fd, buf, buf_offset, n) {
       process.stdout.write(h$decodeUtf8(buf, n, buf_offset));
+      return n;
     };
     h$stderrBuf.write  = function(fd, buf, buf_offset, n) {
       process.stderr.write(h$decodeUtf8(buf, n, buf_offset));
+      return n;
     };
   } else if(typeof putstr !== 'undefined') { // SpiderMonkey
     h$stdoutBuf.isATTY = true;
@@ -70,10 +72,12 @@ function h$initStdioBufs() {
     h$stdinBuf.readReady = true;
     h$stdinBuf.read = function() { return 0; } // eof
     h$stdoutBuf.write = function(fd, buf, buf_offset, n) {
-     putstr(h$decodeUtf8(buf, n, buf_offset));
+      putstr(h$decodeUtf8(buf, n, buf_offset));
+      return n;
     }
     h$stderrBuf.write = function(fd, buf, buf_offset, n) {
       printErr(h$decodeUtf8(buf, n, buf_offset)); // prints too many newlines
+      return n;
     }
   } else { // browser or fallback
     h$stdoutBuf.isATTY = true;
