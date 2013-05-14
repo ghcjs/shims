@@ -3,7 +3,7 @@
 // an array of generic enums
 var h$enums = [];
 function h$initEnums() {
-  for(var i=0;i<64;i++) {
+  for(var i=0;i<256;i++) {
     h$enums[i] = h$makeEnum(i);
   }
 }
@@ -18,12 +18,16 @@ function h$makeEnum(tag) {
 }
 
 function h$tagToEnum(tag) {
-  if(tag === 0) return h$f;
-  if(tag === 1) return h$t;
+  if(tag === 0) return false;
+  if(tag === 1) return true;
   if(tag >= h$enums.length) {
     return h$makeEnum(tag);
   } else {
     return h$enums[tag];
   }
+}
+
+function h$enumTag(e) {
+  return (e===false)?0:((e===true)?1:((typeof e !== 'object')?0:(e.f.a-1)));
 }
 
