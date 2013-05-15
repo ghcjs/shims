@@ -186,7 +186,7 @@ function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
 }
 
 function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.mod(bbits);
+    h$ret1 = abits.subtract(bbits.multiply(abits.divide(bbits)));
 //    h$logInt("### result: " + ret1.toString());
     return 0;
 }
