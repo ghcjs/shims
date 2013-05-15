@@ -280,11 +280,21 @@ function h$integer_cmm_gcdIntzh(a, b) {
 var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
+    if(isNaN(x)) {
+      h$ret2 = h$bigFromInt(3).shiftLeft(51).negate();
+      h$ret1 = 0;
+      return 972;
+    }
     if( x < 0 ) {
         var result = h$integer_cmm_decodeDoublezh(-x);
         h$ret2 = h$ret2.negate();
         h$ret1 = h$ret2.signum();
         return result;
+    }
+    if(x === Number.POSITIVE_INFINITY) {
+        h$ret2 = h$bigOne.shiftLeft(52);
+        h$ret1 = 0;
+        return 972;
     }
     var exponent = Math.floor(Math.log(x) * h$oneOverLog2)-52;
     var n;
@@ -329,6 +339,10 @@ function h$integer_cmm_orIntegerzh(sa, abits, sb, bbits) {
 function h$integer_cmm_xorIntegerzh(sa, abits, sb, bbits) {
     h$ret1 = abits.xor(bbits);
     return 0;
+}
+
+function h$integer_cmm_testBitIntegerzh(sa, abits, bit) {
+    return abits.testBit(bit)?1:0;
 }
 
 function h$integer_cmm_mul2ExpIntegerzh(sa, abits, b) {

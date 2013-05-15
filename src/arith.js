@@ -111,11 +111,12 @@ function h$hs_gtInt64(a1,a2,b1,b2) {
   }
 }
 
-// fixme wrong
 function h$hs_quotWord64(a1,a2,b1,b2) {
-  var c = goog.math.Long.fromBits(a2,a1).div(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  var a = h$bigFromWord64(a1,a2);
+  var b = h$bigFromWord64(b1,b2);
+  var c = a.divide(b);
+  h$ret1 = c.intValue();
+  return c.shiftRight(32).intValue();
 }
 
 function h$hs_timesInt64(a1,a2,b1,b2) {
@@ -152,11 +153,23 @@ function h$hs_leWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s < b2s || (a2s === b2s && (a2&1 <= b2&1))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    return (a1s < b1s || (a1s === b1s && (a1&1 <= b1&1))) ? 1 : 0;
+    return (a1s < b1s || (a1s === b1s && ((a1&1) <= (b1&1)))) ? 1 : 0;
+  }
+}
+
+function h$hs_ltWord64(a1,a2,b1,b2) {
+  if(a1 === b1) {
+    var a2s = a2 >>> 1;
+    var b2s = b2 >>> 1;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
+  } else {
+    var a1s = a1 >>> 1;
+    var b1s = b1 >>> 1;
+    return (a1s < b1s || (a1s === b1s && ((a1&1) < (b1&1)))) ? 1 : 0;
   }
 }
 
@@ -164,12 +177,32 @@ function h$hs_geWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    return (a2s > b2s || (a2s === b2s && (a2&1 >= b2&1))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    return (a1s > b1s || (a1s === b1s && (a1&1 >= b1&1))) ? 1 : 0;
+    return (a1s > b1s || (a1s === b1s && ((a1&1) >= (b1&1)))) ? 1 : 0;
   }
+}
+
+function h$hs_gtWord64(a1,a2,b1,b2) {
+  if(a1 === b1) {
+    var a2s = a2 >>> 1;
+    var b2s = b2 >>> 1;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
+  } else {
+    var a1s = a1 >>> 1;
+    var b1s = b1 >>> 1;
+    return (a1s > b1s || (a1s === b1s && ((a1&1) > (b1&1)))) ? 1 : 0;
+  }
+}
+
+function h$hs_remWord64(a1,a2,b1,b2) {
+  var a = h$bigFromWord64(a1,a2);
+  var b = h$bigFromWord64(b1,b2);
+  var c = a.mod(b);
+  h$ret1 = c.intValue();
+  return c.shiftRight(32).intValue();
 }
 
 function h$hs_uncheckedIShiftL64(a1,a2,n) {
@@ -232,19 +265,35 @@ var h$mulInt32 = Math.imul ? Math.imul : h$imul_shim;
 // var hs_mulInt32 = h$mulInt32;
 
 function h$mulWord32(a,b) {
-  return new goog.math.Long(a,0).multiply(new goog.math.Long(b,0)).getLowBits();
+  return goog.math.Long.fromBits(a,0).multiply(goog.math.Long.fromBits(b,0)).getLowBits();
 }
 
 function h$mul2Word32(a,b) {
-  return new goog.math.Long(a,0).multiply(new goog.math.Long(b,0)).getLowBits();
+  var c = goog.math.Long.fromBits(a,0).multiply(goog.math.Long.fromBits(b,0))
+  h$ret1 = c.getLowBits();
+  return c.getHighBits();
 }
 
 function h$quotWord32(a,b) {
-  return new goog.math.Long(a,0).div(new goog.math.Long(b,0)).getLowBits();
+  return goog.math.Long.fromBits(a,0).div(goog.math.Long.fromBits(b,0)).getLowBits();
 }
 
 function h$remWord32(a,b) {
-  return new goog.math.Long(a,0).modulo(new goog.math.Long(b,0)).getLowBits();
+  return goog.math.Long.fromBits(a,0).modulo(goog.math.Long.fromBits(b,0)).getLowBits();
+}
+
+function h$quotRem2Word32(a1,a2,b) {
+  var a = h$bigFromWord64(a1,a2);
+  var b = h$bigFromWord(b);
+  var d = a.divide(b);
+  h$ret1 = a.subtract(b.multiply(d)).intValue();
+  return d.intValue();
+}
+
+function h$wordAdd2(a,b) {
+  var c = goog.math.Long.fromBits(a,0).add(goog.math.Long.fromBits(b,0));
+  h$ret1 = c.getLowBits();
+  return c.getHighBits();
 }
 
 // this does an unsigned shift, is that ok?
@@ -304,43 +353,50 @@ function h$isFloatDenormalized(d) {
 }
 
 function h$decodeFloatInt(d) {
-    if( d < 0 ) {
-      return -h$decodeFloatInt(-d);
+    if(isNaN(d)) {
+      h$ret1 = 105;
+      return -12582912;
     }
-    var exponent = Math.floor(Math.log(d) * 1.4426950408889634)-23; // 1/log(2)
+    var exponent    = h$integer_cmm_decodeDoublezh(d)+29;
+    var significand = h$ret2.shiftRight(29).intValue();
+    if(exponent > 105) {
+      exponent = 105;
+      significand = significand > 0 ? 8388608 : -8388608;
+    } else if(exponent < -151) {
+      significand = 0;
+      exponent = 0;
+    }
     h$ret1 = exponent;
-    return (d * Math.pow(2, -exponent)) | 0;
+    return significand;
 }
 
 function h$decodeDouble2Int(d) {
-   var sign = 1;
-   if( d < 0 ) {
-      d = -d;
-      sign = -1;
-    }
-    var exponent = Math.floor(Math.log(d) * 1.4426950408889634); // 1/log(2)
-    var mantissa = goog.math.Long.fromNumber(d * Math.pow(2, -exponent));
-    h$ret1 = mantissa.getHighBits();
-    h$ret2 = mantissa.getLowBits();
-    h$ret3 = -exponent;
-    return sign;
+   var exponent    = h$integer_cmm_decodeDoublezh(d);
+   var significand = h$ret2;
+   var sign = d<0?-1:1;
+   h$ret1 = significand.shiftRight(32).intValue(); // correct sign?
+   h$ret2 = significand.intValue();
+   return sign;
 }
 
+// round .5 to nearest even number
 function h$rintDouble(a) {
-    if(a < 0) {
-      return -Math.round(-a);
+  var rounda = Math.round(a);
+  if(a >= 0) {
+    if(a%1===0.5 && rounda%2===1) { // tie
+      return rounda-1;
     } else {
-      return Math.round(a);
+      return rounda;
     }
-}
-
-function h$rintFloat(a) {
-    if(a < 0) {
-      return -Math.round(-a);
+  } else {
+    if(a%1===-0.5 && rounda%2===-1) { // tie
+      return rounda-1;
     } else {
-      return Math.round(a);
+      return rounda;
     }
+  }
 }
+var h$rintFloat = h$rintDouble;
 
 function h$acos(d) { return Math.acos(d); }
 function h$acosf(f) { return Math.acos(f); }
