@@ -61,7 +61,7 @@ function h$errorMsg(pat) {
   } else if (typeof printErr !== 'undefined') {
     printErr(str);
   } else if (typeof putstr !== 'undefined') {
-    putstr(str+"\n");
+    putstr(str);
   } else if(typeof(console) !== 'undefined') {
     console.log(str);
   }

@@ -27,7 +27,7 @@ function h$tagToEnum(tag) {
   }
 }
 
-function h$enumTag(e) {
-  return (e===false)?0:((e===true)?1:((typeof e !== 'object')?0:(e.f.a-1)));
+function h$dataTag(e) {
+  return (e===true)?1:((typeof e !== 'object')?0:(e.f.a-1));
 }
 
