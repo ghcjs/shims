@@ -66,10 +66,12 @@ function h$threadString(t) {
   }
 }
 
-function h$fork(a) {
+function h$fork(a, inherit) {
   var t = new h$Thread();
   h$logSched("sched: forking: " + h$threadString(t));
-  t.mask = h$currentThread.mask;
+  if(inherit && h$currentThread) {
+    t.mask = h$currentThread.mask;
+  }
   //h$logSched("sched: action forked: " + a.f.n);
   t.stack[4] = h$ap_1_0;
   t.stack[5] = a;
@@ -522,7 +524,7 @@ function h$mainLoop() {
 // returns immediately, thread is started in background
 function h$run(a) {
   //h$logSched("sched: starting thread");
-  var t = h$fork(a);
+  var t = h$fork(a, false);
   h$startMainLoop();
   return t;
 }
