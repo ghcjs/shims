@@ -540,11 +540,5 @@ function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
   }
 }
 
-function h$rtsSupportsBoundThreads() {
-    return 1;
-}
-
-// function ghc_wrapper_d2ep_
-
 
 

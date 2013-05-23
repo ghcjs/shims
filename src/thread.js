@@ -41,6 +41,7 @@ function h$Thread() {
   this.delayed = false;  // waiting for threadDelay
   this.blockedOn = null; // object on which thread is blocked
   this.retryInterrupted = null; // how to retry blocking operation when interrupted
+  this.transaction = null; // for STM
   this.m = 0;
 }
 
@@ -229,11 +230,17 @@ function h$unmaskAsync(a) {
   return h$ap_1_0_fast();
 }
 
+function h$pendingAsync() {
+  var t = h$currentThread;
+  return (t.excep.length > 0 && (t.mask === 0 || (t.mask === 2 && t.interruptible)));
+}
+
 // post the first of the queued async exceptions to
 // this thread, restore frame is in thread if alreadySuspended
+
 function h$postAsync(alreadySuspended,next) {
   var t = h$currentThread;
-  if(t.excep.length > 0 && (t.mask === 0 || (t.mask === 2 && t.interruptible))) {
+  if(h$pendingAsync()) {
     h$logSched("posting async to " + h$threadString(t) + " mask status: " + t.mask);
     var v = t.excep.shift();
     var tposter = v[0]; // posting thread, blocked
@@ -275,7 +282,7 @@ function h$forceWakeupThread(t) {
   if(t.status === h$threadBlocked) {
     var o = t.blockedOn;
     if(o === null || o === undefined) {
-      throw ("panic: blocked on null or undefined: " + h$threadString(t));
+      throw ("h$forceWakeupThread: blocked on null or undefined: " + h$threadString(t));
     } else if(o === h$delayed) {
       // thread delayed, can't remove, wakeupDelayed will check
       t.delayed = false;
@@ -306,11 +313,13 @@ function h$forceWakeupThread(t) {
           break;
         }
       }
+    } else if (o instanceof h$TVarsWaiting) {
+      h$stmRemoveBlockedThread(o.tvars, t)
     } else if(o.f && o.f.t === h$BLACKHOLE_CLOSURE) {
       h$logSched("blocked on blackhole");
       h$removeFromArray(o.d2,t);
     } else {
-      throw ("panic: blocked on unknown object: " + h$collectProps(o));
+      throw ("h$forceWakeupThread: blocked on unknown object: " + h$collectProps(o));
     }
     if(t.retryInterrupted) {
       t.sp+=2;
@@ -367,9 +376,13 @@ function h$scheduler(next) {
   h$wakeupDelayed(now);
   // find the next runnable thread in the run queue
   // remove non-runnable threads
-  if(h$currentThread && h$postAsync(next === h$reschedule, next)) {
+  if(h$currentThread && h$pendingAsync()) {
     h$logSched("received async exception, continuing thread");
-    h$currentThread.status = h$threadRunning;
+    if(h$currentThread.status !== h$threadRunning) {
+      h$forceWakeupThread(h$currentThread);
+      h$currentThread.status = h$threadRunning;
+    }
+    h$postAsync(next === h$reschedule, next);
     return h$stack[h$sp];
   }
   var t;
@@ -389,17 +402,17 @@ function h$scheduler(next) {
         h$stack = h$currentThread.stack;
         h$lastGc = Date.now();
       }
-      if(h$postAsync(next === h$reschedule, next)) {
-        h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
-        return h$stack[h$sp];  // async exception posted, jump to the new stack top
-      } else {
+//      if(h$postAsync(next === h$reschedule, next)) {
+//        h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
+//        return h$stack[h$sp];  // async exception posted, jump to the new stack top
+//      } else {
         h$logSched("sched: continuing: " + h$threadString(h$currentThread));
-        if(next === h$reschedule) {
-          return h$stack[h$sp];
-        } else {
+  //      if(next === h$reschedule) {
+//          return h$stack[h$sp];
+//        } else {
           return next; // just continue
-        }
-      }
+//        }
+//      }
     } else {
       h$logSched("sched: pausing");
       h$currentThread = null;
@@ -563,9 +576,9 @@ function h$MVar() {
 function h$notifyMVarEmpty(mv) {
   var w = mv.writers.dequeue();
   if(w !== undefined) {
-    h$logSched("notifyMVarEmpty(" + mv.id + "): writer ready");
     var thread = w[0];
     var val    = w[1];
+    h$logSched("notifyMVarEmpty(" + mv.id + "): writer ready: " + h$threadString(thread));
     mv.val = val;
     // thread is null if some JavaScript outside Haskell wrote to the MVar
     if(thread !== null) {
@@ -582,7 +595,7 @@ function h$notifyMVarEmpty(mv) {
 function h$notifyMVarFull(mv,val) {
   var r = mv.readers.dequeue();
   if(r !== undefined) {
-    h$logSched("notifyMVarFull(" + mv.id + "): reader ready");
+    h$logSched("notifyMVarFull(" + mv.id + "): reader ready: " + h$threadString(r));
     r.sp += 2;
     r.stack[r.sp-1] = val;
     r.stack[r.sp]   = h$return;
@@ -718,11 +731,7 @@ var h$enabled_capabilities = new DataView(new ArrayBuffer(4));
 h$enabled_capabilities.setUint32(0,1);
 
 function h$rtsSupportsBoundThreads() {
-    return 0;
-}
-
-function h$rts_getThreadId(t) {
-  return t.tid;
+  return 0;
 }
 
 // async foreign calls

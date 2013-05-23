@@ -35,3 +35,5 @@ js:
   - src/enum.js@
   - src/weak.js
   - src/thread.js
+  - src/stm.js
+
