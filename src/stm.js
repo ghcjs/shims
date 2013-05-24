@@ -39,7 +39,6 @@ function h$WrittenTVar(tv,v) {
 function h$TVar(v) {
   h$logStm("creating tvar, value: " + h$collectProps(v));
   this.val     = v;                         // current value
-  this.version = 0;                         // version gets incremented every write
   this.blocked = new goog.structs.Set();    // threads that get woken up if this TVar is updated
   this.invariants = null;                   // invariants that use this tvar
 }
@@ -56,8 +55,8 @@ function h$LocalInvariant(o) {
 // local view of a TVar
 function h$LocalTVar(v) {
   h$logStm("creating tvar view for: " + h$collectProps(v));
-  this.version = v.version;
-  this.val     = v.val;
+  this.readVal = v.val;  // the value when read from environment
+  this.val     = v.val;  // the current uncommitted value
   this.tvar    = v;
 }
 
@@ -132,8 +131,8 @@ function h$stmValidateTransaction() {
   try {
     while(true) {
       var ltv = i.next();
-      h$logStm("h$stmValidateTransaction: " + ltv + " " + ltv.version);
-      if(ltv.version !== ltv.tvar.version) return false;
+      h$logStm("h$stmValidateTransaction: " + ltv);
+      if(ltv.readVal !== ltv.tvar.val) return false;
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
   return true;
@@ -168,7 +167,7 @@ function h$stmRetry() {
         size = (tag & 0xff) + 1;
       }
     }
-    h$sp = h$sp - size;
+    h$sp -= size;
   }
   // either h$sp == 0 or at a handler
   if(h$sp > 0) {
@@ -317,7 +316,6 @@ function h$stmCommitTVar(tv, v) {
         }
       }
     } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-    tv.version++;
     tv.val = v;
   }
 }
