@@ -20,14 +20,12 @@ function h$Transaction(o, parent) {
   this.tvars         = new goog.structs.Map();
   // h$TVar.id -> h$LocalTVar, all local tvars accessed anywhere in the transaction
   this.accessed      = parent===null?new goog.structs.Map():parent.accessed;
-  // non-null while running a check, contains read variables in this part of the transaction
+  // nonnull while running a check, contains read variables in this part of the transaction
   this.checkRead     = parent===null?null:parent.checkRead;
   this.parent        = parent;
   this.state         = h$stmTransactionActive;
+  this.invariants    = []; // invariants added in this transaction
 }
-
-// these invariants haven't been run yet, so have no TVar deps
-var h$stmGlobalInvariants = [];
 
 function h$StmInvariant(a) {
   this.action = a;
@@ -48,6 +46,11 @@ function h$TVar(v) {
 
 function h$TVarsWaiting(s) {
   this.tvars = s;  // goog.structs.Set of TVars we're waiting on
+}
+
+function h$LocalInvariant(o) {
+  this.action = o;
+  this.dependencies = new goog.structs.Set();
 }
 
 // local view of a TVar
@@ -73,11 +76,19 @@ function h$stmStartTransaction(o) {
 
 function h$stmUpdateInvariantDependencies(inv) {
   var i = h$currentThread.transaction.checkRead.__iterator__();
-  try {
-    while(true) {
-      h$stmAddTVarInvariant(i.next(), inv);
-    }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+  if(inv instanceof h$LocalInvariant) {
+    try {
+      while(true) {
+        inv.dependencies.add(i.next());
+      }
+    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+  } else {
+    try {
+      while(true) {
+        h$stmAddTVarInvariant(i.next(), inv);
+      }
+    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+  }
 }
 
 function h$stmAddTVarInvariant(tv, inv) {
@@ -100,6 +111,9 @@ function h$stmCommitTransaction() {
         h$stmCommitTVar(wtv.tvar, wtv.val);
       }
     } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+    for(var j=0;j<t.invariants.length;j++) {
+      h$stmCommitInvariant(t.invariants[j]);
+    }
   } else { // commit subtransaction
     var tpvs = t.parent.tvars;
     try {
@@ -108,6 +122,7 @@ function h$stmCommitTransaction() {
         tpvs.set(goog.getUid(wtv.tvar), wtv);
       }
     } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+    t.parent.invariants = t.parent.invariants.concat(t.invariants);
   }
   h$currentThread.transaction = t.parent;
 }
@@ -131,7 +146,7 @@ function h$stmAbortTransaction() {
 
 // add an invariant
 function h$stmCheck(o) {
-  h$stmGlobalInvariants.push(new h$StmInvariant(o));
+  h$currentThread.transaction.invariants.push(new h$LocalInvariant(o));
   return false;
 }
 
@@ -284,11 +299,9 @@ function h$stmCheckInvariants() {
       }
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  for(j=0;j<h$stmGlobalInvariants.length;j++) {
-    addCheck(h$stmGlobalInvariants[j]);
+  for(j=0;j<t.invariants.length;j++) {
+    addCheck(t.invariants[j]);
   }
-  h$stmGlobalInvariants = [];
-  //h$dumpStackTop(h$stack, 0, h$sp);
   return h$stack[h$sp];
 }
 
@@ -319,3 +332,12 @@ function h$stmRemoveBlockedThread(s, thread) {
   } catch (e) { if(e !== goog.iter.StopIteration) { throw e; } }
 }
 
+function h$stmCommitInvariant(localInv) {
+  var inv = new h$StmInvariant(localInv.action);
+  var i = localInv.dependencies.__iterator__();
+  try {
+    while(true) {
+      h$stmAddTVarInvariant(i.next(), inv);
+    }
+  } catch (e) { if(e !== goog.iter.StopIteration) { throw e; } }
+}
