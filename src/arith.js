@@ -594,21 +594,30 @@ function h$getObjectHash(o) {
 }
 
 function h$makeStableName(x) {
-  return [x,x.f];
+  if(typeof x === 'object') {
+    return [x,x.f];
+  } else {
+    return [x,null];
+  }
 }
 
 function h$stableNameInt(s) {
-  return 0; // fixme
-/*  var hash = 23;
+  var s0 = s[0];
+  if(typeof s0 === 'boolean') { return s0?1:0; }
+  if(typeof s0 === 'number') { return s0|0; } // fixme this won't work well with small floats 
+  var hash = 23;
   hash = (hash * 37 + h$getObjectKey(s.f))|0;
   hash = (hash * 37 + h$getObjectHash(s.d1))|0;
   hash = (hash * 37 + h$getObjectHash(s.d2))|0;
-  return hash; */
+  return hash;
 }
 
 function h$eqStableName(s1o,s2o) {
   var s1 = s1o[0];
   var s2 = s2o[0];
+  if(typeof s1 !== 'object' || typeof s2 !== 'object') {
+    return s1 === s2 ? 1 : 0;
+  }
   var s1f = s1o[1];
   var s2f = s2o[1];
   return (s1f === s2f && (s1 === s2 || (s1.f === s2.f && s1.d1 === s2.d1 && s1.d2 === s2.d2)))?1:0;
