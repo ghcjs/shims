@@ -1,3 +1,25 @@
+// encode a string constant
+function h$str(s) {
+  var enc = null;
+  return function() {
+    if(enc === null) {
+      enc = h$encodeUtf8(s);
+    }
+    return enc;
+  }
+}
+
+// encode a raw string from bytes
+function h$rstr(d) {
+  var enc = null;
+  return function() {
+    if(enc === null) {
+      enc = h$rawStringData(d);
+    }
+    return enc;
+  }
+}
+
 var h$toUpper = null;
 function h$u_towupper(ch) {
   if(h$toUpper == null) { h$toUpper = h$decodeMapping(h$toUpperMapping); }
