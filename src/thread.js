@@ -17,7 +17,7 @@ function h$logSched() { return; }
 // var h$logSched = h$logSched0;
 function h$logSched0() { if(arguments.length == 1) {
                           if(h$currentThread != null) {
-                            log("sched: " + h$threadString(h$currentThread) +
+                            log((Date.now()/1000) + " sched: " + h$threadString(h$currentThread) +
                                 "[" + h$currentThread.mask + "," +
                                 (h$currentThread.interruptible?1:0) + "," +
                                 h$currentThread.excep.length +
@@ -280,9 +280,16 @@ function h$wakeupThread(t) {
 function h$forceWakeupThread(t) {
   h$logSched("forcing wakeup of: " + h$threadString(t));
   if(t.status === h$threadBlocked) {
+    h$removeThread(t);
+    h$wakeupThread(t);
+  }
+}
+
+function h$removeThreadBlock(t) {
+  if(t.status === h$threadBlocked) {
     var o = t.blockedOn;
     if(o === null || o === undefined) {
-      throw ("h$forceWakeupThread: blocked on null or undefined: " + h$threadString(t));
+      throw ("h$removeThreadBlock: blocked on null or undefined: " + h$threadString(t));
     } else if(o === h$delayed) {
       // thread delayed, can't remove, wakeupDelayed will check
       t.delayed = false;
@@ -319,14 +326,13 @@ function h$forceWakeupThread(t) {
       h$logSched("blocked on blackhole");
       h$removeFromArray(o.d2,t);
     } else {
-      throw ("h$forceWakeupThread: blocked on unknown object: " + h$collectProps(o));
+      throw ("h$removeThreadBlock: blocked on unknown object: " + h$collectProps(o));
     }
     if(t.retryInterrupted) {
       t.sp+=2;
       t.stack[t.sp-1] = t.retryInterrupted;
       t.stack[t.sp] = h$retryInterrupted;
     }
-    h$wakeupThread(t);
   }
 }
 
@@ -449,7 +455,7 @@ function h$scheduler(next) {
     h$sp = t.sp;
     h$logSched("sched: scheduling " + h$threadString(t) + " sp: " + h$sp);
     //h$logSched("sp thing: " + h$stack[h$sp].n);
-//      h$dumpStackTop(h$stack,0,h$sp);
+    // h$dumpStackTop(h$stack,0,h$sp);
     return h$stack[h$sp];
   }
 }
@@ -468,8 +474,19 @@ if(typeof window !== 'undefined' && window.postMessage) {
     window.attachEvent("message", handler);
   }
   h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
+} else if(typeof process !== 'undefined' && process.nextTick) {
+/*  h$yieldRun = function() {
+    h$logSched("yieldrun process.nextTick");
+    h$running = false;
+    process.nextTick(h$mainLoop);
+  } */
+  h$yieldRun = null; // the above (and setTimeout) are extremely slow in node
 } else if(typeof setTimeout !== 'undefined') {
-  h$yieldRun = function() { h$running = false; setTimeout(h$mainLoop, 0); }
+  h$yieldRun = function() {
+    h$logSched("yieldrun setTimeout");
+    h$running = false;
+    setTimeout(h$mainLoop, 0);
+  }
 } else {
   h$yieldRun = null; // SpiderMonkey shell has none of these
 }
@@ -488,7 +505,8 @@ function h$mainLoop() {
   if(h$running) return;
   h$running = true;
   h$run_init_static();
-  var c = h$next;
+  var h$currentThread = h$next;
+  var c = null; // fixme is this ok?
   var count;
   var start = Date.now();
   do {
@@ -506,8 +524,13 @@ function h$mainLoop() {
     }
     // yield to js after 100ms
     if(Date.now() - start > 100) {
+      h$logSched("yielding to js");
       if(h$yieldRun) {
-        h$next = c;
+        if(c !== h$reschedule) {
+          h$suspendCurrentThread(c);
+        }
+        h$next = h$currentThread;
+        h$currentThread = null;
         return h$yieldRun();
       }
     }
@@ -540,6 +563,149 @@ function h$run(a) {
   var t = h$fork(a, false);
   h$startMainLoop();
   return t;
+}
+
+// try to run the supplied IO action synchronously, running the
+// thread to completion
+// throws an exception if the action wants to do some async
+// thing like blocking on an MVar or threadDelay
+
+// cont :: bool, continue thread asynchronously after h$runSync returns
+function h$runSync(a, cont) {
+  var c = h$return;
+  var t = new h$Thread();
+  var ct = h$currentThread;
+  var csp = h$sp;
+  var cr1 = h$r1; // do we need to save more than this?
+  t.stack[4] = h$ap_1_0;
+  t.stack[5] = a;
+  t.stack[6] = h$return;
+  t.sp = 6;
+  t.status = h$threadRunning;
+  var excep = null;
+  h$currentThread = t;
+  h$stack = t.stack;
+  h$sp = t.sp;
+  try {
+    while(true) {
+      while(c !== h$reschedule) {
+        c = c();
+        c = c();
+        c = c();
+        c = c();
+        c = c();
+      }
+      if(t.status === h$threadFinished) {
+        break;
+      }
+      var b = t.blockedOn;
+      if(typeof b === 'object' && b && b.f && b.f.t === h$BLACKHOLE_CLOSURE) {
+        var bhThread = b.d1;
+        if(bhThread === ct || bhThread === t) { // hit a blackhole from running thread or ourselves
+          c = h$throw(h$baseZCControlziExceptionziBasezinonTermination, false);
+        } else { // blackhole from other thread, steal it if thread is running
+          // switch to that thread
+          if(h$runBlackholeThreadSync(b)) {
+            h$logSched("blackhole succesfully removed");
+            c = h$stack[h$sp];
+          } else {
+            h$logSched("blackhole not removed, failing");
+            throw b;
+          }
+        }
+      } else {
+        h$logSched("blocked on something other than a blackhole");
+        throw b;
+      }
+    }
+  } catch(e) { excep = e; }
+  h$currentThread = ct;
+  h$stack = ct.stack;
+  h$sp = csp;
+  h$r1 = cr1;
+  if(t.status !== h$threadFinished && !cont) {
+    h$removeThreadBlock(t);
+    h$finishThread(t);
+  }
+  if(excep) {
+    log(h$collectProps(excep));
+    throw excep;
+  }
+  if(t.status !== h$threadFinished) {
+    throw t.blockedOn;
+  }
+  h$logSched("finishing sync");
+  return true;
+}
+
+// run other threads synchronously until the blackhole is 'freed'
+// returns true for success, false for failure, a thread blocks
+function h$runBlackholeThreadSync(bh) {
+  h$logSched("trying to remove black hole");
+  var ct = h$currentThread;
+  var sp = h$sp;
+  var success = false;
+  var bhs = [];
+  var currentBh  = bh;
+  // we don't handle async exceptions here, don't run threads with pending exceptions
+  if(bh.d1.excep.length > 0) {
+    return false;
+  }
+  h$currentThread = bh.d1;
+  h$stack = h$currentThread.stack;
+  h$sp = h$currentThread.sp;
+  var c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
+  h$logSched("switched thread status running: " + (h$currentThread.status === h$threadRunning));
+  try {
+    while(true) {
+      while(c !== h$reschedule && currentBh.f.t === h$BLACKHOLE_CLOSURE) {
+        c = c();
+        c = c();
+        c = c();
+        c = c();
+        c = c();
+      }
+      if(c === h$reschedule) { // perhaps new blackhole, then continue with that thread, otherwise fail
+        if(typeof h$currentThread.blockedOn === 'object' &&
+           h$currentThread.blockedOn.f &&
+           h$currentThread.blockedOn.f.t === h$BLACKHOLE_CLOSURE) {
+          h$logSched("following another black hole");
+          bhs.push(currentBh);
+          currentBh = h$currentThread.blockedOn;
+          h$currentThread = h$currentThread.blockedOn.d1;
+          if(h$currentThread.excep.length > 0) {
+            break;
+          }
+          h$stack = h$currentThread.stack;
+          h$sp = h$currentThread.sp;
+          c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
+        } else {
+          h$logSched("thread blocked on something that's not a black hole, failing");
+          break;
+        }
+      } else { // blackhole updated: suspend thread and pick up the old one
+        h$logSched("blackhole updated, switching back (" + h$sp + ")");
+        h$logSched("next: " + c.toString());
+        h$suspendCurrentThread(c);
+        if(bhs.length > 0) {
+          h$logSched("to next black hole");
+          currentBh = bhs.pop();
+          h$currentThread = currentBh.d1;
+          h$stack = h$currentThread.stack;
+          h$sp = h$currentThread.sp;
+        } else {
+          h$logSched("last blackhole removed, success!");
+          success = true;
+          break;
+        }
+      }
+    }
+  } catch(e) { }
+  // switch back to original thread
+  h$sp = sp;
+  h$stack = ct.stack;
+  h$currentThread = ct;
+  return success;
 }
 
 // run the supplied IO action in a main thread
