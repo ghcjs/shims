@@ -280,7 +280,7 @@ function h$wakeupThread(t) {
 function h$forceWakeupThread(t) {
   h$logSched("forcing wakeup of: " + h$threadString(t));
   if(t.status === h$threadBlocked) {
-    h$removeThread(t);
+    h$removeThreadBlock(t);
     h$wakeupThread(t);
   }
 }
@@ -383,7 +383,7 @@ function h$scheduler(next) {
   // find the next runnable thread in the run queue
   // remove non-runnable threads
   if(h$currentThread && h$pendingAsync()) {
-    h$logSched("received async exception, continuing thread");
+    h$logSched("sched: received async exception, continuing thread");
     if(h$currentThread.status !== h$threadRunning) {
       h$forceWakeupThread(h$currentThread);
       h$currentThread.status = h$threadRunning;
@@ -397,9 +397,10 @@ function h$scheduler(next) {
   }
   // if no other runnable threads, just continue current (if runnable)
   if(t === undefined) {
+    h$logSched("sched: no other runnable threads");
     if(h$currentThread && h$currentThread.status === h$threadRunning) {
-      // fixme do gc after a while
-      if(now - h$lastGc > h$gcInterval) { // doGc
+      // do gc after a while
+      if(now - h$lastGc > h$gcInterval) {
         if(next !== h$reschedule) {
           h$suspendCurrentThread(next);
           next = h$stack[h$sp];
@@ -412,13 +413,8 @@ function h$scheduler(next) {
 //        h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
 //        return h$stack[h$sp];  // async exception posted, jump to the new stack top
 //      } else {
-        h$logSched("sched: continuing: " + h$threadString(h$currentThread));
-  //      if(next === h$reschedule) {
-//          return h$stack[h$sp];
-//        } else {
-          return next; // just continue
-//        }
-//      }
+      h$logSched("sched: continuing: " + h$threadString(h$currentThread));
+      return (next===h$reschedule)?h$stack[h$sp]:next; // just continue
     } else {
       h$logSched("sched: pausing");
       h$currentThread = null;
@@ -858,7 +854,7 @@ function h$atomicModifyMutVar(mv, fun) {
 // caller must save registers on stack
 function h$blockOnBlackhole(c) {
   h$logSched("blackhole, blocking: " + h$collectProps(c));
-  if(c.d1 === h$currentThread.tid) {
+  if(c.d1 === h$currentThread) {
     h$logSched("NonTermination");
     return h$throw(h$baseZCControlziExceptionziBasezinonTermination, false); // is this an async exception?
   }
