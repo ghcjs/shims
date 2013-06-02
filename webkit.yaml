@@ -1,0 +1,3 @@
+js:
+  - pkg/webkit.js
+  - pkg/webkit-dom.js

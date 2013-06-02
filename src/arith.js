@@ -685,12 +685,20 @@ function h$memmove(a_v, a_o, b_v, b_o, n) {
   h$ret1 = a_o;
   return a_v;
 }
-
+function h$mkPtr(v, o) {
+  return h$c2(h$baseZCGHCziPtrziPtr_con_e, v, o);
+};
 function h$mkFunctionPtr(f) {
   var d = new DataView(new ArrayBuffer(4));
   d.arr = [f];
   return d;
 }
+h$freeHaskellFunctionPtr = function () {
+}
+function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
+    h$ret1 = hptr_2;
+    return hptr;
+};
 
 function h$isInstanceOf(o,c) {
   return o instanceof c;
