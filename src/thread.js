@@ -401,7 +401,7 @@ function h$scheduler(next) {
     if(h$currentThread && h$currentThread.status === h$threadRunning) {
       // do gc after a while
       if(now - h$lastGc > h$gcInterval) {
-        if(next !== h$reschedule) {
+        if(next !== h$reschedule && next !== null) {
           h$suspendCurrentThread(next);
           next = h$stack[h$sp];
         }
@@ -414,7 +414,7 @@ function h$scheduler(next) {
 //        return h$stack[h$sp];  // async exception posted, jump to the new stack top
 //      } else {
       h$logSched("sched: continuing: " + h$threadString(h$currentThread));
-      return (next===h$reschedule)?h$stack[h$sp]:next; // just continue
+      return (next===h$reschedule || next === null)?h$stack[h$sp]:next; // just continue
     } else {
       h$logSched("sched: pausing");
       h$currentThread = null;
@@ -428,7 +428,7 @@ function h$scheduler(next) {
         h$threads.enqueue(h$currentThread);
       }
       // if h$reschedule called, thread takes care of suspend
-      if(next !== h$reschedule && next != null) {
+      if(next !== h$reschedule && next !== null) {
         h$logSched("sched: suspending: " + h$threadString(h$currentThread));
         // suspend thread: push h$restoreThread stack frame
         h$suspendCurrentThread(next);
