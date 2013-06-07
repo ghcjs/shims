@@ -1,6 +1,7 @@
 h$SystemziGlibziMainLoop_df30 = function () {}
 h$LanguageziJavascriptziJSCziObject_dbwE = function () {}
 h$LanguageziJavascriptziJSCziObject_dnMr = function () {};
+h$LanguageziJavascriptziJSCziObject_dnMu = function () {};
 
 function h$JSContextGetGlobalObject(ctx) {
     return ctx;
@@ -176,7 +177,7 @@ function h$JSStringGetLength(s, s_2) {
 function h$JSStringGetCharactersPtr(s, s_2) {
     return h$encodeUtf16(s);
 };
-function h$JSEvaluateScript(ctx, ctx_2, script, thisObject, thisObject_2, sourceURL, sourceURL_2, startingLineNumber, exception, exception_2) {
+function h$JSEvaluateScript(ctx, ctx_2, script, script_2, thisObject, thisObject_2, sourceURL, sourceURL_2, startingLineNumber, exception, exception_2) {
   return eval(script);
 };
 function h$JSValueIsUndefined(ctx, v) {

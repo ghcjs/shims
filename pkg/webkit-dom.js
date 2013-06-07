@@ -1,7 +1,7 @@
 // Graphics.UI.Gtk.WebKit.DOM.Xpath
 h$webkit_dom_xpath_result_get_type = (function()
                                       {
-                                        return XPathResult;
+                                        return h$g_get_type(XPathResult);
                                       });
 var h$webkit_dom_xpath_result_iterate_next;
 h$webkit_dom_xpath_result_iterate_next = (function(self,
@@ -64,7 +64,7 @@ h$webkit_dom_xpath_result_get_snapshot_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Xpath
 h$webkit_dom_xpath_ns_resolver_get_type = (function()
                                            {
-                                             return XPathNSResolver;
+                                             return h$g_get_type(XPathNSResolver);
                                            });
 var h$webkit_dom_xpath_ns_resolver_lookup_namespace_uri;
 h$webkit_dom_xpath_ns_resolver_lookup_namespace_uri = (function(self,
@@ -77,7 +77,7 @@ h$webkit_dom_xpath_ns_resolver_lookup_namespace_uri = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Xpath
 h$webkit_dom_xpath_expression_get_type = (function()
                                           {
-                                            return XPathExpression;
+                                            return h$g_get_type(XPathExpression);
                                           });
 var h$webkit_dom_xpath_expression_evaluate;
 h$webkit_dom_xpath_expression_evaluate = (function(self,
@@ -92,7 +92,7 @@ h$webkit_dom_xpath_expression_evaluate = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Xml
 h$webkit_dom_xml_http_request_get_type = (function()
                                           {
-                                            return XMLHttpRequest;
+                                            return h$g_get_type(XMLHttpRequest);
                                           });
 var h$webkit_dom_xml_http_request_set_request_header;
 h$webkit_dom_xml_http_request_set_request_header = (function(self,
@@ -292,7 +292,7 @@ h$webkit_dom_xml_http_request_get_status_text = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_webkit_point_get_type = (function()
                                       {
-                                        return WebKitPoint;
+                                        return h$g_get_type(WebKitPoint);
                                       });
 var h$webkit_dom_webkit_point_set_x;
 h$webkit_dom_webkit_point_set_x = (function(self,
@@ -321,7 +321,7 @@ h$webkit_dom_webkit_point_get_y = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_webkit_named_flow_get_type = (function()
                                            {
-                                             return WebKitNamedFlow;
+                                             return h$g_get_type(WebKitNamedFlow);
                                            });
 var h$webkit_dom_webkit_named_flow_get_regions_by_content;
 h$webkit_dom_webkit_named_flow_get_regions_by_content = (function(self,
@@ -373,7 +373,7 @@ h$webkit_dom_webkit_named_flow_get_first_empty_region_index = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_webkit_animation_list_get_type = (function()
                                                {
-                                                 return WebKitAnimationList;
+                                                 return h$g_get_type(WebKitAnimationList);
                                                });
 var h$webkit_dom_webkit_animation_list_item;
 h$webkit_dom_webkit_animation_list_item = (function(self,
@@ -391,7 +391,7 @@ h$webkit_dom_webkit_animation_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_webkit_animation_get_type = (function()
                                           {
-                                            return WebKitAnimation;
+                                            return h$g_get_type(WebKitAnimation);
                                           });
 var h$webkit_dom_webkit_animation_play;
 h$webkit_dom_webkit_animation_play = (function(self,
@@ -463,7 +463,7 @@ h$webkit_dom_webkit_animation_get_fill_mode = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_ui_event_get_type = (function()
                                   {
-                                    return UIEvent;
+                                    return h$g_get_type(UIEvent);
                                   });
 var h$webkit_dom_ui_event_init_ui_event;
 h$webkit_dom_ui_event_init_ui_event = (function(self,
@@ -533,7 +533,7 @@ h$webkit_dom_ui_event_get_which = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_validity_state_get_type = (function()
                                         {
-                                          return ValidityState;
+                                          return h$g_get_type(ValidityState);
                                         });
 var h$webkit_dom_validity_state_get_value_missing;
 h$webkit_dom_validity_state_get_value_missing = (function(self,
@@ -592,7 +592,7 @@ h$webkit_dom_validity_state_get_valid = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Traversal
 h$webkit_dom_tree_walker_get_type = (function()
                                      {
-                                       return TreeWalker;
+                                       return h$g_get_type(TreeWalker);
                                      });
 var h$webkit_dom_tree_walker_get_root;
 h$webkit_dom_tree_walker_get_root = (function(self,
@@ -636,7 +636,7 @@ h$webkit_dom_tree_walker_get_current_node = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_time_ranges_get_type = (function()
                                      {
-                                       return TimeRanges;
+                                       return h$g_get_type(TimeRanges);
                                      });
 var h$webkit_dom_time_ranges_start;
 h$webkit_dom_time_ranges_start = (function(self,
@@ -659,7 +659,7 @@ h$webkit_dom_time_ranges_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_text_get_type = (function()
                               {
-                                return Text;
+                                return h$g_get_type(Text);
                               });
 var h$webkit_dom_text_split_text;
 h$webkit_dom_text_split_text = (function(self,
@@ -686,12 +686,12 @@ h$webkit_dom_text_get_whole_text = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Storage
 h$webkit_dom_storage_info_get_type = (function()
                                       {
-                                        return StorageInfo;
+                                        return h$g_get_type(StorageInfo);
                                       });
 // Graphics.UI.Gtk.WebKit.DOM.Storage
 h$webkit_dom_storage_get_type = (function()
                                  {
-                                   return Storage;
+                                   return h$g_get_type(Storage);
                                  });
 var h$webkit_dom_storage_key;
 h$webkit_dom_storage_key = (function(self,
@@ -739,7 +739,7 @@ h$webkit_dom_storage_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Stylesheets
 h$webkit_dom_style_sheet_list_get_type = (function()
                                           {
-                                            return StyleSheetList;
+                                            return h$g_get_type(StyleSheetList);
                                           });
 var h$webkit_dom_style_sheet_list_item;
 h$webkit_dom_style_sheet_list_item = (function(self,
@@ -757,7 +757,7 @@ h$webkit_dom_style_sheet_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Stylesheets
 h$webkit_dom_style_sheet_get_type = (function()
                                      {
-                                       return StyleSheet;
+                                       return h$g_get_type(StyleSheet);
                                      });
 var h$webkit_dom_style_sheet_set_disabled;
 h$webkit_dom_style_sheet_set_disabled = (function(self,
@@ -809,7 +809,7 @@ h$webkit_dom_style_sheet_get_media = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.View
 h$webkit_dom_style_media_get_type = (function()
                                      {
-                                       return StyleMedia;
+                                       return h$g_get_type(StyleMedia);
                                      });
 var h$webkit_dom_style_media_match_medium;
 h$webkit_dom_style_media_match_medium = (function(self,
@@ -822,7 +822,7 @@ h$webkit_dom_style_media_match_medium = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_screen_get_type = (function()
                                 {
-                                  return Screen;
+                                  return h$g_get_type(Screen);
                                 });
 var h$webkit_dom_screen_get_height;
 h$webkit_dom_screen_get_height = (function(self,
@@ -875,7 +875,7 @@ h$webkit_dom_screen_get_avail_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Ranges
 h$webkit_dom_range_get_type = (function()
                                {
-                                 return Range;
+                                 return h$g_get_type(Range);
                                });
 var h$webkit_dom_range_set_start;
 h$webkit_dom_range_set_start = (function(self,
@@ -1087,7 +1087,7 @@ h$webkit_dom_range_get_text = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_processing_instruction_get_type = (function()
                                                 {
-                                                  return ProcessingInstruction;
+                                                  return h$g_get_type(ProcessingInstruction);
                                                 });
 var h$webkit_dom_processing_instruction_get_target;
 h$webkit_dom_processing_instruction_get_target = (function(self,
@@ -1120,7 +1120,7 @@ h$webkit_dom_processing_instruction_get_sheet = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_notation_get_type = (function()
                                   {
-                                    return Notation;
+                                    return h$g_get_type(Notation);
                                   });
 var h$webkit_dom_notation_get_public_id;
 h$webkit_dom_notation_get_public_id = (function(self,
@@ -1139,7 +1139,7 @@ h$webkit_dom_notation_get_system_id = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_node_list_get_type = (function()
                                    {
-                                     return NodeList;
+                                     return h$g_get_type(NodeList);
                                    });
 var h$webkit_dom_node_list_item;
 h$webkit_dom_node_list_item = (function(self,
@@ -1157,7 +1157,7 @@ h$webkit_dom_node_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Traversal
 h$webkit_dom_node_iterator_get_type = (function()
                                        {
-                                         return NodeIterator;
+                                         return h$g_get_type(NodeIterator);
                                        });
 var h$webkit_dom_node_iterator_detach;
 h$webkit_dom_node_iterator_detach = (function(self,
@@ -1207,12 +1207,12 @@ h$webkit_dom_node_iterator_get_pointer_before_reference_node = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Traversal
 h$webkit_dom_node_filter_get_type = (function()
                                      {
-                                       return NodeFilter;
+                                       return h$g_get_type(NodeFilter);
                                      });
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_node_get_type = (function()
                               {
-                                return Node;
+                                return h$g_get_type(Node);
                               });
 var h$webkit_dom_node_insert_before;
 h$webkit_dom_node_insert_before = (function(self,
@@ -1478,7 +1478,7 @@ h$webkit_dom_node_get_parent_element = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_navigator_get_type = (function()
                                    {
-                                     return Navigator;
+                                     return h$g_get_type(Navigator);
                                    });
 var h$webkit_dom_navigator_java_enabled;
 h$webkit_dom_navigator_java_enabled = (function(self,
@@ -1591,7 +1591,7 @@ h$webkit_dom_navigator_get_on_line = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_named_node_map_get_type = (function()
                                         {
-                                          return NamedNodeMap;
+                                          return h$g_get_type(NamedNodeMap);
                                         });
 var h$webkit_dom_named_node_map_get_named_item;
 h$webkit_dom_named_node_map_get_named_item = (function(self,
@@ -1663,7 +1663,7 @@ h$webkit_dom_named_node_map_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_mutation_event_get_type = (function()
                                         {
-                                          return MutationEvent;
+                                          return h$g_get_type(MutationEvent);
                                         });
 var h$webkit_dom_mutation_event_init_mutation_event;
 h$webkit_dom_mutation_event_init_mutation_event = (function(self,
@@ -1722,12 +1722,12 @@ h$webkit_dom_mutation_event_get_attr_change = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_message_port_get_type = (function()
                                       {
-                                        return MessagePort;
+                                        return h$g_get_type(MessagePort);
                                       });
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_mouse_event_get_type = (function()
                                      {
-                                       return MouseEvent;
+                                       return h$g_get_type(MouseEvent);
                                      });
 var h$webkit_dom_mouse_event_init_mouse_event;
 h$webkit_dom_mouse_event_init_mouse_event = (function(self,
@@ -1860,7 +1860,7 @@ h$webkit_dom_mouse_event_get_to_element = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_memory_info_get_type = (function()
                                      {
-                                       return MemoryInfo;
+                                       return h$g_get_type(MemoryInfo);
                                      });
 var h$webkit_dom_memory_info_get_total_js_heap_size;
 h$webkit_dom_memory_info_get_total_js_heap_size = (function(self,
@@ -1883,7 +1883,7 @@ h$webkit_dom_memory_info_get_js_heap_size_limit = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.View
 h$webkit_dom_media_query_list_get_type = (function()
                                           {
-                                            return MediaQueryList;
+                                            return h$g_get_type(MediaQueryList);
                                           });
 var h$webkit_dom_media_query_list_get_media;
 h$webkit_dom_media_query_list_get_media = (function(self,
@@ -1901,7 +1901,7 @@ h$webkit_dom_media_query_list_get_matches = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Stylesheets
 h$webkit_dom_media_list_get_type = (function()
                                     {
-                                      return MediaList;
+                                      return h$g_get_type(MediaList);
                                     });
 var h$webkit_dom_media_list_item;
 h$webkit_dom_media_list_item = (function(self,
@@ -1947,7 +1947,7 @@ h$webkit_dom_media_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_media_error_get_type = (function()
                                      {
-                                       return MediaError;
+                                       return h$g_get_type(MediaError);
                                      });
 var h$webkit_dom_media_error_get_code;
 h$webkit_dom_media_error_get_code = (function(self,
@@ -1958,7 +1958,7 @@ h$webkit_dom_media_error_get_code = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_location_get_type = (function()
                                   {
-                                    return Location;
+                                    return h$g_get_type(Location);
                                   });
 var h$webkit_dom_location_get_origin;
 h$webkit_dom_location_get_origin = (function(self,
@@ -1977,7 +1977,7 @@ h$webkit_dom_location_get_ancestor_origins = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_keyboard_event_get_type = (function()
                                         {
-                                          return KeyboardEvent;
+                                          return h$g_get_type(KeyboardEvent);
                                         });
 var h$webkit_dom_keyboard_event_get_modifier_state;
 h$webkit_dom_keyboard_event_get_modifier_state = (function(self,
@@ -2080,7 +2080,7 @@ h$webkit_dom_keyboard_event_get_char_code = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_video_element_get_type = (function()
                                             {
-                                              return HTMLVideoElement;
+                                              return h$g_get_type(HTMLVideoElement);
                                             });
 var h$webkit_dom_html_video_element_webkit_enter_fullscreen;
 h$webkit_dom_html_video_element_webkit_enter_fullscreen = (function(self,
@@ -2183,7 +2183,7 @@ h$webkit_dom_html_video_element_get_webkit_dropped_frame_count = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmlu_list_element_get_type = (function()
                                             {
-                                              return HTMLUListElement;
+                                              return h$g_get_type(HTMLUListElement);
                                             });
 var h$webkit_dom_htmlu_list_element_set_compact;
 h$webkit_dom_htmlu_list_element_set_compact = (function(self,
@@ -2200,7 +2200,7 @@ h$webkit_dom_htmlu_list_element_get_compact = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_title_element_get_type = (function()
                                             {
-                                              return HTMLTitleElement;
+                                              return h$g_get_type(HTMLTitleElement);
                                             });
 var h$webkit_dom_html_title_element_set_text;
 h$webkit_dom_html_title_element_set_text = (function(self,
@@ -2219,7 +2219,7 @@ h$webkit_dom_html_title_element_get_text = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_text_area_element_get_type = (function()
                                                 {
-                                                  return HTMLTextAreaElement;
+                                                  return h$g_get_type(HTMLTextAreaElement);
                                                 });
 var h$webkit_dom_html_text_area_element_check_validity;
 h$webkit_dom_html_text_area_element_check_validity = (function(self,
@@ -2502,7 +2502,7 @@ h$webkit_dom_html_text_area_element_get_selection_direction = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_section_element_get_type = (function()
                                                     {
-                                                      return HTMLTableSectionElement;
+                                                      return h$g_get_type(HTMLTableSectionElement);
                                                     });
 var h$webkit_dom_html_table_section_element_insert_row;
 h$webkit_dom_html_table_section_element_insert_row = (function(self,
@@ -2583,7 +2583,7 @@ h$webkit_dom_html_table_section_element_get_rows = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_row_element_get_type = (function()
                                                 {
-                                                  return HTMLTableRowElement;
+                                                  return h$g_get_type(HTMLTableRowElement);
                                                 });
 var h$webkit_dom_html_table_row_element_insert_cell;
 h$webkit_dom_html_table_row_element_insert_cell = (function(self,
@@ -2690,7 +2690,7 @@ h$webkit_dom_html_table_row_element_get_v_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_element_get_type = (function()
                                             {
-                                              return HTMLTableElement;
+                                              return h$g_get_type(HTMLTableElement);
                                             });
 var h$webkit_dom_html_table_element_create_t_head;
 h$webkit_dom_html_table_element_create_t_head = (function(self,
@@ -2933,7 +2933,7 @@ h$webkit_dom_html_table_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_col_element_get_type = (function()
                                                 {
-                                                  return HTMLTableColElement;
+                                                  return h$g_get_type(HTMLTableColElement);
                                                 });
 var h$webkit_dom_html_table_col_element_set_align;
 h$webkit_dom_html_table_col_element_set_align = (function(self,
@@ -3020,7 +3020,7 @@ h$webkit_dom_html_table_col_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_cell_element_get_type = (function()
                                                  {
-                                                   return HTMLTableCellElement;
+                                                   return h$g_get_type(HTMLTableCellElement);
                                                  });
 var h$webkit_dom_html_table_cell_element_get_cell_index;
 h$webkit_dom_html_table_cell_element_get_cell_index = (function(self,
@@ -3221,7 +3221,7 @@ h$webkit_dom_html_table_cell_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_table_caption_element_get_type = (function()
                                                     {
-                                                      return HTMLTableCaptionElement;
+                                                      return h$g_get_type(HTMLTableCaptionElement);
                                                     });
 var h$webkit_dom_html_table_caption_element_set_align;
 h$webkit_dom_html_table_caption_element_set_align = (function(self,
@@ -3240,7 +3240,7 @@ h$webkit_dom_html_table_caption_element_get_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_style_element_get_type = (function()
                                             {
-                                              return HTMLStyleElement;
+                                              return h$g_get_type(HTMLStyleElement);
                                             });
 var h$webkit_dom_html_style_element_set_disabled;
 h$webkit_dom_html_style_element_set_disabled = (function(self,
@@ -3290,7 +3290,7 @@ h$webkit_dom_html_style_element_get_sheet = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_select_element_get_type = (function()
                                              {
-                                               return HTMLSelectElement;
+                                               return h$g_get_type(HTMLSelectElement);
                                              });
 var h$webkit_dom_html_select_element_item;
 h$webkit_dom_html_select_element_item = (function(self,
@@ -3497,7 +3497,7 @@ h$webkit_dom_html_select_element_get_labels = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_script_element_get_type = (function()
                                              {
-                                               return HTMLScriptElement;
+                                               return h$g_get_type(HTMLScriptElement);
                                              });
 var h$webkit_dom_html_script_element_set_text;
 h$webkit_dom_html_script_element_set_text = (function(self,
@@ -3624,7 +3624,7 @@ h$webkit_dom_html_script_element_get_nonce = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_quote_element_get_type = (function()
                                             {
-                                              return HTMLQuoteElement;
+                                              return h$g_get_type(HTMLQuoteElement);
                                             });
 var h$webkit_dom_html_quote_element_set_cite;
 h$webkit_dom_html_quote_element_set_cite = (function(self,
@@ -3643,7 +3643,7 @@ h$webkit_dom_html_quote_element_get_cite = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_pre_element_get_type = (function()
                                           {
-                                            return HTMLPreElement;
+                                            return h$g_get_type(HTMLPreElement);
                                           });
 var h$webkit_dom_html_pre_element_set_width;
 h$webkit_dom_html_pre_element_set_width = (function(self,
@@ -3672,7 +3672,7 @@ h$webkit_dom_html_pre_element_get_wrap = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_param_element_get_type = (function()
                                             {
-                                              return HTMLParamElement;
+                                              return h$g_get_type(HTMLParamElement);
                                             });
 var h$webkit_dom_html_param_element_set_name;
 h$webkit_dom_html_param_element_set_name = (function(self,
@@ -3719,7 +3719,7 @@ h$webkit_dom_html_param_element_get_value_type = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_paragraph_element_get_type = (function()
                                                 {
-                                                  return HTMLParagraphElement;
+                                                  return h$g_get_type(HTMLParagraphElement);
                                                 });
 var h$webkit_dom_html_paragraph_element_set_align;
 h$webkit_dom_html_paragraph_element_set_align = (function(self,
@@ -3738,7 +3738,7 @@ h$webkit_dom_html_paragraph_element_get_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_options_collection_get_type = (function()
                                                  {
-                                                   return HTMLOptionsCollection;
+                                                   return h$g_get_type(HTMLOptionsCollection);
                                                  });
 var h$webkit_dom_html_options_collection_set_selected_index;
 h$webkit_dom_html_options_collection_set_selected_index = (function(self,
@@ -3755,7 +3755,7 @@ h$webkit_dom_html_options_collection_get_selected_index = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_option_element_get_type = (function()
                                              {
-                                               return HTMLOptionElement;
+                                               return h$g_get_type(HTMLOptionElement);
                                              });
 var h$webkit_dom_html_option_element_set_disabled;
 h$webkit_dom_html_option_element_set_disabled = (function(self,
@@ -3844,7 +3844,7 @@ h$webkit_dom_html_option_element_get_index = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_opt_group_element_get_type = (function()
                                                 {
-                                                  return HTMLOptGroupElement;
+                                                  return h$g_get_type(HTMLOptGroupElement);
                                                 });
 var h$webkit_dom_html_opt_group_element_set_disabled;
 h$webkit_dom_html_opt_group_element_set_disabled = (function(self,
@@ -3875,7 +3875,7 @@ h$webkit_dom_html_opt_group_element_get_label = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmlo_list_element_get_type = (function()
                                             {
-                                              return HTMLOListElement;
+                                              return h$g_get_type(HTMLOListElement);
                                             });
 var h$webkit_dom_htmlo_list_element_set_compact;
 h$webkit_dom_htmlo_list_element_set_compact = (function(self,
@@ -3916,7 +3916,7 @@ h$webkit_dom_htmlo_list_element_get_reversed = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_object_element_get_type = (function()
                                              {
-                                               return HTMLObjectElement;
+                                               return h$g_get_type(HTMLObjectElement);
                                              });
 var h$webkit_dom_html_object_element_check_validity;
 h$webkit_dom_html_object_element_check_validity = (function(self,
@@ -4172,7 +4172,7 @@ h$webkit_dom_html_object_element_get_content_document = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_mod_element_get_type = (function()
                                           {
-                                            return HTMLModElement;
+                                            return h$g_get_type(HTMLModElement);
                                           });
 var h$webkit_dom_html_mod_element_set_cite;
 h$webkit_dom_html_mod_element_set_cite = (function(self,
@@ -4205,7 +4205,7 @@ h$webkit_dom_html_mod_element_get_date_time = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_meta_element_get_type = (function()
                                            {
-                                             return HTMLMetaElement;
+                                             return h$g_get_type(HTMLMetaElement);
                                            });
 var h$webkit_dom_html_meta_element_set_content;
 h$webkit_dom_html_meta_element_set_content = (function(self,
@@ -4266,7 +4266,7 @@ h$webkit_dom_html_meta_element_get_scheme = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_menu_element_get_type = (function()
                                            {
-                                             return HTMLMenuElement;
+                                             return h$g_get_type(HTMLMenuElement);
                                            });
 var h$webkit_dom_html_menu_element_set_compact;
 h$webkit_dom_html_menu_element_set_compact = (function(self,
@@ -4283,12 +4283,12 @@ h$webkit_dom_html_menu_element_get_compact = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_audio_element_get_type = (function()
                                             {
-                                              return HTMLAudioElement;
+                                              return h$g_get_type(HTMLAudioElement);
                                             });
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_media_element_get_type = (function()
                                             {
-                                              return HTMLMediaElement;
+                                              return h$g_get_type(HTMLMediaElement);
                                             });
 var h$webkit_dom_html_media_element_load;
 h$webkit_dom_html_media_element_load = (function(self,
@@ -4595,7 +4595,7 @@ h$webkit_dom_html_media_element_get_media_group = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_marquee_element_get_type = (function()
                                               {
-                                                return HTMLMarqueeElement;
+                                                return h$g_get_type(HTMLMarqueeElement);
                                               });
 var h$webkit_dom_html_marquee_element_start;
 h$webkit_dom_html_marquee_element_start = (function(self,
@@ -4754,7 +4754,7 @@ h$webkit_dom_html_marquee_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_map_element_get_type = (function()
                                           {
-                                            return HTMLMapElement;
+                                            return h$g_get_type(HTMLMapElement);
                                           });
 var h$webkit_dom_html_map_element_get_areas;
 h$webkit_dom_html_map_element_get_areas = (function(self,
@@ -4780,7 +4780,7 @@ h$webkit_dom_html_map_element_get_name = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_link_element_get_type = (function()
                                            {
-                                             return HTMLLinkElement;
+                                             return h$g_get_type(HTMLLinkElement);
                                            });
 var h$webkit_dom_html_link_element_set_disabled;
 h$webkit_dom_html_link_element_set_disabled = (function(self,
@@ -4902,7 +4902,7 @@ h$webkit_dom_html_link_element_get_sheet = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmlli_element_get_type = (function()
                                         {
-                                          return HTMLLIElement;
+                                          return h$g_get_type(HTMLLIElement);
                                         });
 var h$webkit_dom_htmlli_element_set_value;
 h$webkit_dom_htmlli_element_set_value = (function(self,
@@ -4919,7 +4919,7 @@ h$webkit_dom_htmlli_element_get_value = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_legend_element_get_type = (function()
                                              {
-                                               return HTMLLegendElement;
+                                               return h$g_get_type(HTMLLegendElement);
                                              });
 var h$webkit_dom_html_legend_element_get_form;
 h$webkit_dom_html_legend_element_get_form = (function(self,
@@ -4945,7 +4945,7 @@ h$webkit_dom_html_legend_element_get_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_label_element_get_type = (function()
                                             {
-                                              return HTMLLabelElement;
+                                              return h$g_get_type(HTMLLabelElement);
                                             });
 var h$webkit_dom_html_label_element_get_form;
 h$webkit_dom_html_label_element_get_form = (function(self,
@@ -4978,7 +4978,7 @@ h$webkit_dom_html_label_element_get_control = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_keygen_element_get_type = (function()
                                              {
-                                               return HTMLKeygenElement;
+                                               return h$g_get_type(HTMLKeygenElement);
                                              });
 var h$webkit_dom_html_keygen_element_check_validity;
 h$webkit_dom_html_keygen_element_check_validity = (function(self,
@@ -5096,7 +5096,7 @@ h$webkit_dom_html_keygen_element_get_labels = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_input_element_get_type = (function()
                                             {
-                                              return HTMLInputElement;
+                                              return h$g_get_type(HTMLInputElement);
                                             });
 var h$webkit_dom_html_input_element_step_up;
 h$webkit_dom_html_input_element_step_up = (function(self,
@@ -5702,7 +5702,7 @@ h$webkit_dom_html_input_element_get_capture = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_image_element_get_type = (function()
                                             {
-                                              return HTMLImageElement;
+                                              return h$g_get_type(HTMLImageElement);
                                             });
 var h$webkit_dom_html_image_element_set_name;
 h$webkit_dom_html_image_element_set_name = (function(self,
@@ -5923,7 +5923,7 @@ h$webkit_dom_html_image_element_get_y = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_iframe_element_get_type = (function()
                                              {
-                                               return HTMLIFrameElement;
+                                               return h$g_get_type(HTMLIFrameElement);
                                              });
 var h$webkit_dom_html_iframe_element_set_align;
 h$webkit_dom_html_iframe_element_set_align = (function(self,
@@ -6122,7 +6122,7 @@ h$webkit_dom_html_iframe_element_get_content_window = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_html_element_get_type = (function()
                                            {
-                                             return HTMLHtmlElement;
+                                             return h$g_get_type(HTMLHtmlElement);
                                            });
 var h$webkit_dom_html_html_element_set_version;
 h$webkit_dom_html_html_element_set_version = (function(self,
@@ -6155,7 +6155,7 @@ h$webkit_dom_html_html_element_get_manifest = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmlhr_element_get_type = (function()
                                         {
-                                          return HTMLHRElement;
+                                          return h$g_get_type(HTMLHRElement);
                                         });
 var h$webkit_dom_htmlhr_element_set_align;
 h$webkit_dom_htmlhr_element_set_align = (function(self,
@@ -6214,7 +6214,7 @@ h$webkit_dom_htmlhr_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_heading_element_get_type = (function()
                                               {
-                                                return HTMLHeadingElement;
+                                                return h$g_get_type(HTMLHeadingElement);
                                               });
 var h$webkit_dom_html_heading_element_set_align;
 h$webkit_dom_html_heading_element_set_align = (function(self,
@@ -6233,7 +6233,7 @@ h$webkit_dom_html_heading_element_get_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_head_element_get_type = (function()
                                            {
-                                             return HTMLHeadElement;
+                                             return h$g_get_type(HTMLHeadElement);
                                            });
 var h$webkit_dom_html_head_element_set_profile;
 h$webkit_dom_html_head_element_set_profile = (function(self,
@@ -6252,7 +6252,7 @@ h$webkit_dom_html_head_element_get_profile = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_frame_set_element_get_type = (function()
                                                 {
-                                                  return HTMLFrameSetElement;
+                                                  return h$g_get_type(HTMLFrameSetElement);
                                                 });
 var h$webkit_dom_html_frame_set_element_set_cols;
 h$webkit_dom_html_frame_set_element_set_cols = (function(self,
@@ -6468,7 +6468,7 @@ h$webkit_dom_html_frame_set_element_get_onload = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_frame_element_get_type = (function()
                                             {
-                                              return HTMLFrameElement;
+                                              return h$g_get_type(HTMLFrameElement);
                                             });
 var h$webkit_dom_html_frame_element_set_frame_border;
 h$webkit_dom_html_frame_element_set_frame_border = (function(self,
@@ -6609,7 +6609,7 @@ h$webkit_dom_html_frame_element_get_height = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_form_element_get_type = (function()
                                            {
-                                             return HTMLFormElement;
+                                             return h$g_get_type(HTMLFormElement);
                                            });
 var h$webkit_dom_html_form_element_submit;
 h$webkit_dom_html_form_element_submit = (function(self,
@@ -6769,7 +6769,7 @@ h$webkit_dom_html_form_element_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_font_element_get_type = (function()
                                            {
-                                             return HTMLFontElement;
+                                             return h$g_get_type(HTMLFontElement);
                                            });
 var h$webkit_dom_html_font_element_set_color;
 h$webkit_dom_html_font_element_set_color = (function(self,
@@ -6816,7 +6816,7 @@ h$webkit_dom_html_font_element_get_size = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_field_set_element_get_type = (function()
                                                 {
-                                                  return HTMLFieldSetElement;
+                                                  return h$g_get_type(HTMLFieldSetElement);
                                                 });
 var h$webkit_dom_html_field_set_element_check_validity;
 h$webkit_dom_html_field_set_element_check_validity = (function(self,
@@ -6895,7 +6895,7 @@ h$webkit_dom_html_field_set_element_get_validation_message = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_embed_element_get_type = (function()
                                             {
-                                              return HTMLEmbedElement;
+                                              return h$g_get_type(HTMLEmbedElement);
                                             });
 var h$webkit_dom_html_embed_element_set_align;
 h$webkit_dom_html_embed_element_set_align = (function(self,
@@ -6966,7 +6966,7 @@ h$webkit_dom_html_embed_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_element_get_type = (function()
                                       {
-                                        return HTMLElement;
+                                        return h$g_get_type(HTMLElement);
                                       });
 var h$webkit_dom_html_element_insert_adjacent_element;
 h$webkit_dom_html_element_insert_adjacent_element = (function(self,
@@ -7280,7 +7280,7 @@ h$webkit_dom_html_element_get_item_prop = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_document_get_type = (function()
                                        {
-                                         return HTMLDocument;
+                                         return h$g_get_type(HTMLDocument);
                                        });
 var h$webkit_dom_html_document_open;
 h$webkit_dom_html_document_open = (function(self,
@@ -7466,7 +7466,7 @@ h$webkit_dom_html_document_get_vlink_color = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmld_list_element_get_type = (function()
                                             {
-                                              return HTMLDListElement;
+                                              return h$g_get_type(HTMLDListElement);
                                             });
 var h$webkit_dom_htmld_list_element_set_compact;
 h$webkit_dom_htmld_list_element_set_compact = (function(self,
@@ -7483,7 +7483,7 @@ h$webkit_dom_htmld_list_element_get_compact = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_div_element_get_type = (function()
                                           {
-                                            return HTMLDivElement;
+                                            return h$g_get_type(HTMLDivElement);
                                           });
 var h$webkit_dom_html_div_element_set_align;
 h$webkit_dom_html_div_element_set_align = (function(self,
@@ -7502,7 +7502,7 @@ h$webkit_dom_html_div_element_get_align = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_directory_element_get_type = (function()
                                                 {
-                                                  return HTMLDirectoryElement;
+                                                  return h$g_get_type(HTMLDirectoryElement);
                                                 });
 var h$webkit_dom_html_directory_element_set_compact;
 h$webkit_dom_html_directory_element_set_compact = (function(self,
@@ -7519,7 +7519,7 @@ h$webkit_dom_html_directory_element_get_compact = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_details_element_get_type = (function()
                                               {
-                                                return HTMLDetailsElement;
+                                                return h$g_get_type(HTMLDetailsElement);
                                               });
 var h$webkit_dom_html_details_element_set_open;
 h$webkit_dom_html_details_element_set_open = (function(self,
@@ -7536,7 +7536,7 @@ h$webkit_dom_html_details_element_get_open = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_collection_get_type = (function()
                                          {
-                                           return HTMLCollection;
+                                           return h$g_get_type(HTMLCollection);
                                          });
 var h$webkit_dom_html_collection_item;
 h$webkit_dom_html_collection_item = (function(self,
@@ -7554,7 +7554,7 @@ h$webkit_dom_html_collection_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_canvas_element_get_type = (function()
                                              {
-                                               return HTMLCanvasElement;
+                                               return h$g_get_type(HTMLCanvasElement);
                                              });
 var h$webkit_dom_html_canvas_element_set_width;
 h$webkit_dom_html_canvas_element_set_width = (function(self,
@@ -7583,7 +7583,7 @@ h$webkit_dom_html_canvas_element_get_height = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_button_element_get_type = (function()
                                              {
-                                               return HTMLButtonElement;
+                                               return h$g_get_type(HTMLButtonElement);
                                              });
 var h$webkit_dom_html_button_element_check_validity;
 h$webkit_dom_html_button_element_check_validity = (function(self,
@@ -7755,7 +7755,7 @@ h$webkit_dom_html_button_element_get_labels = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_htmlbr_element_get_type = (function()
                                         {
-                                          return HTMLBRElement;
+                                          return h$g_get_type(HTMLBRElement);
                                         });
 var h$webkit_dom_htmlbr_element_set_clear;
 h$webkit_dom_htmlbr_element_set_clear = (function(self,
@@ -7774,7 +7774,7 @@ h$webkit_dom_htmlbr_element_get_clear = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_body_element_get_type = (function()
                                            {
-                                             return HTMLBodyElement;
+                                             return h$g_get_type(HTMLBodyElement);
                                            });
 var h$webkit_dom_html_body_element_set_a_link;
 h$webkit_dom_html_body_element_set_a_link = (function(self,
@@ -8045,7 +8045,7 @@ h$webkit_dom_html_body_element_get_onload = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_base_font_element_get_type = (function()
                                                 {
-                                                  return HTMLBaseFontElement;
+                                                  return h$g_get_type(HTMLBaseFontElement);
                                                 });
 var h$webkit_dom_html_base_font_element_set_color;
 h$webkit_dom_html_base_font_element_set_color = (function(self,
@@ -8090,7 +8090,7 @@ h$webkit_dom_html_base_font_element_get_size = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_base_element_get_type = (function()
                                            {
-                                             return HTMLBaseElement;
+                                             return h$g_get_type(HTMLBaseElement);
                                            });
 var h$webkit_dom_html_base_element_set_href;
 h$webkit_dom_html_base_element_set_href = (function(self,
@@ -8123,7 +8123,7 @@ h$webkit_dom_html_base_element_get_target = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_area_element_get_type = (function()
                                            {
-                                             return HTMLAreaElement;
+                                             return h$g_get_type(HTMLAreaElement);
                                            });
 var h$webkit_dom_html_area_element_set_alt;
 h$webkit_dom_html_area_element_set_alt = (function(self,
@@ -8273,7 +8273,7 @@ h$webkit_dom_html_area_element_get_search = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_applet_element_get_type = (function()
                                              {
-                                               return HTMLAppletElement;
+                                               return h$g_get_type(HTMLAppletElement);
                                              });
 var h$webkit_dom_html_applet_element_set_align;
 h$webkit_dom_html_applet_element_set_align = (function(self,
@@ -8428,7 +8428,7 @@ h$webkit_dom_html_applet_element_get_width = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_html_anchor_element_get_type = (function()
                                              {
-                                               return HTMLAnchorElement;
+                                               return h$g_get_type(HTMLAnchorElement);
                                              });
 var h$webkit_dom_html_anchor_element_set_charset;
 h$webkit_dom_html_anchor_element_set_charset = (function(self,
@@ -8699,7 +8699,7 @@ h$webkit_dom_html_anchor_element_get_text = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_history_get_type = (function()
                                  {
-                                   return History;
+                                   return h$g_get_type(History);
                                  });
 var h$webkit_dom_history_get_length;
 h$webkit_dom_history_get_length = (function(self,
@@ -8710,7 +8710,7 @@ h$webkit_dom_history_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_geolocation_get_type = (function()
                                      {
-                                       return Geolocation;
+                                       return h$g_get_type(Geolocation);
                                      });
 var h$webkit_dom_geolocation_clear_watch;
 h$webkit_dom_geolocation_clear_watch = (function(self,
@@ -8721,7 +8721,7 @@ h$webkit_dom_geolocation_clear_watch = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_file_list_get_type = (function()
                                    {
-                                     return FileList;
+                                     return h$g_get_type(FileList);
                                    });
 var h$webkit_dom_file_list_item;
 h$webkit_dom_file_list_item = (function(self,
@@ -8739,7 +8739,7 @@ h$webkit_dom_file_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_file_get_type = (function()
                               {
-                                return File;
+                                return h$g_get_type(File);
                               });
 var h$webkit_dom_file_get_name;
 h$webkit_dom_file_get_name = (function(self,
@@ -8751,7 +8751,7 @@ h$webkit_dom_file_get_name = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_event_target_get_type = (function()
                                       {
-                                        return EventTarget;
+                                        return h$g_get_type(EventTarget);
                                       });
 var h$webkit_dom_event_target_dispatch_event;
 h$webkit_dom_event_target_dispatch_event = (function(self,
@@ -8762,7 +8762,7 @@ h$webkit_dom_event_target_dispatch_event = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Events
 h$webkit_dom_event_get_type = (function()
                                {
-                                 return Event;
+                                 return h$g_get_type(Event);
                                });
 var h$webkit_dom_event_stop_propagation;
 h$webkit_dom_event_stop_propagation = (function(self,
@@ -8870,12 +8870,12 @@ h$webkit_dom_event_get_cancel_bubble = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_entity_reference_get_type = (function()
                                           {
-                                            return EntityReference;
+                                            return h$g_get_type(EntityReference);
                                           });
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_element_get_type = (function()
                                  {
-                                   return Element;
+                                   return h$g_get_type(Element);
                                  });
 var h$webkit_dom_element_get_attribute;
 h$webkit_dom_element_get_attribute = (function(self,
@@ -9837,7 +9837,7 @@ h$webkit_dom_element_get_onwebkitfullscreenerror = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_window_get_type = (function()
                                     {
-                                      return Window;
+                                      return h$g_get_type(Window);
                                     });
 var h$webkit_dom_dom_window_get_selection;
 h$webkit_dom_dom_window_get_selection = (function(self,
@@ -11292,7 +11292,7 @@ h$webkit_dom_dom_window_get_onwebkitdeviceproximity = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_dom_token_list_get_type = (function()
                                         {
-                                          return DOMTokenList;
+                                          return h$g_get_type(DOMTokenList);
                                         });
 var h$webkit_dom_dom_token_list_item;
 h$webkit_dom_dom_token_list_item = (function(self,
@@ -11338,7 +11338,7 @@ h$webkit_dom_dom_token_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_dom_string_list_get_type = (function()
                                          {
-                                           return DOMStringList;
+                                           return h$g_get_type(DOMStringList);
                                          });
 var h$webkit_dom_dom_string_list_item;
 h$webkit_dom_dom_string_list_item = (function(self,
@@ -11363,7 +11363,7 @@ h$webkit_dom_dom_string_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_dom_settable_token_list_get_type = (function()
                                                  {
-                                                   return DOMSettableTokenList;
+                                                   return h$g_get_type(DOMSettableTokenList);
                                                  });
 var h$webkit_dom_dom_settable_token_list_set_value;
 h$webkit_dom_dom_settable_token_list_set_value = (function(self,
@@ -11382,7 +11382,7 @@ h$webkit_dom_dom_settable_token_list_get_value = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_selection_get_type = (function()
                                        {
-                                         return DOMSelection;
+                                         return h$g_get_type(DOMSelection);
                                        });
 var h$webkit_dom_dom_selection_collapse;
 h$webkit_dom_dom_selection_collapse = (function(self,
@@ -11552,7 +11552,7 @@ h$webkit_dom_dom_selection_get_extent_offset = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_dom_security_policy_get_type = (function()
                                              {
-                                               return DOMSecurityPolicy;
+                                               return h$g_get_type(DOMSecurityPolicy);
                                              });
 var h$webkit_dom_dom_security_policy_is_active;
 h$webkit_dom_dom_security_policy_is_active = (function(self,
@@ -11658,7 +11658,7 @@ h$webkit_dom_dom_security_policy_get_report_ur_is = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_plugin_array_get_type = (function()
                                           {
-                                            return DOMPluginArray;
+                                            return h$g_get_type(DOMPluginArray);
                                           });
 var h$webkit_dom_dom_plugin_array_item;
 h$webkit_dom_dom_plugin_array_item = (function(self,
@@ -11690,7 +11690,7 @@ h$webkit_dom_dom_plugin_array_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_plugin_get_type = (function()
                                     {
-                                      return DOMPlugin;
+                                      return h$g_get_type(DOMPlugin);
                                     });
 var h$webkit_dom_dom_plugin_item;
 h$webkit_dom_dom_plugin_item = (function(self,
@@ -11737,7 +11737,7 @@ h$webkit_dom_dom_plugin_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_mime_type_array_get_type = (function()
                                              {
-                                               return DOMMimeTypeArray;
+                                               return h$g_get_type(DOMMimeTypeArray);
                                              });
 var h$webkit_dom_dom_mime_type_array_item;
 h$webkit_dom_dom_mime_type_array_item = (function(self,
@@ -11763,7 +11763,7 @@ h$webkit_dom_dom_mime_type_array_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_dom_mime_type_get_type = (function()
                                        {
-                                         return DOMMimeType;
+                                         return h$g_get_type(DOMMimeType);
                                        });
 var h$webkit_dom_dom_mime_type_get_suffixes;
 h$webkit_dom_dom_mime_type_get_suffixes = (function(self,
@@ -11789,7 +11789,7 @@ h$webkit_dom_dom_mime_type_get_enabled_plugin = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_dom_implementation_get_type = (function()
                                             {
-                                              return DOMImplementation;
+                                              return h$g_get_type(DOMImplementation);
                                             });
 var h$webkit_dom_dom_implementation_has_feature;
 h$webkit_dom_dom_implementation_has_feature = (function(self,
@@ -11853,7 +11853,7 @@ h$webkit_dom_dom_implementation_create_html_document = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Offline
 h$webkit_dom_dom_application_cache_get_type = (function()
                                                {
-                                                 return DOMApplicationCache;
+                                                 return h$g_get_type(DOMApplicationCache);
                                                });
 var h$webkit_dom_dom_application_cache_update;
 h$webkit_dom_dom_application_cache_update = (function(self,
@@ -11992,7 +11992,7 @@ h$webkit_dom_dom_application_cache_get_onobsolete = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_document_type_get_type = (function()
                                        {
-                                         return DocumentType;
+                                         return h$g_get_type(DocumentType);
                                        });
 var h$webkit_dom_document_type_get_name;
 h$webkit_dom_document_type_get_name = (function(self,
@@ -12039,7 +12039,7 @@ h$webkit_dom_document_type_get_internal_subset = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_document_fragment_get_type = (function()
                                            {
-                                             return DocumentFragment;
+                                             return h$g_get_type(DocumentFragment);
                                            });
 var h$webkit_dom_document_fragment_query_selector;
 h$webkit_dom_document_fragment_query_selector = (function(self,
@@ -12061,7 +12061,7 @@ h$webkit_dom_document_fragment_query_selector_all = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_document_get_type = (function()
                                   {
-                                    return Document;
+                                    return h$g_get_type(Document);
                                   });
 var h$webkit_dom_document_create_element;
 h$webkit_dom_document_create_element = (function(self,
@@ -13299,7 +13299,7 @@ h$webkit_dom_document_get_security_policy = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Css
 h$webkit_dom_css_value_get_type = (function()
                                    {
-                                     return CSSValue;
+                                     return h$g_get_type(CSSValue);
                                    });
 var h$webkit_dom_css_value_set_css_text;
 h$webkit_dom_css_value_set_css_text = (function(self,
@@ -13324,7 +13324,7 @@ h$webkit_dom_css_value_get_css_value_type = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Css
 h$webkit_dom_css_style_sheet_get_type = (function()
                                          {
-                                           return CSSStyleSheet;
+                                           return h$g_get_type(CSSStyleSheet);
                                          });
 var h$webkit_dom_css_style_sheet_insert_rule;
 h$webkit_dom_css_style_sheet_insert_rule = (function(self,
@@ -13379,7 +13379,7 @@ h$webkit_dom_css_style_sheet_get_rules = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Css
 h$webkit_dom_css_style_declaration_get_type = (function()
                                                {
-                                                 return CSSStyleDeclaration;
+                                                 return h$g_get_type(CSSStyleDeclaration);
                                                });
 var h$webkit_dom_css_style_declaration_get_property_value;
 h$webkit_dom_css_style_declaration_get_property_value = (function(self,
@@ -13488,7 +13488,7 @@ h$webkit_dom_css_style_declaration_get_parent_rule = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Css
 h$webkit_dom_css_rule_list_get_type = (function()
                                        {
-                                         return CSSRuleList;
+                                         return h$g_get_type(CSSRuleList);
                                        });
 var h$webkit_dom_css_rule_list_item;
 h$webkit_dom_css_rule_list_item = (function(self,
@@ -13506,7 +13506,7 @@ h$webkit_dom_css_rule_list_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Css
 h$webkit_dom_css_rule_get_type = (function()
                                   {
-                                    return CSSRule;
+                                    return h$g_get_type(CSSRule);
                                   });
 var h$webkit_dom_css_rule_set_css_text;
 h$webkit_dom_css_rule_set_css_text = (function(self,
@@ -13539,7 +13539,7 @@ h$webkit_dom_css_rule_get_parent_rule = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_console_get_type = (function()
                                  {
-                                   return Console;
+                                   return h$g_get_type(Console);
                                  });
 var h$webkit_dom_console_time;
 h$webkit_dom_console_time = (function(self,
@@ -13564,12 +13564,12 @@ h$webkit_dom_console_get_memory = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_comment_get_type = (function()
                                  {
-                                   return Comment;
+                                   return h$g_get_type(Comment);
                                  });
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_character_data_get_type = (function()
                                         {
-                                          return CharacterData;
+                                          return h$g_get_type(CharacterData);
                                         });
 var h$webkit_dom_character_data_substring_data;
 h$webkit_dom_character_data_substring_data = (function(self,
@@ -13632,12 +13632,12 @@ h$webkit_dom_character_data_get_length = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_cdata_section_get_type = (function()
                                        {
-                                         return CDATASection;
+                                         return h$g_get_type(CDATASection);
                                        });
 // Graphics.UI.Gtk.WebKit.DOM.Html
 h$webkit_dom_blob_get_type = (function()
                               {
-                                return Blob;
+                                return h$g_get_type(Blob);
                               });
 var h$webkit_dom_blob_get_size;
 h$webkit_dom_blob_get_size = (function(self,
@@ -13648,7 +13648,7 @@ h$webkit_dom_blob_get_size = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Window
 h$webkit_dom_bar_info_get_type = (function()
                                   {
-                                    return BarInfo;
+                                    return h$g_get_type(BarInfo);
                                   });
 var h$webkit_dom_bar_info_get_visible;
 h$webkit_dom_bar_info_get_visible = (function(self,
@@ -13659,7 +13659,7 @@ h$webkit_dom_bar_info_get_visible = (function(self,
 // Graphics.UI.Gtk.WebKit.DOM.Core
 h$webkit_dom_attr_get_type = (function()
                               {
-                                return Attr;
+                                return h$g_get_type(Attr);
                               });
 var h$webkit_dom_attr_get_name;
 h$webkit_dom_attr_get_name = (function(self,
