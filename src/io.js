@@ -89,6 +89,7 @@ function h$initStdioBufs() {
       if(typeof console !== 'undefined' && console && console.log) {
         console.log(h$decodeUtf8(buf, n, buf_offset));
       }
+      return n;
     }
     h$stdoutBuf.write = writeConsole;
     h$stderrBuf.write = writeConsole;
