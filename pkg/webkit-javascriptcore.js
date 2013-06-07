@@ -47,9 +47,11 @@ function h$JSObjectMakeFunctionWithCallback(ctx, ctx_2, name, name_2, callback, 
         var ex = h$malloc(4);
         ex.arr = [[null,0]];
         h$runSync(h$c3(h$ap2_e,
-            h$c4(h$pap_4,
+            h$c6(h$pap_4,
                 callback.arr[callback_2],
-                h$mkFunctionPtr(f),
+                2,
+                h$mkPtr(ctx, ctx_2),
+                h$mkPtr(f, 0),
                 h$mkPtr(this, 0),
                 arguments.length),
             h$mkPtr(argv,0),
@@ -103,7 +105,11 @@ function h$JSObjectCallAsConstructor(ctx, ctx_2, f, f_2, argc, argv, argv_2, pex
 };
 function h$JSObjectMakeArray(ctx, ctx_2, l, p, p_2, pexception, pexception_2) {
     try {
-        return p.arr[p_2].slice(0, l);
+        var a = [];
+        for(var i = 0; i != l; i++) {
+            a[i] = p.arr[p_2+(i<<2)][0];
+        }
+        return a;
     }
     catch(e) {
         pexception.arr[pexception_2] = [e, 0];
