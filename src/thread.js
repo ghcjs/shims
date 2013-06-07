@@ -35,7 +35,7 @@ function h$Thread() {
   this.status = h$threadRunning;
   this.stack = [h$done, 0, h$baseZCGHCziConcziSynczireportError, h$catch_e];
   this.sp = 3;
-  this.mask = 0;         // async exceptions masked (0 unmask, 1: uninterruptible, 2: interruptible)
+  this.mask = 0;         // async exceptions masked (0 unmasked, 1: uninterruptible, 2: interruptible)
   this.interruptible = false; // currently in an interruptible operation
   this.excep = [];       // async exceptions waiting for unmask of this thread
   this.delayed = false;  // waiting for threadDelay
@@ -568,6 +568,7 @@ function h$run(a) {
 
 // cont :: bool, continue thread asynchronously after h$runSync returns
 function h$runSync(a, cont) {
+  h$run_init_static();
   var c = h$return;
   var t = new h$Thread();
   var ct = h$currentThread;
@@ -584,41 +585,51 @@ function h$runSync(a, cont) {
   h$sp = t.sp;
   try {
     while(true) {
+      h$logSched("h$runSync: entering main loop");
       while(c !== h$reschedule) {
+//        h$logCall(c);
+//        h$logStack();
         c = c();
         c = c();
         c = c();
         c = c();
         c = c();
       }
+      h$logSched("h$runSync: main loop exited");
       if(t.status === h$threadFinished) {
+        h$logSched("h$runSync: thread finished");
         break;
+      } else {
+        h$logSched("h$runSync: thread NOT finished");
       }
       var b = t.blockedOn;
       if(typeof b === 'object' && b && b.f && b.f.t === h$BLACKHOLE_CLOSURE) {
         var bhThread = b.d1;
         if(bhThread === ct || bhThread === t) { // hit a blackhole from running thread or ourselves
+          h$logSched("h$runSync: NonTermination");
           c = h$throw(h$baseZCControlziExceptionziBasezinonTermination, false);
         } else { // blackhole from other thread, steal it if thread is running
           // switch to that thread
           if(h$runBlackholeThreadSync(b)) {
-            h$logSched("blackhole succesfully removed");
+            h$logSched("h$runSync: blackhole succesfully removed");
             c = h$stack[h$sp];
           } else {
-            h$logSched("blackhole not removed, failing");
+            h$logSched("h$runSync: blackhole not removed, failing");
             throw b;
           }
         }
       } else {
-        h$logSched("blocked on something other than a blackhole");
+        h$logSched("h$runSync: blocked on something other than a blackhole");
         throw b;
       }
     }
   } catch(e) { excep = e; }
-  h$currentThread = ct;
-  h$stack = ct.stack;
-  h$sp = csp;
-  h$r1 = cr1;
+  if(ct !== null) {
+    h$currentThread = ct;
+    h$stack = ct.stack;
+    h$sp = csp;
+    h$r1 = cr1;
+  }
   if(t.status !== h$threadFinished && !cont) {
     h$removeThreadBlock(t);
     h$finishThread(t);
@@ -630,7 +641,7 @@ function h$runSync(a, cont) {
   if(t.status !== h$threadFinished) {
     throw t.blockedOn;
   }
-  h$logSched("finishing sync");
+  h$logSched("h$runSync: finishing");
   return true;
 }
 
@@ -823,8 +834,10 @@ function h$tryPutMVar(mv,val) {
 function h$writeMVarJs1(mv,val) {
   var v = h$c1(h$data1_e, val);
   if(mv.val !== null) {
+    h$logSched("h$writeMVarJs1: was full");
     mv.writers.enqueue([null,v]);
   } else {
+    h$logSched("h$writeMVarJs1: was empty");
     h$notifyMVarFull(mv,v);
   }
 }
@@ -832,8 +845,10 @@ function h$writeMVarJs1(mv,val) {
 function h$writeMVarJs2(mv,val1,val2) {
   var v = h$c2(h$data1_e, val1, val2);
   if(mv.val !== null) {
+    h$logSched("h$writeMVarJs2: was full");
     mv.writers.enqueue([null,v]);
   } else {
+    h$logSched("h$writeMVarJs2: was empty");
     h$notifyMVarFull(mv,v);
   }
 }
