@@ -78,8 +78,8 @@ function h$baseZCSystemziCPUTimeZCgetrusage() {
 
 function h$gettimeofday(tv_v,tv_o,tz_v,tz_o) {
   var now = Date.now();
-  tv_v.setUint32(tv_o,     now / 1000);
-  tv_v.setUint32(tv_o + 4, (now % 1000) * 1000);
+  tv_v.dv.setInt32(tv_o,     (now / 1000)|0);
+  tv_v.dv.setInt32(tv_o + 4, ((now % 1000) * 1000)|0);
   return 0;
 }
 
