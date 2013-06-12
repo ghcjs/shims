@@ -113,11 +113,12 @@ function h$localeEncoding() {
 }
 
 function h$rawStringData(str) {
-    var v = new DataView(new ArrayBuffer(str.length+1));
+    var v = h$newByteArray(str.length+1);
+    var u8 = v.u8;
     for(var i=0;i<str.length;i++) {
-       v.setUint8(i, str[i]);
+       u8[i] = str[i];
     }
-    v.setUint8(str.length, 0);
+    u8[str.length] = 0;
     return v;
 }
 
