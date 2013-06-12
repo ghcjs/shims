@@ -147,7 +147,8 @@ function h$encodeUtf8(str) {
       n+=6;
     }
   }
-  var v = new DataView(new ArrayBuffer(n+1));
+  var v = h$newByteArray(n+1);
+  var u8 = v.u8;
   n = 0;
   for(i=0;i<str.length;i++) {
     var c = str.charCodeAt(i);
@@ -159,41 +160,41 @@ function h$encodeUtf8(str) {
     }
 //    log("### encoding char " + c + " to UTF-8: " + String.fromCodePoint(c));
     if(c <= 0x7F) {
-      v.setUint8(n, c);
+      u8[n] = c;
       n++;
     } else if(c <= 0x7FF) {
-      v.setUint8(n, (c >> 6) | 0xC0);
-      v.setUint8(n+1, (c & 0x3F) | 0x80);
+      u8[n] = (c >> 6) | 0xC0;
+      u8[n+1] = (c & 0x3F) | 0x80;
       n+=2;
     } else if(c <= 0xFFFF) {
-      v.setUint8(n,   (c >> 12) | 0xE0);
-      v.setUint8(n+1, ((c >> 6) & 0x3F) | 0x80);
-      v.setUint8(n+2, (c & 0x3F) | 0x80);
+      u8[n]   = (c >> 12) | 0xE0;
+      u8[n+1] = ((c >> 6) & 0x3F) | 0x80;
+      u8[n+2] = (c & 0x3F) | 0x80;
       n+=3;
     } else if(c <= 0x1FFFFF) {
-      v.setUint8(n,   (c >> 18) | 0xF0);
-      v.setUint8(n+1, ((c >> 12) & 0x3F) | 0x80);
-      v.setUint8(n+2, ((c >> 6) & 0x3F) | 0x80);
-      v.setUint8(n+3, (c & 0x3F) | 0x80);
+      u8[n]   = (c >> 18) | 0xF0;
+      u8[n+1] = ((c >> 12) & 0x3F) | 0x80;
+      u8[n+2] = ((c >> 6) & 0x3F) | 0x80;
+      u8[n+3] = (c & 0x3F) | 0x80;
       n+=4;
     } else if(c <= 0x3FFFFFF) {
-      v.setUint8(n,   (c >> 24) | 0xF8);
-      v.setUint8(n+1, ((c >> 18) & 0x3F) | 0x80);
-      v.setUint8(n+2, ((c >> 12) & 0x3F) | 0x80);
-      v.setUint8(n+3, ((c >> 6) & 0x3F) | 0x80);
-      v.setUint8(n+4, (c & 0x3F) | 0x80);
+      u8[n]   = (c >> 24) | 0xF8;
+      u8[n+1] = ((c >> 18) & 0x3F) | 0x80;
+      u8[n+2] = ((c >> 12) & 0x3F) | 0x80;
+      u8[n+3] = ((c >> 6) & 0x3F) | 0x80;
+      u8[n+4] = (c & 0x3F) | 0x80;
       n+=5;
     } else {
-      v.setUint8(n,   (c >>> 30) | 0xFC);
-      v.setUint8(n+1, ((c >> 24) & 0x3F) | 0x80);
-      v.setUint8(n+2, ((c >> 18) & 0x3F) | 0x80);
-      v.setUint8(n+3, ((c >> 12) & 0x3F) | 0x80);
-      v.setUint8(n+4, ((c >> 6) & 0x3F) | 0x80);
-      v.setUint8(n+5, (c & 0x3F) | 0x80);
+      u8[n]   = (c >>> 30) | 0xFC;
+      u8[n+1] = ((c >> 24) & 0x3F) | 0x80;
+      u8[n+2] = ((c >> 18) & 0x3F) | 0x80;
+      u8[n+3] = ((c >> 12) & 0x3F) | 0x80;
+      u8[n+4] = ((c >> 6) & 0x3F) | 0x80;
+      u8[n+5] = (c & 0x3F) | 0x80;
       n+=6;
     }
   }
-  v.setUint8(v.byteLength-1,0); // terminator
+  u8[v.len-1] = 0; // terminator
 //  log("### encodeUtf8: " + str);
 //  log(v);
   return v;
@@ -211,31 +212,33 @@ function h$encodeUtf16(str) {
       n += 4;
     }
   }
-  var v = new DataView(new ArrayBuffer(n+1));
+  var v = h$newByteArray(n+1);
+  var dv = v.dv;
   n = 0;
   for(i=0;i<str.length;i++) {
     var c = str.charCodeAt(i);
     if(c <= 0xFFFF) {
-      v.setUint16(n, c);
+      dv.setUint16(n, c, true);
       n+=2;
     } else {
       var c0 = c - 0x10000;
-      v.setUint16(n,   c0 >> 10);
-      v.setUint16(n+2, c0 & 0x3FF);
+      dv.setUint16(n,   c0 >> 10, true);
+      dv.setUint16(n+2, c0 & 0x3FF, true);
       n+=4;
     }
   }
-  v.setUint8(v.byteLength-1,0);  // terminator
+  dv.setUint8(v.len-1,0);  // terminator
   return v;
 }
 
 // convert a string to a DataView buffer, set second field in
 // Addr# to length
 function h$fromStr(s) {
-  var b = new DataView(new ArrayBuffer(s.length * 2));
   var l = s.length;
+  var b = h$newByteArray(l * 2);
+  var dv = b.dv;
   for(var i=l-1;i>=0;i--) {
-    b.setUint16(i<<1, s.charCodeAt(i));
+    dv.setUint16(i<<1, s.charCodeAt(i), true);
   }
   h$ret1 = l;
   return b;
@@ -247,8 +250,9 @@ function h$toStr(b,o,l) {
   var a = [];
   var end = 2*(o+l);
   var k = 0;
+  var dv = b.dv;
   for(var i=2*o;i<end;i+=2) {
-    var cc = b.getUint16(i);
+    var cc = dv.getUint16(i,true);
     a[k++] = cc;
   }
   return String.fromCharCode.apply(this, a);
@@ -285,7 +289,7 @@ function h$decodeUtf16l(v, byteLen, start) {
   // perhaps we can apply it with an Uint16Array view, but that might give us endianness problems
   var a = [];
   for(var i=0;i<byteLen;i+=2) {
-    a[i>>1] = v.getUint16(i+start);
+    a[i>>1] = v.dv.getUint16(i+start,true);
   }
   return String.fromCharCode.apply(this, a);
 }
@@ -294,10 +298,12 @@ var h$dU16 = h$decodeUtf16;
 // decode a DataView with UTF-8 chars to a JS string
 // stop at the first zero
 function h$decodeUtf8z(v,start) {
+//  log("h$decodeUtf8z");
   var n = start;
-  var max = v.byteLength;
+  var max = v.len;
   while(n < max) {
-    if(v.getUint8(n) === 0) { break; }
+//    log("### " + n + " got char: " + v.u8[n]);
+    if(v.u8[n] === 0) { break; }
     n++;
   }
   return h$decodeUtf8(v,n,start);
@@ -308,15 +314,16 @@ function h$decodeUtf8z(v,start) {
 function h$decodeUtf8(v,n0,start) {
 //  log("### decodeUtf8");
 //  log(v);
-  var n = n0 || v.byteLength;
+  var n = n0 || v.len;
   var arr = [];
   var i = start || 0;
   var code;
+  var u8 = v.u8;
 //  log("### decoding, starting at:  " + i);
   while(i < n) {
-    var c = v.getUint8(i);
+    var c = u8[i];
     while((c & 0xC0) === 0x80) {
-      c = v.getUint8(++i);
+      c = u8[++i];
     }
 //    log("### lead char: " + c);
     if((c & 0x80) === 0) {
@@ -324,41 +331,41 @@ function h$decodeUtf8(v,n0,start) {
       i++;
     } else if((c & 0xE0) === 0xC0) {
       code = ( ((c & 0x1F) << 6)
-             | (v.getUint8(i+1) & 0x3F)
+             | (u8[i+1] & 0x3F)
              );
       i+=2;
     } else if((c & 0xF0) === 0xE0) {
       code = ( ((c & 0x0F) << 12)
-             | ((v.getUint8(i+1) & 0x3F) << 6)
-             | (v.getUint8(i+2) & 0x3F)
+             | ((u8[i+1] & 0x3F) << 6)
+             | (u8[i+2] & 0x3F)
              );
       i+=3;
     } else if ((c & 0xF8) === 0xF0) {
       code = ( ((c & 0x07) << 18)
-             | ((v.getUint8(i+1) & 0x3F) << 12)
-             | ((v.getUint8(i+2) & 0x3F) <<  6)
-             | (v.getUint8(i+3) & 0x3F)
+             | ((u8[i+1] & 0x3F) << 12)
+             | ((u8[i+2] & 0x3F) <<  6)
+             | (u8[i+3] & 0x3F)
              );
       i+=4;
     } else if((c & 0xFC) === 0xF8) {
       code = ( ((c & 0x03) << 24)
-             | ((v.getUint8(i+1) & 0x3F) << 18)
-             | ((v.getUint8(i+2) & 0x3F) << 12)
-             | ((v.getUint8(i+3) & 0x3F) <<  6)
-             | (v.getUint8(i+4) & 0x3F)
+             | ((u8[i+1] & 0x3F) << 18)
+             | ((u8[i+2] & 0x3F) << 12)
+             | ((u8[i+3] & 0x3F) <<  6)
+             | (u8[i+4] & 0x3F)
              );
       i+=5;
     } else {
       code = ( ((c & 0x01) << 30)
-             | ((v.getUint8(i+1) & 0x3F) << 24)
-             | ((v.getUint8(i+2) & 0x3F) << 18)
-             | ((v.getUint8(i+3) & 0x3F) << 12)
-             | ((v.getUint8(i+4) & 0x3F) <<  6)
-             | (v.getUint8(i+5) & 0x3F)
+             | ((u8[i+1] & 0x3F) << 24)
+             | ((u8[i+2] & 0x3F) << 18)
+             | ((u8[i+3] & 0x3F) << 12)
+             | ((u8[i+4] & 0x3F) <<  6)
+             | (u8[i+5] & 0x3F)
              );
       i+=6;
     }
-//    log("### decoded codePoint: " + code + " - " + String.fromCodePoint(code));
+    // log("### decoded codePoint: " + code + " - " + String.fromCharCode(code)); // String.fromCodePoint(code));
     // need to deal with surrogate pairs
     if(code > 0xFFFF) {
       var offset = code - 0x10000;
@@ -372,10 +379,11 @@ function h$decodeUtf8(v,n0,start) {
 
 // fixme what if terminator, then we read past end
 function h$decodeUtf16(v) {
-  var n = v.byteLength;
+  var n = v.len;
   var arr = [];
+  var dv = v.dv;
   for(var i=0;i<n;i+=2) {
-    arr.push(v.getUint16(i));
+    arr.push(dv.getUint16(i,true));
   }
   return String.fromCharCode.apply(this, arr);
 }
@@ -424,7 +432,7 @@ function h$readPtrPtrU32(ptr, ptr_off, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off + 4 * x];
-  return arr[0].getUint32(arr[1] + 4 * y);
+  return arr[0].dv.getInt32(arr[1] + 4 * y, true);
 }
 
 // char** -> char   ptr[x][y]
@@ -432,15 +440,15 @@ function h$readPtrPtrU8(ptr, ptr_off, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off + 4 * x];
-  return arr[0].getUint8(arr[1] + y);
+  return arr[0].dv.getUint8(arr[1] + y);
 }
 
 // word**   ptr[x][y] = v
 function h$writePtrPtrU32(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
-  var arr = ptr.arr[ptr_off+ 4 * x];
-  arr[0].putUint8(arr[1] + y, v);
+  var arr = ptr.arr[ptr_off + 4 * x];
+  arr[0].dv.putInt32(arr[1] + y, v);
 }
 
 // unsigned char** ptr[x][y] = v
@@ -448,7 +456,7 @@ function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off+ 4 * x];
-  arr[0].putUint8(arr[1] + y, v);
+  arr[0].dv.putUint8(arr[1] + y, v);
 }
 
 // function encodeSame(inbuf, inbuf_off, insize, insize_off
@@ -457,6 +465,7 @@ function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
  * since utf8 is the most used interchange format and utf32
  * is used by haskell internally, utf16 for the Text package
  */
+/* outdated, need to update to little endian if used again
 function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
                        outbuf0, outbuf_off0, outsize, outsize_off) {
 
@@ -561,6 +570,6 @@ function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
     return 0;
   }
 }
-
+*/
 
 

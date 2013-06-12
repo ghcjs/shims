@@ -23,6 +23,7 @@ js:
   - lib/closure-library/closure/goog/structs/set.js
   - lib/jsbn/jsbn.js
   - lib/jsbn/jsbn2.js
+  - src/mem.js
   - src/gc.js
   - src/errno.js
   - src/md5.js

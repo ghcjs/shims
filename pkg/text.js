@@ -55,10 +55,12 @@ function h$_hs_text_decode_utf8( dest_v
                                , src_v, src_o
                                , src_end_v, src_end_o
                                ) {
-  var dsto = destoff_v.getUint32(destoff_o);
+  var dsto = destoff_v.dv.getUint32(destoff_o,true);
   var srco = src_o;
   var state = h$_text_UTF8_ACCEPT;
   var codepoint;
+  var ddv = dst_v.dv;
+  var sdv = src_v.dv;
 
   function decode(byte) {
     var type = h$_text_utf8d[byte];
@@ -69,7 +71,7 @@ function h$_hs_text_decode_utf8( dest_v
     return state;
   }
   while (srco < src_end_o) {
-    if(decode(src_v.getUint8(srco++)) !== h$_text_UTF8_ACCEPT) {
+    if(decode(sdv.getUint8(srco++)) !== h$_text_UTF8_ACCEPT) {
       if(state !== h$_text_UTF8_REJECT) {
         continue;
       } else {
@@ -77,11 +79,11 @@ function h$_hs_text_decode_utf8( dest_v
       }
     }
     if (codepoint <= 0xffff) {
-      dest_v.setUint16(dsto,codepoint);
+      ddv.setUint16(dsto,codepoint,true);
       dsto += 2;
     } else {
-      dest_v.setUint16(dsto,(0xD7C0 + (codepoint >> 10)));
-      dest_v.setUint16(dsto+2,(0xDC00 + (codepoint & 0x3FF)));
+      ddv.setUint16(dsto,(0xD7C0 + (codepoint >> 10)),true);
+      ddv.setUint16(dsto+2,(0xDC00 + (codepoint & 0x3FF)),true);
       dsto += 4;
     }
   }
@@ -90,7 +92,7 @@ function h$_hs_text_decode_utf8( dest_v
   if (state != h$_text_UTF8_ACCEPT)
     srco -= 1;
 
-  destoff_v.setUint32(destoff_o,dsto>>1);
+  destoff_v.dv.setUint32(destoff_o,dsto>>1,true);
   h$ret1 = srco;
   return src_v;
 }

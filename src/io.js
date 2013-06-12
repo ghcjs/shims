@@ -36,15 +36,16 @@ function h$initStdioBufs() {
         var h = fd.buf.chunks.peek();
         var o = fd.buf.chunkOff;
         var left = h.length - o;
+        var u8 = buf.u8;
         if(left < n) {
           for(var i=0;i<n;i++) {
-            buf.setUint8(buf_offset+i,h[o+i]);
+            u8[buf_offset+i] = h[o+i];
           }
           fd.buf.chunkOff += n;
           return n;
         } else {
           for(var i=0;i<left;i++) {
-            buf.setUint8(buf_offset+i,h[o+i]);
+            u8[buf_offset+i] = h[o+i];
           }
           fd.buf.chunkOff = 0;
           fd.buf.chunks.dequeue();
@@ -267,7 +268,7 @@ function h$__hscore_st_dev() { return 0; }
 function h$__hscore_st_ino() { return 0; }
 function h$__hscore_st_size(st,off) {
     // return 64 bit
-    h$ret1 = st.getUint32(off);
+    h$ret1 = st.dv.getInt32(off, true);
     return 0;
 }
 
@@ -373,7 +374,7 @@ function h$readFile(fd, buf, buf_offset, n) {
   var pos = fd.pos;
   n = Math.min(n, fd.buf.len - pos);
   for(var i=0;i<n;i++) {
-    buf.setUint8(buf_offset+i, fbuf.getUint8(pos+i));
+    buf.u8[buf_offset+i] = fbuf.u8[pos+i];
   }
   fd.pos += n;
 //  log("h$readFile read: " + n);
@@ -383,18 +384,22 @@ function h$readFile(fd, buf, buf_offset, n) {
 // write file just in memory
 function h$writeFile(fd, buf, buf_offset, n) {
 //  log("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
-  if(fd.pos + n >= fd.buf.data.byteLength) {
+  if(fd.pos + n >= fd.buf.data.len) {
     var od = fd.buf.data;
-    var d = new DataView(new ArrayBuffer(Math.round(1.3*od.byteLength)+100));
-    for(var i=0;i<od.byteLength;i++) {
-      d.setUint8(i, od.getUint8(i));
+    var d = h$newByteArray(Math.round(1.3*od.len)+100);
+    var u8 = d.u8;
+    var u8od = od.u8;
+    for(var i=0;i<od.len;i++) {
+      u8[i] = u8od[i];
     }
     fd.buf.data = d;
   }
   var offset = buf_offset + fd.pos;
   var bd = fd.buf.data;
+  var u8 = bd.u8;
+  var u8buf = buf.u8;
   for(var i=0;i<n;i++) {
-    bd.setUint8(offset+i,buf.getUint8(buf_offset+i));
+    u8[offset+i] = u8buf[buf_offset+i];
   }
   fd.pos += n;
   fd.buf.len = Math.max(fd.buf.len, fd.pos);
