@@ -459,7 +459,8 @@ function h$scheduler(next) {
 // untility function: yield h$run to browser to do layout or
 // other JavaScript
 var h$yieldRun;
-if(typeof window !== 'undefined' && window.postMessage) {
+// disable postMessage for now, messages sometimes do not arrive, killing our runtime
+if(false) { // typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
   var handler = function(ev) {
     if(ev.data === "h$mainLoop") { h$mainLoop(); }
@@ -925,6 +926,7 @@ function h$mkForeignCallback(x) {
 // event listeners through MVar
 function h$makeMVarListener(mv, stopProp, stopImmProp, preventDefault) {
   return function(event) {
+    h$logSched("MVar listener callback");
     h$writeMVarJs1(mv,event);
     if(stopProp) { event.stopPropagation(); }
     if(stopImmProp) { event.stopImmediatePropagation(); }
