@@ -59,7 +59,7 @@ function h$_hs_text_decode_utf8( dest_v
   var srco = src_o;
   var state = h$_text_UTF8_ACCEPT;
   var codepoint;
-  var ddv = dst_v.dv;
+  var ddv = dest_v.dv;
   var sdv = src_v.dv;
 
   function decode(byte) {
