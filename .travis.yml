@@ -37,7 +37,8 @@ install:
     - cd $HOME/.ghcjs/x86*
     - ln -s $REPOSITORY_DIR shims
     - ghcjs-pkg list
-    - cd $REPOSITORY_DIR
+    - cd
+    - cd ghcjs
 
 script:
     - TestRunner -j 2 -t ghc -t conc -t integer -t ffi
