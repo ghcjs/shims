@@ -209,20 +209,23 @@ function h$getObjectHash(o) {
 
 function h$makeStableName(x) {
   if(typeof x === 'object') {
+    log("making object StableName");
     return [x,x.f];
   } else {
+    log("making non-object StableName");
     return [x,null];
   }
 }
 
 function h$stableNameInt(s) {
+  log("h$stableNameInt: " + (typeof s[0]));
   var s0 = s[0];
   if(typeof s0 === 'boolean') { return s0?1:0; }
   if(typeof s0 === 'number') { return s0|0; } // fixme this won't work well with small floats 
   var hash = 23;
-  hash = (hash * 37 + h$getObjectKey(s.f))|0;
-  hash = (hash * 37 + h$getObjectHash(s.d1))|0;
-  hash = (hash * 37 + h$getObjectHash(s.d2))|0;
+  hash = (hash * 37 + h$getObjectKey(s0))|0;
+  hash = (hash * 37 + h$getObjectHash(s0.d1))|0;
+  hash = (hash * 37 + h$getObjectHash(s0.d2))|0;
   return hash;
 }
 
@@ -313,6 +316,24 @@ function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
     h$ret1 = hptr_2;
     return hptr;
 };
+
+// extra roots for the heap scanner: objects with root property
+var h$extraRoots = new goog.structs.Set();
+
+function h$makeCallback(f, extraArgs, action) {
+  args = extraArgs.slice(0);
+  args.unshift(action);
+  var c = function() {
+    f.apply(this, args);
+  }
+  c.root = action;
+  h$extraRoots.add(c);
+  return c;
+}
+
+function h$freeCallback(c) {
+  h$extraRoots.remove(c);
+}
 
 function h$isInstanceOf(o,c) {
   return o instanceof c;

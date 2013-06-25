@@ -61,6 +61,7 @@ function h$gcQuick(t) {
 // run full marking for threads in h$blocked and h$threads, optionally t if t /= null
 var h$marked = 0;
 function h$gc(t) {
+//  return; // fixme debug
   h$marked = 0;
   var now = Date.now();
 //  if(now - h$lastGc < 1000) {
@@ -220,7 +221,7 @@ function h$follow(stack, sp, work, weaks, ignore) {
         doMark = true;
         for(var i=0;i<c.length;i++) {
           var x = c[i];
-          if(x.m === undefined || (x.m&3) !== mark) {
+          if(x && typeof x === 'object' && (x.m === undefined || (x.m&3) !== mark)) {
             work.push(x);
           }
         }

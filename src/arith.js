@@ -456,4 +456,3 @@ function h$popCnt64(x1,x2) {
           h$popCntTab[(x2>>>24)&0xFF];
 }
 
-
