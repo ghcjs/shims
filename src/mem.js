@@ -209,10 +209,8 @@ function h$getObjectHash(o) {
 
 function h$makeStableName(x) {
   if(typeof x === 'object') {
-    log("making object StableName");
     return [x,x.f];
   } else {
-    log("making non-object StableName");
     return [x,null];
   }
 }
