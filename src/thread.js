@@ -563,9 +563,10 @@ function h$run(a) {
 }
 
 // try to run the supplied IO action synchronously, running the
-// thread to completion
-// throws an exception if the action wants to do some async
-// thing like blocking on an MVar or threadDelay
+// thread to completion, unless it blocks,
+// for example by taking an MVar or threadDelay
+
+// returns the thing the thread blocked on, null if the thread ran to completion
 
 // cont :: bool, continue thread asynchronously after h$runSync returns
 function h$runSync(a, cont) {
@@ -581,6 +582,7 @@ function h$runSync(a, cont) {
   t.sp = 6;
   t.status = h$threadRunning;
   var excep = null;
+  var blockedOn = null;
   h$currentThread = t;
   h$stack = t.stack;
   h$sp = t.sp;
@@ -616,12 +618,14 @@ function h$runSync(a, cont) {
             c = h$stack[h$sp];
           } else {
             h$logSched("h$runSync: blackhole not removed, failing");
-            throw b;
+            blockedOn = b;
+            throw false;
           }
         }
       } else {
         h$logSched("h$runSync: blocked on something other than a blackhole");
-        throw b;
+        blockedOn = b;
+        throw false;
       }
     }
   } catch(e) { excep = e; }
@@ -636,14 +640,10 @@ function h$runSync(a, cont) {
     h$finishThread(t);
   }
   if(excep) {
-    log(h$collectProps(excep));
     throw excep;
   }
-  if(t.status !== h$threadFinished) {
-    throw t.blockedOn;
-  }
+  return blockedOn;
   h$logSched("h$runSync: finishing");
-  return true;
 }
 
 // run other threads synchronously until the blackhole is 'freed'

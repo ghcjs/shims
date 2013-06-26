@@ -319,7 +319,7 @@ function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
 var h$extraRoots = new goog.structs.Set();
 
 function h$makeCallback(f, extraArgs, action) {
-  args = extraArgs.slice(0);
+  var args = extraArgs.slice(0);
   args.unshift(action);
   var c = function() {
     f.apply(this, args);
