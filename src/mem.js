@@ -9,6 +9,79 @@ function h$sti(f) {
   });
 }
 
+// initialize packed info tables
+// see Compactor for how the data is encoded
+function h$initInfoTables(n, funcs, info) {
+  var pos = 0;
+  function code(c) {
+    if(c < 34) return c - 32;
+    if(c < 92) return c - 33;
+    return c -34;
+  }
+  function next() {
+    var c = info.charCodeAt(pos);
+    if(c < 124) {
+      pos++;
+      return code(c);
+    }
+    if(c === 124) {
+      pos+=3;
+      return 90 + 90 * code(info.charCodeAt(pos-2))
+                + code(info.charCodeAt(pos-1));
+    }
+    if(c === 125) {
+      pos+=3;
+      return 8190 + 8100 * code(info.charCodeAt(pos-3)) 
+                  + 90 * code(info.charCodeAt(pos-2))
+                  + code(info.charCodeAt(pos-1));
+    }
+    throw "h$initInfoTables: invalid code in info table"
+  }
+  for(var i=0;i<n;i++) {
+    var o = funcs[i];
+    var ot, oa;
+    switch(next()) {
+      case 0: // thunk
+        ot = 0;
+        oa = 0;
+        break;
+      case 1: // fun
+        var arity = next();
+        var regs  = next();
+        ot = 1
+        oa = arity + (regs << 8);
+        break;
+      case 2:  // con
+        var tag = next();
+        ot = 2;
+        oa = tag;
+        break;
+      default: throw ("h$initInfoTables: invalid closure type: " + 3)
+    }
+    var size = next();
+    size = size === 0 ? -1 : size - 1;
+    var nsrts = next();
+    var srt = null;
+    if(nsrts > 0) {
+      srt = [];
+      for(var j=0;j<nsrts;j++) {
+        srt.push(funcs[next()]);
+      }
+    }
+    // log("result: " + ot + " " + oa + " [" + srt + "] " + size);
+    // log("orig: " + o.t + " " + o.a + " [" + o.s + "] " + o.gtag);
+    o.t    = ot;
+    o.i    = [];
+    o.n    = "";
+    o.a    = oa;
+    o.gai  = [];
+    o.s    = srt;
+    o.m    = null;
+    o.gtag = size;
+    o.gi   = [];
+  }
+}
+
 // slice an array of heap objects
 var h$sliceArray = /* ArrayBuffer.prototype.slice ?
   function(a, start, n) {
