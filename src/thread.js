@@ -905,8 +905,8 @@ function h$makeResumable(bh,start,end,extra) {
   //  bh.d2 = ++h$debugResumableId;
 }
 
-var h$enabled_capabilities = new DataView(new ArrayBuffer(4));
-h$enabled_capabilities.setUint32(0,1);
+var h$enabled_capabilities = h$newByteArray(4);
+h$enabled_capabilities.i3[0] = 1;
 
 function h$rtsSupportsBoundThreads() {
   return 0;

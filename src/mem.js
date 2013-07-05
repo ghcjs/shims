@@ -1,5 +1,14 @@
 // memory management and pointer emulation
 
+// static initialize
+function h$sti(f) {
+  h$initStatic.push(function() {
+    var xs = f();
+    var to = xs.shift();
+    h$init_closure(to, xs);
+  });
+}
+
 // slice an array of heap objects
 var h$sliceArray = /* ArrayBuffer.prototype.slice ?
   function(a, start, n) {
