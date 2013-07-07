@@ -400,15 +400,47 @@ function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
 // extra roots for the heap scanner: objects with root property
 var h$extraRoots = new goog.structs.Set();
 
-function h$makeCallback(f, extraArgs, action) {
+function h$makeCallback(retain, f, extraArgs, action) {
   var args = extraArgs.slice(0);
   args.unshift(action);
   var c = function() {
-    f.apply(this, args);
+    return f.apply(this, args);
   }
-  c.root = action;
-  h$extraRoots.add(c);
+  if(retain) {
+    c.root = action;
+    h$extraRoots.add(c);
+  }
   return c;
+}
+
+function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
+  var c;
+  if(n === 1) {
+    c = function(x) {
+      var args = extraArgs.slice(0);
+      var action = h$c2(h$ap1_e, fun, h$mkJSRef(x));
+      args.unshift(action);
+      return f.apply(this, args);
+    }
+  } else if (n === 2) {
+    c = function(x,y) {
+      var args = extraArgs.slice(0);
+      var action = h$c3(h$ap2_e, fun, h$mkJSRef(x), h$mkJSRef(y));
+      args.unshift(action);
+      return f.apply(this, args);
+    }
+  } else {
+    throw "h$makeCallbackApply: unsupported arity";
+  }
+  if(retain) {
+    c.root = action;
+    h$extraRoots.add(c);
+  }
+  return c;
+}
+
+function h$mkJSRef(x) {
+  return h$c1(h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e, x);
 }
 
 function h$freeCallback(c) {
