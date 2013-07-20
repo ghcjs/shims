@@ -30,7 +30,7 @@ function h$initInfoTables(n, funcs, info) {
                 + code(info.charCodeAt(pos-1));
     }
     if(c === 125) {
-      pos+=3;
+      pos+=4;
       return 8190 + 8100 * code(info.charCodeAt(pos-3)) 
                   + 90 * code(info.charCodeAt(pos-2))
                   + code(info.charCodeAt(pos-1));
