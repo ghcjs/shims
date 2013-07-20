@@ -196,7 +196,7 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         d = d.subtract(h$bigOne);
-        m = m.add(b);
+        m = m.add(bbits);
     }
     h$ret1 = d;
     h$ret2 = 0;
