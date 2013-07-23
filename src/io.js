@@ -37,7 +37,7 @@ function h$initStdioBufs() {
         var o = fd.buf.chunkOff;
         var left = h.length - o;
         var u8 = buf.u8;
-        if(left < n) {
+        if(left > n) {
           for(var i=0;i<n;i++) {
             u8[buf_offset+i] = h[o+i];
           }
