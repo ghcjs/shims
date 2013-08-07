@@ -433,7 +433,7 @@ function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
     throw "h$makeCallbackApply: unsupported arity";
   }
   if(retain) {
-    c.root = action;
+    c.root = fun;
     h$extraRoots.add(c);
   }
   return c;
