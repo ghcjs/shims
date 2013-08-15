@@ -456,3 +456,7 @@ function h$popCnt64(x1,x2) {
           h$popCntTab[(x2>>>24)&0xFF];
 }
 
+function h$bswap64(x1,x2) {
+  h$ret1 = (x1 >>> 24) | (x1 << 24) | ((x1 & 0xFF00) << 8) | ((x1 & 0xFF0000) >> 8);
+  return   (x2 >>> 24) | (x2 << 24) | ((x2 & 0xFF00) << 8) | ((x2 & 0xFF0000) >> 8);
+}

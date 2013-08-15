@@ -742,6 +742,7 @@ function h$MVar() {
   this.val     = null;
   this.readers = new goog.structs.Queue();
   this.writers = new goog.structs.Queue();
+  this.waiters = null;  // waiting for a value in the MVar with ReadMVar
   this.m = 0;
   this.id = ++h$mvarId;
 }
@@ -767,6 +768,16 @@ function h$notifyMVarEmpty(mv) {
 
 // set the MVar to val unless there are readers
 function h$notifyMVarFull(mv,val) {
+  if(mv.waiters && mv.waiters.length > 0) {
+    for(var i=0;i<mv.waiters.length;i++) {
+      var w = mv.waiters[i];
+      w.sp += 2;
+      w.stack[w.sp-1] = val;
+      w.stack[w.sp]   = h$return;
+      h$wakeupThread(w);
+    }
+    mv.waiters = null;
+  }
   var r = mv.readers.dequeue();
   if(r !== undefined) {
     h$logSched("notifyMVarFull(" + mv.id + "): reader ready: " + h$threadString(r));
@@ -805,6 +816,23 @@ function h$tryTakeMVar(mv) {
     h$ret1 = mv.val;
     h$notifyMVarEmpty(mv);
     return 1;
+  }
+}
+
+function h$readMVar(mv) {
+  h$logSched("h$readMVar(" + mv.id + "): " + mv.val);
+  if(mv.val === null) {
+    if(mv.waiters) {
+      mv.waiters.push(h$currentThread);
+    } else {
+      mv.waiters = [h$currentThread];
+    }
+    h$currentThread.interruptible = true;
+    h$blockThread(h$currentThread,mv,[h$readMVar,mv]);
+    return h$reschedule;
+  } else {
+    h$r1 = mv.val;
+    return h$stack[h$sp];
   }
 }
 

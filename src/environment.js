@@ -87,6 +87,10 @@ function h$traceEvent(ev_v,ev_o) {
   h$errorMsg(h$decodeUtf8z(ev_v, ev_o));
 }
 
+function h$traceMarker(ev_v,ev_o) {
+  h$errorMsg(h$decodeUtf8z(ev_v, ev_o));
+}
+
 var h$__hscore_gettimeofday = h$gettimeofday;
 
 function h$localtime_r(timep_v, timep_o, result_v, result_o) {
