@@ -17,9 +17,8 @@ function h$makeEnum(tag) {
   return h$c0(f);
 }
 
+// used for all non-Bool enums
 function h$tagToEnum(tag) {
-  if(tag === 0) return false;
-  if(tag === 1) return true;
   if(tag >= h$enums.length) {
     return h$makeEnum(tag);
   } else {
