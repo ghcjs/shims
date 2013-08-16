@@ -2,13 +2,11 @@
 var h$logArith = function() { }
 
 function h$hs_eqWord64(a1,a2,b1,b2) {
-  h$ret1 = (a1===b1 && a2===b2) ? 1 : 0;
-  return 0;
+  return (a1===b1 && a2===b2) ? 1 : 0;
 }
 
 function h$hs_neWord64(a1,a2,b1,b2) {
-  h$ret1 = (a1 !== b1 || a2 !== b2) ? 1 : 0;
-  return 0;
+  return (a1 !== b1 || a2 !== b2) ? 1 : 0;
 }
 
 function h$hs_word64ToWord(a1,a2) {
@@ -66,57 +64,51 @@ function h$hs_or64(a1,a2,b1,b2) {
 }
 
 function h$hs_eqInt64(a1,a2,b1,b2) {
-  h$ret1 = (a1 === b1 && a2 === b2) ? 1 : 0;
-  return 0;
+  return (a1 === b1 && a2 === b2) ? 1 : 0;
 }
 
 function h$hs_neInt64(a1,a2,b1,b2) {
-  h$ret1 = (a1 !== b1 || a2 !== b2) ? 1 : 0;
-  return 0;
+  return (a1 !== b1 || a2 !== b2) ? 1 : 0;
 }
 
 function h$hs_leInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
   } else {
-    h$ret1 = (a1 < b1) ? 1 : 0;
+    return (a1 < b1) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_ltInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
   } else {
-    h$ret1 = (a1 < b1) ? 1 : 0;
+    return (a1 < b1) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_geInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
   } else {
-    h$ret1 = (a1 > b1) ? 1 : 0;
+    return (a1 > b1) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_gtInt64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
   } else {
-    h$ret1 = (a1 > b1) ? 1 : 0;
+    return (a1 > b1) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_quotWord64(a1,a2,b1,b2) {
@@ -161,52 +153,48 @@ function h$hs_leWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) <= (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    h$ret1 = (a1s < b1s || (a1s === b1s && ((a1&1) <= (b1&1)))) ? 1 : 0;
+    return (a1s < b1s || (a1s === b1s && ((a1&1) <= (b1&1)))) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_ltWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
+    return (a2s < b2s || (a2s === b2s && ((a2&1) < (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    h$ret1 = (a1s < b1s || (a1s === b1s && ((a1&1) < (b1&1)))) ? 1 : 0;
+    return (a1s < b1s || (a1s === b1s && ((a1&1) < (b1&1)))) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_geWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) >= (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    h$ret1 = (a1s > b1s || (a1s === b1s && ((a1&1) >= (b1&1)))) ? 1 : 0;
+    return (a1s > b1s || (a1s === b1s && ((a1&1) >= (b1&1)))) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_gtWord64(a1,a2,b1,b2) {
   if(a1 === b1) {
     var a2s = a2 >>> 1;
     var b2s = b2 >>> 1;
-    h$ret1 = (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
+    return (a2s > b2s || (a2s === b2s && ((a2&1) > (b2&1)))) ? 1 : 0;
   } else {
     var a1s = a1 >>> 1;
     var b1s = b1 >>> 1;
-    h$ret1 = (a1s > b1s || (a1s === b1s && ((a1&1) > (b1&1)))) ? 1 : 0;
+    return (a1s > b1s || (a1s === b1s && ((a1&1) > (b1&1)))) ? 1 : 0;
   }
-  return 0;
 }
 
 function h$hs_remWord64(a1,a2,b1,b2) {
