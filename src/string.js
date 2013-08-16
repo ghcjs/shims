@@ -232,7 +232,7 @@ function h$encodeUtf16(str) {
   return v;
 }
 
-// convert a string to a DataView buffer, set second field in
+// convert a string to a buffer, set second field in
 // Addr# to length
 function h$fromStr(s) {
   var l = s.length;
@@ -245,7 +245,7 @@ function h$fromStr(s) {
   return b;
 }
 
-// convert a Data.Text DataView buffer with offset/length to a
+// convert a Data.Text buffer with offset/length to a
 // JS string
 function h$toStr(b,o,l) {
   var a = [];
@@ -296,7 +296,7 @@ function h$decodeUtf16l(v, byteLen, start) {
 }
 var h$dU16 = h$decodeUtf16;
 
-// decode a DataView with UTF-8 chars to a JS string
+// decode a buffer with UTF-8 chars to a JS string
 // stop at the first zero
 function h$decodeUtf8z(v,start) {
 //  log("h$decodeUtf8z");
@@ -310,7 +310,7 @@ function h$decodeUtf8z(v,start) {
   return h$decodeUtf8(v,n,start);
 }
 
-// decode a DataView with Utf8 chars to a JS string
+// decode a buffer with Utf8 chars to a JS string
 // invalid characters are ignored
 function h$decodeUtf8(v,n0,start) {
 //  log("### decodeUtf8");

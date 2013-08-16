@@ -214,52 +214,23 @@ function h$newByteArray(len) {
 // wrap an ArrayBuffer so that it can be used as a ByteArray#
 // with the most common view prespun
 // offset and length are optional, both are in bytes
-// offset must be in multiples of 4
-function h$wrapBuffer(buf, offset, length) {
-  var len0 = Math.max(h$roundUpToMultipleOf(len, 8), 8);
-  if(offset) {
-    if(length) {
-      return { buf: buf
-             , len: length
-             , i3: new Int32Array(buf, offset, length >> 2)
-             , u8: new Uint8Array(buf, offset, length)
-             , u1: new Uint16Array(buf, offset, length >> 1)
-             , f3: new Float32Array(buf, offset, length >> 2)
-             , f6: new Float64Array(buf, offset, length >> 3)
-             , dv: new DataView(buf, offset, length)
-             };
-    } else {
-      return { buf: buf
-             , len: buf.byteLength - offset
-             , i3: new Int32Array(buf, offset)
-             , u8: new Uint8Array(buf, offset)
-             , u1: new Uint16Array(buf, offset)
-             , f3: new Float32Array(buf, offset)
-             , f6: new Float64Array(buf, offset)
-             , dv: new DataView(buf, offset)
-             };
-    }
-  } else if(length) {
-    return { buf: buf
-           , len: length
-           , i3: new Int32Array(buf, 0, length >> 2)
-           , u8: new Uint8Array(buf, 0, length)
-           , u1: new Uint16Array(buf, 0, length >> 1)
-           , f3: new Float32Array(buf, offset, length >> 2)
-           , f6: new Float64Array(buf, offset, length >> 3)
-           , dv: new DataView(buf, 0, length)
-           };
-  } else {
-    return { buf: buf
-           , len: buf.byteLength
-           , i3: new Int32Array(buf)
-           , u8: new Uint8Array(buf)
-           , u1: new Uint16Array(buf)
-           , f3: new Float32Array(buf)
-           , f6: new Float64Array(buf)
-           , dv: new DataView(buf)
-           };
+// if unaligned ok, then unaligned fields will be null
+function h$wrapBuffer(buf, unalignedOk, offset, length) {
+  if(!unalignedOk && offset && offset % 8 != 0) {
+    throw ("h$wrapBuffer offset not aligned:" + offset);
   }
+  if(!offset) { offset = 0; }
+  if(!length) { length = buf.byteLength - offset; }
+  // log("h$wrapBuffer: " + offset + " " + length);
+  return { buf: buf
+         , len: length
+         , i3: (offset%4) ? null : new Int32Array(buf, offset, length >> 2)
+         , u8: new Uint8Array(buf, offset, length)
+         , u1: (offset%2) ? null : new Uint16Array(buf, offset, length >> 1)
+         , f3: (offset%4) ? null : new Float32Array(buf, offset, length >> 2)
+         , f6: (offset%8) ? null : new Float64Array(buf, offset, length >> 3)
+         , dv: new DataView(buf, offset, length)
+         };
 }
 
 // try to compute a reasonably unique int key from object data
@@ -298,7 +269,7 @@ function h$makeStableName(x) {
 }
 
 function h$stableNameInt(s) {
-  log("h$stableNameInt: " + (typeof s[0]));
+  // log("h$stableNameInt: " + (typeof s[0]));
   var s0 = s[0];
   if(typeof s0 === 'boolean') { return s0?1:0; }
   if(typeof s0 === 'number') { return s0|0; } // fixme this won't work well with small floats 

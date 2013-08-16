@@ -152,7 +152,7 @@ function h$newFd(file) {
 function h$newFile(path, data) {
   var f = { path: path
           , data: data
-          , len: data.byteLength // number of bytes in the file (migh be smaller than data.byteLength later)
+          , len: data.len // number of bytes in the file (might be smaller than data.len later)
           , read: h$readFile
           , write: h$writeFile
           , isATTY: false
@@ -184,7 +184,7 @@ function h$readFile() {
 }
 
 // use the system specific way to load the file (either AJAX or directly)
-// return a DataView with the contents
+// return a buffer with the contents
 function h$loadFileData(path) {
   if(path.charCodeAt(path.length-1) === 0) {
     path = path.substring(0,path.length-1);
@@ -192,7 +192,7 @@ function h$loadFileData(path) {
   if(typeof h$nodeFs !== 'undefined' && h$nodeFs.readFileSync) { // node.js
     return h$fromNodeBuffer(h$nodeFs.readFileSync(path));
   } else if(typeof snarf !== 'undefined') { // SpiderMonkey
-    return new DataView(snarf(path, "binary").buffer);
+    return new h$wrapBuffer(snarf(path, "binary").buffer, false);
   } else {
     var url = h$pathUrl(path);
     var transport = new XMLHttpRequest();
@@ -200,14 +200,14 @@ function h$loadFileData(path) {
     transport.responseType = "arraybuffer";
     transport.send();
     if(transport.status == 200 || transport.status == 0) {
-      return new DataView(transport.response);
+      return h$wrapBuffer(transport.response, false);
     } else {
       return null; // fixme proper error
     }
   }
 }
 
-// node buffer to DataView
+// node buffer to GHCJS buffer
 function h$fromNodeBuffer(buf) {
   var l = buf.length;
   var buf2 = new ArrayBuffer(l);
@@ -215,7 +215,7 @@ function h$fromNodeBuffer(buf) {
   for(var i=0;i<l;i++) {
     u8[i] = buf[i];
   }
-  return new DataView(buf2);
+  return h$wrapBuffer(buf2, false);
 }
 
 function h$pathUrl(path) {
@@ -253,20 +253,28 @@ function h$__hscore_s_ischr() { return 0; }
 function h$__hscore_s_issock() { return 0; }
 function h$__hscore_s_isreg() { return 1; }
 
+// fixme support some actual mode bits?
+function h$S_ISDIR(mode) { return 0; }
+function h$S_ISFIFO(mode) { return 0; }
+function h$S_ISBLK(mode) { return 0; }
+function h$S_ISCHR(mode) { return 0; }
+function h$S_ISSOCK(mode) { return 0; }
+function h$S_ISREG(mode) { return 1; }
+
 /*
  partial fstat emulation, only set the size
  */
 function h$__hscore_sizeof_stat() { return 4; }
 function h$__hscore_fstat(fd, buf, off) {
-  var f = h$fds[fd]
-//  log('__hscore_fstat: (bytelen): ' + f.file.data.byteLength);
-  buf.setUint32(off, f.buf.len);
+  var f = h$fds[fd];
+  // log('__hscore_fstat: (bytelen): ' + f.buf.len);
+  buf.dv.setUint32(off, f.buf.len, true);
   return 0;
 }
 function h$__hscore_st_mode(st) { return 0; }
 function h$__hscore_st_dev() { return 0; }
 function h$__hscore_st_ino() { return 0; }
-function h$__hscore_st_size(st,off) {
+function h$__hscore_st_size(st, off) {
     // return 64 bit
     h$ret1 = st.dv.getInt32(off, true);
     return 0;
@@ -274,7 +282,7 @@ function h$__hscore_st_size(st,off) {
 
 function h$__hscore_open(filename, filename_off, h, mode) {
     var p = h$decodeUtf8(filename, filename_off);
-//    log('__hscore_open '+p);
+    // log('__hscore_open '+p);
     var f = h$findFile(p);
     if(!f) {
       var d = h$loadFileData(p);
@@ -287,7 +295,7 @@ function h$__hscore_open(filename, filename_off, h, mode) {
 
 function h$lseek(fd, offset1, offset2, whence) {
   var offset = goog.math.Long.fromBits(offset2,offset1).toNumber();
-//  log("### lseek: " + fd + ", " + offset + ", " + whence);
+  // log("### lseek: " + fd + ", " + offset + ", " + whence);
   var f = h$fds[fd];
   if(!f) {
     h$errno = h$EBADF;
@@ -314,6 +322,11 @@ function h$lseek(fd, offset1, offset2, whence) {
     return no.getHighBits();
   }
 }
+
+function h$SEEK_SET() { return 0; }
+function h$SEEK_CUR() { return 1; }
+function h$SEEK_END() { return 2; }
+
 var h$baseZCSystemziPosixziInternalsZClseek = h$lseek;
 var h$baseZCSystemziPosixziInternalsZCSEEKzuCUR = h$__hscore_seek_cur;
 var h$baseZCSystemziPosixziInternalsZCSEEKzuSET = h$__hscore_seek_set;
@@ -383,8 +396,8 @@ function h$readFile(fd, buf, buf_offset, n) {
 
 // write file just in memory
 function h$writeFile(fd, buf, buf_offset, n) {
-//  log("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
-  if(fd.pos + n >= fd.buf.data.len) {
+  // log("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
+  if(fd.pos + n > fd.buf.data.len) {
     var od = fd.buf.data;
     var d = h$newByteArray(Math.round(1.3*od.len)+100);
     var u8 = d.u8;

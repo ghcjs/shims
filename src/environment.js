@@ -76,10 +76,18 @@ function h$baseZCSystemziCPUTimeZCgetrusage() {
   return 0;
 }
 
+function h$getrusage() {
+  return 0;
+}
+
+
+// fixme need to fix these struct locations
+
 function h$gettimeofday(tv_v,tv_o,tz_v,tz_o) {
   var now = Date.now();
-  tv_v.dv.setInt32(tv_o,     (now / 1000)|0);
-  tv_v.dv.setInt32(tv_o + 4, ((now % 1000) * 1000)|0);
+  tv_v.dv.setInt32(tv_o,     (now / 1000)|0, true);
+  tv_v.dv.setInt32(tv_o + 4, ((now % 1000) * 1000)|0, true);
+  tv_v.dv.setInt32(tv_o + 8, ((now % 1000) * 1000)|0, true);
   return 0;
 }
 
@@ -93,18 +101,23 @@ function h$traceMarker(ev_v,ev_o) {
 
 var h$__hscore_gettimeofday = h$gettimeofday;
 
+var h$myTimeZone = h$encodeUtf8("UTC");
 function h$localtime_r(timep_v, timep_o, result_v, result_o) {
   var t = timep_v.i3[timep_o];
   var d = new Date(t * 1000);
-  result_v.dv.setInt32(result_o     , d.getSeconds());
-  result_v.dv.setInt32(result_o + 4 , d.getMinutes());
-  result_v.dv.setInt32(result_o + 8 , d.getHours());
-  result_v.dv.setInt32(result_o + 12, d.getDate());
-  result_v.dv.setInt32(result_o + 16, d.getMonth());
-  result_v.dv.setInt32(result_o + 24, d.getFullYear()-1900);
-  result_v.dv.setInt32(result_o + 28, d.getDay());
-  result_v.dv.setInt32(result_o + 32, 0); // fixme yday 1-365 (366?)
-  result_v.dv.setInt32(result_o + 36, -1); // dst information unknown
+  result_v.dv.setInt32(result_o     , d.getSeconds(), true);
+  result_v.dv.setInt32(result_o + 4 , d.getMinutes(), true);
+  result_v.dv.setInt32(result_o + 8 , d.getHours(), true);
+  result_v.dv.setInt32(result_o + 12, d.getDate(), true);
+  result_v.dv.setInt32(result_o + 16, d.getMonth(), true);
+  result_v.dv.setInt32(result_o + 20, d.getFullYear()-1900, true);
+  result_v.dv.setInt32(result_o + 24, d.getDay(), true);
+  result_v.dv.setInt32(result_o + 28, 0, true); // fixme yday 1-365 (366?)
+  result_v.dv.setInt32(result_o + 32, -1, true); // dst information unknown
+  result_v.dv.setInt32(result_o + 40, 0, true); // gmtoff?
+  if(!result_v.arr) result_v.arr = [];
+  result_v.arr[result_o + 40] = [h$myTimeZone, 0];
+  result_v.arr[result_o + 48] = [h$myTimeZone, 0];
   h$ret1 = result_o;
   return result_v;
 }
