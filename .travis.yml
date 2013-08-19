@@ -12,7 +12,8 @@ before_install:
     - rm ghcjs-test.tar.xz
     - export PATH=$HOME/ghc/bin:$HOME/.cabal/bin:$HOME/jsshell:$HOME/node/bin:$PATH
     - cd $HOME/.cabal/bin
-    - wget --prefer-family=IPv4 http://hdiff.luite.com/ghcjs/TestRunner
+    - wget --prefer-family=IPv4 http://hdiff.luite.com/ghcjs/TestRunner.xz
+    - xz -d TestRunner.xz
     - chmod 755 TestRunner
     - hash -r
     - cd $START
@@ -23,7 +24,7 @@ install:
     - cd
     - git clone https://github.com/ghcjs/ghcjs
     - cd ghcjs
-    - cabal install -f-compiler-only -fdisable-optimizer
+    - cabal install --enable-executable-dynamic
     - ghcjs-boot --reboot
     - cabal install --ghcjs stm random syb transformers text parallel QuickCheck old-time vector
     - cd
@@ -50,6 +51,7 @@ env:
 notifications:
   irc:
     channels: "irc.freenode.net#ghcjs"
+    skip_join: true
   email: true
 
 
