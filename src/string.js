@@ -460,6 +460,32 @@ function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
   arr[0].dv.putUint8(arr[1] + y, v);
 }
 
+// convert JavaScript String to a Haskell String
+function h$toHsString(str) {
+  var i = str.length - 1;
+  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  while(i>=0) {
+    var cp = str.charCodeAt(i);
+    if((0xDC00 & cp) && i > 0) {
+      --i;
+      cp = (cp - 0xDC00) + (str.charCodeAt(i) & 0xD800) * 1024;
+    }
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
+    --i;
+  }
+  return r;
+}
+
+// throw e wrapped in a GHCJS.Prim.JSException  in the current thread
+function h$throwJSException(e) {
+  // a GHCJS.Prim.JSException
+  var jsE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,e,h$toHsString(e.toString()));
+  // wrap it in a SomeException, adding the Exception dictionary
+  var someE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,
+     h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException, jsE);
+  return h$throw(someE, true);
+}
+
 // function encodeSame(inbuf, inbuf_off, insize, insize_off
 
 /* specialized implementations of utf8 <-> utf32, utf8 <-> utf16

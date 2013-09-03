@@ -502,7 +502,7 @@ function h$mainLoop() {
   if(h$running) return;
   h$running = true;
   h$run_init_static();
-  var h$currentThread = h$next;
+  h$currentThread = h$next;
   var c = null; // fixme is this ok?
   var count;
   var start = Date.now();
@@ -533,22 +533,33 @@ function h$mainLoop() {
     }
     // preemptively schedule threads after 9990 calls
     // but not earlier than after 25ms
-    while(c !== h$reschedule && Date.now() - scheduled < 25) {
-      count = 0;
-      while(c !== h$reschedule && ++count < 1000) {
-//        h$logCall(c);
-//        h$logStack();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
+    try {
+      while(c !== h$reschedule && Date.now() - scheduled < 25) {
+        count = 0;
+        while(c !== h$reschedule && ++count < 1000) {
+//          h$logCall(c);
+//          h$logStack();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+          c = c();
+        }
       }
+    } catch(e) {
+      // uncaught exception in haskell code, kill thread
+      // would we ever need to remove the thread from queues?
+      h$currentThread.status = h$threadDied;
+      h$currentThread.stack = null;
+      h$currentThread = null;
+      h$stack = null;
+      c = null;
+      console.log("uncaught exception in Haskell thread: " + e.toString());
     }
   } while(true);
 }
