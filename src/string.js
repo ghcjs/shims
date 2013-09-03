@@ -481,7 +481,7 @@ function h$throwJSException(e) {
   // a GHCJS.Prim.JSException
   var jsE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,e,h$toHsString(e.toString()));
   // wrap it in a SomeException, adding the Exception dictionary
-  var someE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,
+  var someE = h$c2(h$baseZCGHCziExceptionziSomeException_con_e,
      h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException, jsE);
   return h$throw(someE, true);
 }
