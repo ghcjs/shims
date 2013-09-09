@@ -476,6 +476,28 @@ function h$toHsString(str) {
   return r;
 }
 
+// ascii only version of the above
+function h$toHsStringA(str) {
+  var i = str.length - 1;
+  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  while(i>=0) {
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
+    --i;
+  }
+  return r;
+}
+
+// unpack ascii string, append to existing Haskell string
+function h$appendToHsStringA(str, appendTo) {
+  var i = str.length - 1;
+  var r = appendTo;
+  while(i>=0) {
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
+    --i;
+  }
+  return r;
+}
+
 // throw e wrapped in a GHCJS.Prim.JSException  in the current thread
 function h$throwJSException(e) {
   // a GHCJS.Prim.JSException
