@@ -17,31 +17,16 @@ function h$hashable_fnv_hash(str_d, str_o, len, hash) {
   return hash;
 }
 
-/*
- * These hash functions were developed by Thomas Wang.
- *
- * http://www.concentric.net/~ttwang/tech/inthash.htm
- */
 
-function h$hashable_wang_32(a) {
-  a = (a ^ 61) ^ (a >> 16);
-  a = a + (a << 3);
-  a = a ^ (a >> 4);
-  a = a * 0x27d4eb2d;
-  a = a ^ (a >> 15);
-  return a;
+// int hashable_getRandomBytes(unsigned char *dest, int nbytes)
+function h$hashable_getRandomBytes(dest_d, dest_o, len) {
+  if(len > 0) {
+    var d = dest_d.u8;
+    for(var i=0;i<len;i++) {
+      d[dest_o+i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return len;
 }
 
-/*
-uint64_t hashable_wang_64(uint64_t key)
-{
-    key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-    key = key ^ ((key >> 24) | (key << 40));
-    key = (key + (key << 3)) + (key << 8); // key * 265
-    key = key ^ ((key >> 14) | (key << 50));
-    key = (key + (key << 2)) + (key << 4); // key * 21
-    key = key ^ ((key >> 28) | (key << 36));
-    key = key + (key << 31);
-    return key;
-}
-*/
+
