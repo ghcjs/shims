@@ -1,3 +1,20 @@
+/* FNV-1 hash
+ *
+ * The FNV-1 hash description: http://isthe.com/chongo/tech/comp/fnv/
+ * The FNV-1 hash is public domain: http://isthe.com/chongo/tech/comp/fnv/#public_domain
+ */
+function h$hashable_fnv_hash_offset(str_a, o, len, hash) {
+  return h$hashable_fnv_hash(str_a, o, len, hash);
+}
+
+function h$hashable_fnv_hash(str_d, str_o, len, hash) {
+  var d = str_d.u8;
+  for(var i=0;i<len;i++) {
+    hash = h$mulInt32(hash, 16777619) ^ d[str_o+i];
+  }
+  return hash;
+}
+
 /*
  * These hash functions were developed by Thomas Wang.
  *
