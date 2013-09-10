@@ -421,3 +421,34 @@ function h$freeCallback(c) {
 function h$isInstanceOf(o,c) {
   return o instanceof c;
 }
+
+function h$getpagesize() {
+  return 4096;
+}
+
+var h$MAP_ANONYMOUS = 0x20;
+function h$mmap(addr_d, addr_o, len, prot, flags, fd, offset1, offset2) {
+  if(flags & h$MAP_ANONYMOUS || fd === -1) {
+    h$ret1 = 0;
+    return h$newByteArray(len);
+  } else {
+    throw "h$mmap: mapping a file is not yet supported";
+  }
+}
+
+function h$mprotect(addr_d, addr_o, size, prot) {
+  return 0;
+}
+
+function h$munmap(addr_d, addr_o, size) {
+  if(addr_d && addr_o === 0 && size >= addr_d.len) {
+    addr_d.buf = null;
+    addr_d.i3  = null;
+    addr_d.u8  = null;
+    addr_d.u1  = null;
+    addr_d.f3  = null;
+    addr_d.f6  = null;
+    addr_d.dv  = null;
+  }
+  return 0;
+}

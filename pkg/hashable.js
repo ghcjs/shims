@@ -8,9 +8,11 @@ function h$hashable_fnv_hash_offset(str_a, o, len, hash) {
 }
 
 function h$hashable_fnv_hash(str_d, str_o, len, hash) {
-  var d = str_d.u8;
-  for(var i=0;i<len;i++) {
-    hash = h$mulInt32(hash, 16777619) ^ d[str_o+i];
+  if(len > 0) {
+    var d = str_d.u8;
+    for(var i=0;i<len;i++) {
+      hash = h$mulInt32(hash, 16777619) ^ d[str_o+i];
+    }
   }
   return hash;
 }
