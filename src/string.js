@@ -460,6 +460,27 @@ function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
   arr[0].dv.putUint8(arr[1] + y, v);
 }
 
+// allocate a list
+function h$cl(arr) {
+  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  var i = arr.length - 1;
+  while(i>=0) {
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
+    --i;
+  }
+  return r;
+}
+
+// allocate a list, prepended to r
+function h$clr(arr, r) {
+  var i = arr.length - 1;
+  while(i>=0) {
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
+    --i;
+  }
+  return r;
+}
+
 // convert JavaScript String to a Haskell String
 function h$toHsString(str) {
   var i = str.length - 1;
