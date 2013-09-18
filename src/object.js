@@ -8,29 +8,37 @@ function h$isInteger (n) {
   return n===+n && n===(n|0);
 }
 
+/*
+        -- 0 - null, 1 - integer,
+        -- 2 - float, 3 - bool,
+        -- 4 - string, 5 - array
+        -- 6 - object
+*/
 function h$typeOf(o) {
     if (!(o instanceof Object)) {
         if (o == null) { 
-            return 'null'; 
+            return 0; 
         } else if (typeof o == 'number') {
             if (h$isInteger(o)) {
-                return 'integer';
+                return 1;
             } else {
-                return 'float';
+                return 2;
             }
+        } else if (typeof o == 'boolean') {
+            return 3;
         } else {
-            return (typeof o);
+            return 4;
         }
     } else {
         if (Object.prototype.toString.call(o) == '[object Array]') {
             // it's an array
-            return 'array';
+            return 5;
         } else if (!o) {
             // null 
-            return 'null';
+            return 0;
         } else {
             // it's an object
-            return 'object';
+            return 6;
         }
     }
 }
