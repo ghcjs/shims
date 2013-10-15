@@ -487,7 +487,7 @@ function h$toHsString(str) {
   var r = h$ghczmprimZCGHCziTypesziZMZN;
   while(i>=0) {
     var cp = str.charCodeAt(i);
-    if((0xDC00 & cp) && i > 0) {
+    if(cp >= 0xDC00 && cp <= 0xDFFF && i > 0) {
       --i;
       cp = (cp - 0xDC00) + (str.charCodeAt(i) & 0xD800) * 1024;
     }
