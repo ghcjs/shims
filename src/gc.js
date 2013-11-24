@@ -209,7 +209,7 @@ function h$follow(stack, sp, work, weaks, ignore) {
         c.m = (c.m&-4)|mark;
         work.push.apply(work, c.readers.getValues());
         work.push.apply(work, c.writers.getValues());
-        if(c.val !== null) { work.push(c); }
+        if(c.val !== null) { work.push(c.val); }
       } else if(c instanceof h$MutVar) {
         //traceGc("marking mutvar");
         c.m = (c.m&-4)|mark;
@@ -272,4 +272,3 @@ function h$finalizeCAFs(t) {
   }
   traceGc("h$finalizeCAFs: " + (Date.now()-start) + "ms");
 }
-
