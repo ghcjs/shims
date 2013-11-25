@@ -91,6 +91,15 @@ function h$gc(t) {
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
 
+  iter = h$extraRoots.__iterator__();
+  try {
+    while(true) {
+      var c = iter.next();
+      work.push(c.root);
+    }
+  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+  h$follow(null, -1, work, weaks, null);
+
   // we now have a bunch of weak refs, mark their finalizers and
   // values, both should not keep the key alive
   while(weaks.length > 0) {
