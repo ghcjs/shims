@@ -12,6 +12,7 @@ function h$finalizeWeaks() {
   traceWeak("finalizeWeaks: " + mark);
   var iter = h$weaks.__iterator__();
   var toFinalize = [];
+  var needFinalizeThread = false;
   var checked = 0;
   try {
     while(true) {
@@ -19,6 +20,7 @@ function h$finalizeWeaks() {
       var w = iter.next();
       traceWeak("key mark: " + w.key.m + " - " + mark);
       if(w.key.m === undefined || w.key.m & 3 !== mark) {
+        if(w.finalizer !== null) needFinalizeThread = true; 
         toFinalize.push(w);
       }
     }
@@ -26,22 +28,24 @@ function h$finalizeWeaks() {
   traceWeak("to finalize: " + toFinalize.length + " checked: " + checked);
   // start a finalizer thread if any finalizers need to be run
   if(toFinalize.length > 0) {
-    var t = new h$Thread();
+    var t = needFinalizeThread ? new h$Thread() : null;
     for(var i=0;i<toFinalize.length;i++) {
       var w = toFinalize[i];
-      t.sp += 6;
-      t.stack[t.sp-5] = 0;      // mask
-      t.stack[t.sp-4] = h$noop; // handler, dummy
-      t.stack[t.sp-3] = h$catch_e;
-      t.stack[t.sp-2] = h$ap_1_0;
-      t.stack[t.sp-1] = w.finalizer;
-      t.stack[t.sp]   = h$return;
+      if(w.finalizer !== null) {
+        t.sp += 6;
+        t.stack[t.sp-5] = 0;      // mask
+        t.stack[t.sp-4] = h$noop; // handler, dummy
+        t.stack[t.sp-3] = h$catch_e;
+        t.stack[t.sp-2] = h$ap_1_0;
+        t.stack[t.sp-1] = w.finalizer;
+        t.stack[t.sp]   = h$return;
+      }
       h$weaks.remove(w);
       w.key = null;
       w.val = null;
       w.finalizer = null;
     }
-    h$wakeupThread(t);
+    if(needFinalizeThread) h$wakeupThread(t);
   }
 }
 
@@ -51,7 +55,7 @@ function h$Weak(key, val, finalizer) {
   this.key = key;
   this.val = val;
   this.finalizer = finalizer;
-  if(finalizer !== null) { h$weaks.add(this); }
+  h$weaks.add(this);
 }
 
 function h$makeWeak(key, val, fin) {
@@ -63,10 +67,12 @@ function h$makeWeakNoFinalizer(key, val) {
 }
 
 function h$finalizeWeak(w) {
+  h$weaks.remove(w);
+  w.key = null;
+  w.val = null;
   if(w.finalizer === null) {
     return 0;
   } else {
-    h$weaks.remove(w);
     h$ret1 = w.finalizer;
     w.finalizer = null;
     return 1;
