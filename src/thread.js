@@ -407,7 +407,6 @@ function h$scheduler(next) {
         }
         h$gc(h$currentThread);
         h$stack = h$currentThread.stack;
-        h$lastGc = Date.now();
       }
 //      if(h$postAsync(next === h$reschedule, next)) {
 //        h$logSched("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
@@ -418,7 +417,11 @@ function h$scheduler(next) {
     } else {
       h$logSched("sched: pausing");
       h$currentThread = null;
-      h$gc(null);
+      // We could set a timer here so we do a gc even if Haskell pauses for a long time.
+      // However, currently this isn't necessary because h$mainLoop always sets a timer
+      // before it pauses.
+      if(now - h$lastGc > h$gcInterval)
+          h$gc(null);
       return null; // pause the haskell runner
     }
   } else { // runnable thread in t, switch to it
@@ -441,10 +444,8 @@ function h$scheduler(next) {
       h$logSched("sched: no suspend needed, no running thread");
     }
     // gc if needed
-    if(now - h$lastGc > h$gcInterval) {
+    if(now - h$lastGc > h$gcInterval)
       h$gc(t);
-      h$lastGc = Date.now();
-    }
     // schedule new one
     h$currentThread = t;
     h$stack = t.stack;

@@ -63,11 +63,6 @@ var h$marked = 0;
 function h$gc(t) {
 //  return; // fixme debug
   h$marked = 0;
-  var now = Date.now();
-//  if(now - h$lastGc < 1000) {
-//    return;
-//  }
-  h$lastGc = now;
   traceGc("gc: " + (t!==null?h$threadString(t):"null"));
   var start = Date.now();
   h$resetRegisters();
@@ -91,6 +86,15 @@ function h$gc(t) {
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
 
+  iter = h$extraRoots.__iterator__();
+  try {
+    while(true) {
+      var c = iter.next();
+      work.push(c.root);
+    }
+  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+  h$follow(null, -1, work, weaks, null);
+
   // we now have a bunch of weak refs, mark their finalizers and
   // values, both should not keep the key alive
   while(weaks.length > 0) {
@@ -101,9 +105,10 @@ function h$gc(t) {
 
   h$finalizeWeaks();
   h$finalizeCAFs();
-  var time = Date.now() - start;
+  var now = Date.now();
+  var time = now - start;
   h$gcTime += time;
-  h$lastGc = Date.now();
+  h$lastGc = now;
   traceGc("time: " + time + "ms");
   traceGc("time (total): " + h$gcTime + "ms");
   traceGc("marked objects: " + h$marked);
