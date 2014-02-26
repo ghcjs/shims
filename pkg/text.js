@@ -8,13 +8,7 @@ function h$_hs_text_memcmp(a_v,a_o2,b_v,b_o2,n) {
 
 // decoder below adapted from cbits/cbits.c in the text package
 
-/**
- * @define {number} size of Word and Int. If 64 we use goog.math.Long.
- */
 var h$_text_UTF8_ACCEPT = 0;
-/**
- * @define {number} size of Word and Int. If 64 we use goog.math.Long.
- */
 var h$_text_UTF8_REJECT = 12
 
 var h$_text_utf8d =
@@ -50,15 +44,20 @@ var h$_text_utf8d =
  * returns the next source offset to read from.
  */
 
-function h$_hs_text_decode_utf8( dest_v
-                               , destoff_v, destoff_o
-                               , src_v, src_o
-                               , src_end_v, src_end_o
-                               ) {
-  var dsto = destoff_v.dv.getUint32(destoff_o,true);
+function h$_hs_text_decode_utf8_internal ( dest_v
+                                         , destoff_v, destoff_o
+                                         , src_v, src_o
+                                         , src_end_v, src_end_o
+                                         , s
+                                         ) {
+  if(src_v === null || src_end_v === null) {
+    h$ret1 = src_end_o;
+    return null;
+  }
+  var dsto = destoff_v.dv.getUint32(destoff_o,true) << 1;
   var srco = src_o;
-  var state = h$_text_UTF8_ACCEPT;
-  var codepoint;
+  var state     = s.state;
+  var codepoint = s.codepoint;
   var ddv = dest_v.dv;
   var sdv = src_v.dv;
 
@@ -70,6 +69,7 @@ function h$_hs_text_decode_utf8( dest_v
     state = h$_text_utf8d[256 + state + type];
     return state;
   }
+
   while (srco < src_end_o) {
     if(decode(sdv.getUint8(srco++)) !== h$_text_UTF8_ACCEPT) {
       if(state !== h$_text_UTF8_REJECT) {
@@ -82,18 +82,140 @@ function h$_hs_text_decode_utf8( dest_v
       ddv.setUint16(dsto,codepoint,true);
       dsto += 2;
     } else {
-      ddv.setUint16(dsto,(0xD7C0 + (codepoint >> 10)),true);
+      ddv.setUint16(dsto,(0xD7C0 + (codepoint >>> 10)),true);
       ddv.setUint16(dsto+2,(0xDC00 + (codepoint & 0x3FF)),true);
       dsto += 4;
     }
+    s.last = srco;
   }
 
-  /* Error recovery - if we're not in a valid finishing state, back up. */
-  if (state != h$_text_UTF8_ACCEPT)
-    srco -= 1;
-
+  s.state = state;
+  s.codepoint = codepoint;
   destoff_v.dv.setUint32(destoff_o,dsto>>1,true);
   h$ret1 = srco;
   return src_v;
 }
 
+function h$_hs_text_decode_utf8_state( dest_v
+                                     , destoff_v, destoff_o
+                                     , src_v, src_o
+                                     , srcend_v, srcend_o
+                                     , codepoint0_v, codepoint0_o
+                                     , state0_v, state0_o
+                                     ) {
+  var s = { state:     state0_v.dv.getUint32(state0_o, true)
+          , codepoint: codepoint0_v.dv.getUint32(codepoint0_o, true)
+          , last: src_o
+          };
+  var ret = h$_hs_text_decode_utf8_internal ( dest_v
+                                            , destoff_v, destoff_o
+                                            , src_v.arr[src_o][0], src_v.arr[src_o][1]
+                                            , srcend_v, srcend_o
+                                            , s
+                                            );
+  src_v.arr[src_o][1] = s.last;
+  state0_v.dv.setUint32(state0_o, s.state, true);
+  codepoint0_v.dv.setUint32(codepoint0_o, s.codepoint, true);
+  if(s.state === h$_text_UTF8_REJECT)
+    h$ret1--;
+  return ret;
+}
+
+function h$_hs_text_decode_utf8( dest_v
+                               , destoff_v, destoff_o
+                               , src_v, src_o
+                               , srcend_v, srcend_o
+                               ) {
+  /* Back up if we have an incomplete or invalid encoding */
+  var s = { state: h$_text_UTF8_ACCEPT
+          , codepoint: 0
+          , last: src_o
+          };
+  var ret = h$_hs_text_decode_utf8_internal ( dest_v
+                                            , destoff_v, destoff_o
+                                            , src_v, src_o
+                                            , srcend_v, srcend_o
+                                            , s
+                                            );
+  if (s.state !== h$_text_UTF8_ACCEPT)
+    h$ret1--;
+  return ret;
+}
+
+
+/*
+ * The ISO 8859-1 (aka latin-1) code points correspond exactly to the first 256 unicode
+ * code-points, therefore we can trivially convert from a latin-1 encoded bytestring to
+ * an UTF16 array
+ */
+function h$_hs_text_decode_latin1(dest_d, src_d, src_o, srcend_d, srcend_o) {
+  var p = src_o;
+  var d = 0;
+  var su8 = src_d.u8;
+  var su3 = src_d.u3;
+  var du1 = dest_d.u1;
+
+  // consume unaligned prefix
+  while(p != srcend_o && p & 3) {
+    du1[d++] = su8[p++];
+  }
+
+  // iterate over 32-bit aligned loads
+  if(su3) {
+    while (p < srcend_o - 3) {
+      var w = su3[p>>2];
+      du1[d++] = w          & 0xff;
+      du1[d++] = (w >>> 8)  & 0xff;
+      du1[d++] = (w >>> 16) & 0xff;
+      du1[d++] = (w >>> 32) & 0xff;
+      p += 4;
+    }
+  }
+
+  // handle unaligned suffix
+  while (p != srcend_o)
+    du1[d++] = su8[p++];
+}
+
+function h$_hs_text_encode_utf8(destp_v, destp_o, src_v, srcoff, srclen) {
+  var dest_v = destp_v.arr[destp_o][0];
+  var dest_o = destp_v.arr[destp_o][1];
+  var src    = srcoff;
+  var dest   = dest_o;
+  var srcend = src + srclen;
+  var srcu1  = src_v.u1;
+  if(!srcu1) throw "h$_hs_text_encode_utf8: invalid alignment for source";
+  var srcu3  = src_v.u3;
+  var destu8 = dest_v.u8;
+  while(src < srcend) {
+    // run of (aligned) ascii characters
+    while(srcu3 && !(src & 1) && srcend - src >= 2) {
+      var w = srcu3[src>>1];
+      if(w & 0xFF80FF80) break;
+      destu8[dest++] = w & 0xFFFF;
+      destu8[dest++] = w >>> 16;
+      src += 2;
+    }
+    while(src < srcend) {
+      var w = srcu1[src++];
+      if(w <= 0x7F) {
+        destu8[dest++] = w;
+        break; // go back to a stream of ASCII
+      } else if(w <= 0x7FF) {
+        destu8[dest++] = (w >> 6) | 0xC0;
+        destu8[dest++] = (w & 0x3f) | 0x80;
+      } else if(w < 0xD800 || w > 0xDBFF) {
+        destu8[dest++] = (w >>> 12) | 0xE0;
+        destu8[dest++] = ((w >> 6) & 0x3F) | 0x80;
+        destu8[dest++] = (w & 0x3F) | 0x80;
+      } else {
+        var c = ((w - 0xD800) << 10) + (srcu1[src++] - 0xDC00) + 0x10000;
+        destu8[dest++] = (c >>> 18) | 0xF0;
+        destu8[dest++] = ((c >> 12) & 0x3F) | 0x80;
+        destu8[dest++] = ((c >> 6) & 0x3F) | 0x80;
+        destu8[dest++] = (c & 0x3F) | 0x80;
+      }
+    }
+  }
+  destp_v.arr[destp_o][1] = dest;
+}

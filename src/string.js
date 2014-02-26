@@ -489,7 +489,7 @@ function h$toHsString(str) {
     var cp = str.charCodeAt(i);
     if(cp >= 0xDC00 && cp <= 0xDFFF && i > 0) {
       --i;
-      cp = (cp - 0xDC00) + (str.charCodeAt(i) & 0xD800) * 1024;
+      cp = (cp - 0xDC00) + (str.charCodeAt(i) - 0xD800) * 1024 + 0x10000;
     }
     r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
     --i;

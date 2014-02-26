@@ -27,6 +27,11 @@ function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
   }
 }
 
+function h$getpid() {
+  if(this['process']) return process.id;
+  return 0;
+}
+
 function h$__hscore_environ() {
   h$ret1 = 0;
   return null;
