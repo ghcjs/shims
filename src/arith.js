@@ -1,6 +1,3 @@
-// var h$logArith = function() { log.apply(this,arguments); }
-var h$logArith = function() { }
-
 function h$hs_eqWord64(a1,a2,b1,b2) {
   return (a1===b1 && a2===b2) ? 1 : 0;
 }

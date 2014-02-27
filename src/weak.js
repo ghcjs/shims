@@ -1,15 +1,18 @@
 // weak reference support
 
-// h$Weak objects that still have finalizers
 var h$weaks = new goog.structs.Set();
 
-// var traceWeak = log;
-function traceWeak() { return; }
+#ifdef GHCJS_TRACE_WEAK
+function h$traceWeak() { h$log.apply(h$log, arguments) }
+#define TRACE_WEAK(args...) h$traceWeak(args)
+#else
+#define TRACE_WEAK(args...)
+#endif
 
 // called by the GC with a set of still reachable
 function h$finalizeWeaks() {
   var mark = h$gcMark;
-  traceWeak("finalizeWeaks: " + mark);
+  TRACE_WEAK("finalizeWeaks: " + mark);
   var iter = h$weaks.__iterator__();
   var toFinalize = [];
   var needFinalizeThread = false;
@@ -18,14 +21,14 @@ function h$finalizeWeaks() {
     while(true) {
       checked++;
       var w = iter.next();
-      traceWeak("key mark: " + w.key.m + " - " + mark);
+      TRACE_WEAK("key mark: " + w.key.m + " - " + mark);
       if(w.key.m === undefined || w.key.m & 3 !== mark) {
         if(w.finalizer !== null) needFinalizeThread = true; 
         toFinalize.push(w);
       }
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  traceWeak("to finalize: " + toFinalize.length + " checked: " + checked);
+  TRACE_WEAK("to finalize: " + toFinalize.length + " checked: " + checked);
   // start a finalizer thread if any finalizers need to be run
   if(toFinalize.length > 0) {
     var t = needFinalizeThread ? new h$Thread() : null;
@@ -50,8 +53,8 @@ function h$finalizeWeaks() {
 }
 
 function h$Weak(key, val, finalizer) {
-  traceWeak("making weak of: " + h$collectProps(key));
-  if(key.f && key.f.n) { traceWeak("name: " + key.f.n); }
+  TRACE_WEAK("making weak of: " + h$collectProps(key));
+  if(key.f && key.f.n) { TRACE_WEAK("name: " + key.f.n); }
   this.key = key;
   this.val = val;
   this.finalizer = finalizer;

@@ -1,3 +1,9 @@
+#ifdef GHCJS_TRACE_IO
+function h$logIO() { h$log.apply(h$log, arguments); }
+#define TRACE_IO(args...) h$logIO(args)
+#else
+#define TRACE_IO(args...)
+#endif
 
 function h$stdFd(n,readReady,writeReady,buf) {
   return new h$Fd(buf, readReady, writeReady, n);
@@ -219,7 +225,6 @@ function h$fromNodeBuffer(buf) {
 }
 
 function h$pathUrl(path) {
-  log("path url: " + path);
   return("://" + path);
 }
 
@@ -267,7 +272,7 @@ function h$S_ISREG(mode) { return 1; }
 function h$__hscore_sizeof_stat() { return 4; }
 function h$__hscore_fstat(fd, buf, off) {
   var f = h$fds[fd];
-  // log('__hscore_fstat: (bytelen): ' + f.buf.len);
+  TRACE_IO('__hscore_fstat: (bytelen): ' + f.buf.len);
   buf.dv.setUint32(off, f.buf.len, true);
   return 0;
 }
@@ -282,7 +287,7 @@ function h$__hscore_st_size(st, off) {
 
 function h$__hscore_open(filename, filename_off, h, mode) {
     var p = h$decodeUtf8(filename, filename_off);
-    // log('__hscore_open '+p);
+    TRACE_IO('__hscore_open '+p);
     var f = h$findFile(p);
     if(!f) {
       var d = h$loadFileData(p);
@@ -295,7 +300,7 @@ function h$__hscore_open(filename, filename_off, h, mode) {
 
 function h$lseek(fd, offset1, offset2, whence) {
   var offset = goog.math.Long.fromBits(offset2,offset1).toNumber();
-  // log("### lseek: " + fd + ", " + offset + ", " + whence);
+  TRACE_IO("lseek: " + fd + ", " + offset + ", " + whence);
   var f = h$fds[fd];
   if(!f) {
     h$errno = h$EBADF;
@@ -339,11 +344,11 @@ var h$baseZCSystemziPosixziInternalsZCSzuISREG = h$__hscore_s_isreg;
 var h$baseZCSystemziPosixziInternalsZCread = h$read;
 
 function h$lockFile(fd, dev, ino, for_writing) {
-//    log("### lockFile");
+    TRACE_IO("lockFile");
     return 0;
 }
 function h$unlockFile(fd) {
-//    log("### unlockFile");
+    TRACE_IO("unlockFile");
     return 0;
 }
 function h$fdReady(fd, write, msecs, isSock) {
@@ -368,13 +373,13 @@ function h$fdReady(fd, write, msecs, isSock) {
 }
 
 function h$write(fd, buf, buf_offset, n) {
-//  log("h$write: fd: " + fd + " (" + n + ")");
+  TRACE_IO("h$write: fd: " + fd + " (" + n + ")");
   var f = h$fds[fd];
   return f.buf.write(f, buf, buf_offset, n);
 }
 
 function h$read(fd, buf, buf_offset, n) {
-//  log("h$read: fd: " + fd + " (" + n + ")");
+  TRACE_IO("h$read: fd: " + fd + " (" + n + ")");
   var f = h$fds[fd];
   return f.buf.read(f, buf, buf_offset, n);
 }
@@ -382,7 +387,7 @@ function h$read(fd, buf, buf_offset, n) {
 var h$baseZCSystemziPosixziInternalsZCwrite = h$write;
 
 function h$readFile(fd, buf, buf_offset, n) {
-//  log("h$readFile: " + n);
+  TRACE_IO("h$readFile: " + n);
   var fbuf = fd.buf.data;
   var pos = fd.pos;
   n = Math.min(n, fd.buf.len - pos);
@@ -390,13 +395,13 @@ function h$readFile(fd, buf, buf_offset, n) {
     buf.u8[buf_offset+i] = fbuf.u8[pos+i];
   }
   fd.pos += n;
-//  log("h$readFile read: " + n);
+  TRACE_IO("h$readFile read: " + n);
   return n;
 }
 
 // write file just in memory
 function h$writeFile(fd, buf, buf_offset, n) {
-  // log("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
+  TRACE_IO("h$writeFile write: " + n + " old pos: " + fd.pos + " len: " + fd.buf.len);
   if(fd.pos + n > fd.buf.data.len) {
     var od = fd.buf.data;
     var d = h$newByteArray(Math.round(1.3*od.len)+100);

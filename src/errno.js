@@ -8,7 +8,7 @@ var h$EILSEQ = 92;
 var h$errno = 0;
 
 function h$__hscore_get_errno() {
-//  log("### __hscore_get_errno: " + h$errno);
+//  h$log("### __hscore_get_errno: " + h$errno);
   return h$errno;
 }
 

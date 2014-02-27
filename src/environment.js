@@ -43,7 +43,7 @@ function h$getenv() {
 }
 
 function h$errorBelch() {
-  log("### errorBelch: do we need to handle a vararg function here?");
+  h$log("### errorBelch: do we need to handle a vararg function here?");
 }
 
 function h$errorBelch2(buf1, buf_offset1, buf2, buf_offset2) {

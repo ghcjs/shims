@@ -1,20 +1,23 @@
 // software transactional memory
 
-function h$logStm() { return; }
-// var h$logStm = h$logStm0;
-function h$logStm0() { if(arguments.length == 1) {
-                          log("stm: " + arguments[0]);
-                        } else {
-                          log.apply(log,arguments);
-                        }
-                      }
+#ifdef GHCJS_TRACE_STM
+function h$logStm() { if(arguments.length == 1) {
+                         h$log("stm: " + arguments[0]);
+                       } else {
+                         h$log.apply(h$log,arguments);
+                       }
+                     }
+#define TRACE_STM(args...) h$logStm(args)
+#else
+#define TRACE_STM(args...)
+#endif
 
 
 var h$stmTransactionActive = 0;
 var h$stmTransactionWaiting = 4;
 
 function h$Transaction(o, parent) {
-  h$logStm("h$Transaction: " + o + " -> " + parent);
+  TRACE_STM("h$Transaction: " + o + " -> " + parent);
   this.action        = o;
   // h$TVar.id -> h$WrittenTVar, transaction-local changed values
   this.tvars         = new goog.structs.Map();
@@ -37,7 +40,7 @@ function h$WrittenTVar(tv,v) {
 }
 
 function h$TVar(v) {
-  h$logStm("creating tvar, value: " + h$collectProps(v));
+  TRACE_STM("creating tvar, value: " + h$collectProps(v));
   this.val     = v;                         // current value
   this.blocked = new goog.structs.Set();    // threads that get woken up if this TVar is updated
   this.invariants = null;                   // invariants that use this tvar
@@ -54,7 +57,7 @@ function h$LocalInvariant(o) {
 
 // local view of a TVar
 function h$LocalTVar(v) {
-  h$logStm("creating tvar view for: " + h$collectProps(v));
+  TRACE_STM("creating tvar view for: " + h$collectProps(v));
   this.readVal = v.val;  // the value when read from environment
   this.val     = v.val;  // the current uncommitted value
   this.tvar    = v;
@@ -66,7 +69,7 @@ function h$atomically(o) {
 }
 
 function h$stmStartTransaction(o) {
-  h$logStm("starting transaction: " + h$collectProps(o));
+  TRACE_STM("starting transaction: " + h$collectProps(o));
   var t = new h$Transaction(o, null);
   h$currentThread.transaction = t;
   h$r1 = o;
@@ -131,7 +134,7 @@ function h$stmValidateTransaction() {
   try {
     while(true) {
       var ltv = i.next();
-      h$logStm("h$stmValidateTransaction: " + ltv);
+      TRACE_STM("h$stmValidateTransaction: " + ltv);
       if(ltv.readVal !== ltv.tvar.val) return false;
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
@@ -191,7 +194,7 @@ function h$stmSuspendRetry() {
   try {
     while(true) {
       var tv = i.next().tvar;
-      h$logStm("h$stmSuspendRetry, accessed: " + h$collectProps(tv));
+      TRACE_STM("h$stmSuspendRetry, accessed: " + h$collectProps(tv));
       tv.blocked.add(h$currentThread);
       tvs.add(tv);
     }
@@ -248,17 +251,17 @@ function h$readLocalTVar(t, tv) {
   while(t0 !== null) {
     var v = t0.tvars.get(tvi);
     if(v !== undefined) {
-      h$logStm("h$readLocalTVar: found locally modified value: " + h$collectProps(v));
+      TRACE_STM("h$readLocalTVar: found locally modified value: " + h$collectProps(v));
       return v.val;
     }
     t0 = t0.parent;
   }
   var lv = t.accessed.get(tvi);
   if(lv !== undefined) {
-    h$logStm("h$readLocalTVar: found tvar value: " + h$collectProps(lv));
+    TRACE_STM("h$readLocalTVar: found tvar value: " + h$collectProps(lv));
     return lv.val;
   } else {
-    h$logStm("h$readLocalTVar: tvar value not found, adding: " + h$collectProps(tv));
+    TRACE_STM("h$readLocalTVar: tvar value not found, adding: " + h$collectProps(tv));
     t.accessed.set(tvi, new h$LocalTVar(tv));
     return tv.val;
   }
@@ -286,7 +289,7 @@ function h$stmCheckInvariants() {
   try {
     while(true) {
       var wtv = i.next();
-      h$logStm("h$stmCheckInvariants: checking: " + h$collectProps(wtv));
+      TRACE_STM("h$stmCheckInvariants: checking: " + h$collectProps(wtv));
       var ii = wtv.tvar.invariants;
       if(ii) {
         var iii = ii.__iterator__();
@@ -311,7 +314,7 @@ function h$stmCommitTVar(tv, v) {
       while(true) {
         var thr = iter.next();
         if(thr.status === h$threadBlocked) {
-          h$logStm("h$stmCommitTVar: waking up thread: " + h$threadString(thr));
+          TRACE_STM("h$stmCommitTVar: waking up thread: " + h$threadString(thr));
           h$wakeupThread(thr);
         }
       }

@@ -35,7 +35,7 @@ function h$u_towlower(ch) {
 }
 
 function h$u_iswspace(ch) {
-//  log("### u_iswspace: " + ch);
+//  h$log("### u_iswspace: " + ch);
   return /^\s$/.test(new String(ch)) ? 1 : 0;
 }
 
@@ -107,7 +107,7 @@ function h$decodeMapping(arr) {
 }
 
 function h$localeEncoding() {
-    //   log("### localeEncoding");
+    //   h$log("### localeEncoding");
    h$ret1 = 0; // offset 0
    return h$encodeUtf8("UTF-8");
 }
@@ -159,7 +159,7 @@ function h$encodeUtf8(str) {
       c = ((c - 0xD800) * 0x400) + (low - 0xDC00) + 0x10000;
       i++;
     }
-//    log("### encoding char " + c + " to UTF-8: " + String.fromCodePoint(c));
+//    h$log("### encoding char " + c + " to UTF-8: " + String.fromCodePoint(c));
     if(c <= 0x7F) {
       u8[n] = c;
       n++;
@@ -196,8 +196,8 @@ function h$encodeUtf8(str) {
     }
   }
   u8[v.len-1] = 0; // terminator
-//  log("### encodeUtf8: " + str);
-//  log(v);
+//  h$log("### encodeUtf8: " + str);
+//  h$log(v);
   return v;
 }
 
@@ -299,11 +299,11 @@ var h$dU16 = h$decodeUtf16;
 // decode a buffer with UTF-8 chars to a JS string
 // stop at the first zero
 function h$decodeUtf8z(v,start) {
-//  log("h$decodeUtf8z");
+//  h$log("h$decodeUtf8z");
   var n = start;
   var max = v.len;
   while(n < max) {
-//    log("### " + n + " got char: " + v.u8[n]);
+//    h$log("### " + n + " got char: " + v.u8[n]);
     if(v.u8[n] === 0) { break; }
     n++;
   }
@@ -313,20 +313,20 @@ function h$decodeUtf8z(v,start) {
 // decode a buffer with Utf8 chars to a JS string
 // invalid characters are ignored
 function h$decodeUtf8(v,n0,start) {
-//  log("### decodeUtf8");
-//  log(v);
+//  h$log("### decodeUtf8");
+//  h$log(v);
   var n = n0 || v.len;
   var arr = [];
   var i = start || 0;
   var code;
   var u8 = v.u8;
-//  log("### decoding, starting at:  " + i);
+//  h$log("### decoding, starting at:  " + i);
   while(i < n) {
     var c = u8[i];
     while((c & 0xC0) === 0x80) {
       c = u8[++i];
     }
-//    log("### lead char: " + c);
+//    h$log("### lead char: " + c);
     if((c & 0x80) === 0) {
       code = (c & 0x7F);
       i++;
@@ -366,7 +366,7 @@ function h$decodeUtf8(v,n0,start) {
              );
       i+=6;
     }
-    // log("### decoded codePoint: " + code + " - " + String.fromCharCode(code)); // String.fromCodePoint(code));
+    // h$log("### decoded codePoint: " + code + " - " + String.fromCharCode(code)); // String.fromCodePoint(code));
     // need to deal with surrogate pairs
     if(code > 0xFFFF) {
       var offset = code - 0x10000;
@@ -397,7 +397,7 @@ function h$hs_iconv_open(to,to_off,from,from_off) {
   return -1;
 //  var fromStr = decodeUtf8(from, from_off);
 //  var toStr = decodeUtf8(to, to_off);
-//  log("#### hs_iconv_open: " + fromStr + " -> " + toStr);
+//  h$log("#### hs_iconv_open: " + fromStr + " -> " + toStr);
 //  return 1; // fixme?
 }
 
@@ -414,7 +414,7 @@ function h$hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
 //  var insiz       = insize.getUint32(insize_off);
 //  var outsiz      = outsize.getUint32(outsize_off);
   // fixme support other encodings
-//  log("### hs_iconv");
+//  h$log("### hs_iconv");
   return utf32leToUtf8(inbuf, inbuf_off, insize, insize_off,
                        outbuf, outbuf_off, outsize, outsize_off);
 }
@@ -552,15 +552,15 @@ function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
   var out_off   = outbuf_off;
   var n = 0;
   var partial = false;
-//  log("### converting utf8");
-//  log("### inbuf_off: " + inbuf_off);
-//  log("### inbuf_left: " + inbuf_left);
-//  log("### in_max: " + in_max);
-//  log("### nbuf length: " + inbuf.byteLength);
+//  h$log("### converting utf8");
+//  h$log("### inbuf_off: " + inbuf_off);
+//  h$log("### inbuf_left: " + inbuf_left);
+//  h$log("### in_max: " + in_max);
+//  h$log("### nbuf length: " + inbuf.byteLength);
   while(in_off + 3 < in_max) {
-//    log("### converting: " + in_off);
+//    h$log("### converting: " + in_off);
     var codePoint = inbuf.getUint32(in_off);
-//    log("### converting " + codePoint + " to UTF-8: " + String.fromCodePoint(codePoint));
+//    h$log("### converting " + codePoint + " to UTF-8: " + String.fromCodePoint(codePoint));
     if(codePoint <= 0x7F) {
       if(out_off + 1 < out_max) {
         outbuf.setUint8(out_off, codePoint);
@@ -583,7 +583,7 @@ function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
         outbuf.setUint8(out_off, (codePoint >> 12) | 0xE0);
         outbuf.setUint8(out_off+1, ((codePoint >> 6) & 0x3F) | 0x80);
         outbuf.setUint8(out_off+2, (codePoint & 0x3F) | 0x80);
-//        log("### encoded triple: " + outbuf.getUint8(out_off) + ", " + outbuf.getUint8(out_off+1) + ", " + outbuf.getUint8(out_off+2));
+//        h$log("### encoded triple: " + outbuf.getUint8(out_off) + ", " + outbuf.getUint8(out_off+1) + ", " + outbuf.getUint8(out_off+2));
         out_off += 3;
       } else {
         partial = true;
@@ -630,7 +630,7 @@ function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
   }
   outsize.setUint32(outsize_off, out_max - out_off);
   insize.setUint32(insize_off, in_max - in_off);
-//  log("### converted chars: " + ((in_off - inbuf_off) / 4));
+//  h$log("### converted chars: " + ((in_off - inbuf_off) / 4));
 //  return 0; // all conversions are reversible return (in_off - inbuf_off) / 4;
   if(partial) {
     inbuf0.arr[inbuf_off0][1] = in_off;

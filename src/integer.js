@@ -6,8 +6,13 @@
          value is always zero, don't use it for comparisons
 */
 
-var h$logInt = function() { log.apply(log,arguments); }
-// var h$logInt = function() { }
+#ifdef GHCJS_TRACE_INTEGER
+function h$logInteger() { h$log.apply(h$log,arguments); }
+#define TRACE_INTEGER(args...) h$logInteger(args)
+#else
+#define TRACE_INTEGER(args...)
+#endif
+
 BigInteger.prototype.am = am3;
 dbits = 28;
 DV = (1<<dbits);
@@ -27,7 +32,7 @@ for(var i=0;i<=100;i++) {
 }
 // convert a value to a BigInt
 function h$bigFromInt(v) {
-//  h$logInt("### h$bigFromInt: " + v);
+  TRACE_INTEGER("h$bigFromInt: " + v);
   var v0 = v|0;
   if(v0 >= 0) {
     if(v0 <= 100) {
@@ -40,7 +45,7 @@ function h$bigFromInt(v) {
     r1.lShiftTo(16,r2);
     r1.fromInt(v0 & 0xffff);
     var r3 = r1.or(r2);
-//    h$logInt("### result: " + r3.toString());
+    TRACE_INTEGER("h$bigFromInt result: " + r3.toString());
     return r3;
   } else {
     v0 = -v0;
@@ -53,7 +58,7 @@ function h$bigFromInt(v) {
     r1.fromInt(v0 & 0xffff);
     var r3 = r1.or(r2);
     BigInteger.ZERO.subTo(r3,r2);
-//    h$logInt("### result: " + r2.toString());
+    TRACE_INTEGER("h$bigFromInt result: " + r2.toString());
     return r2;
   }
 }
@@ -75,28 +80,28 @@ function h$bigFromWord(v) {
 }
 
 function h$bigFromInt64(v1,v2) {
-//  h$logInt("### h$bigFromInt64: " + v1 + " " + v2);
+  TRACE_INTEGER("h$bigFromInt64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var r = new BigInteger([ v10 >>  24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ]);
-//  h$logInt("### result: " + r.toString());
+  TRACE_INTEGER("h$bigFromInt64 result: " + r.toString());
   return r;
 }
 
 function h$bigFromWord64(v1,v2) {
-//  h$logInt("### h$bigFromWord64: " + v1 + " " + v2);
+  TRACE_INTEGER("h$bigFromWord64: " + v1 + " " + v2);
   var v10 = v1|0;
   var v20 = v2|0;
   var arr = [ 0, v10 >>> 24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ];
-//  h$logInt(arr);
+  TRACE_INTEGER(arr);
   var r = new BigInteger([ 0, v10 >>> 24, (v10 & 0xff0000) >> 16, (v10 & 0xff00) >> 8, v10 & 0xff
                          , v20 >>> 24, (v20 & 0xff0000) >> 16, (v20 & 0xff00) >> 8, v20 & 0xff
                          ]);
-//  h$logInt("### result: " + r.toString());
+  TRACE_INTEGER("h$bigFromWord64 result: " + r.toString());
   return r;
 }
 
@@ -128,18 +133,17 @@ function h$encodeNumber(big,e) {
   var b = big.toByteArray();
   var l = b.length;
   var r = 0;
-//  h$logInt(b);
+  TRACE_INTEGER("h$encodeNumber", b);
   for(var i=l-1;i>=1;i--) {
-//    h$logInt("### i: " + i + " b[i] " + b[i]);
+  TRACE_INTEGER("h$encodeNumber i: " + i + " b[i] " + b[i]);
     r += m * Math.pow(2,(l-i-1)*8) * (b[i] & 0xff);
-//    h$logInt(r);
+    TRACE_INTEGER(r);
   }
   // last one signed
   if(b[0] != 0) {
     r += m * Math.pow(2,(l-1)*8) * b[0];
   }
-//  h$logInt(r);
-//  h$logInt("### result: " + r);
+  TRACE_INTEGER("h$encodeNumber result: " + r);
   return r;
 }
 
@@ -171,9 +175,9 @@ function h$integer_cmm_timesIntegerzh(sa, abits, sb, bbits) {
 // fixme make more efficient, divideRemainder
 function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
     var q = abits.divide(bbits);
-//    h$logInt("### q: " + q.toString());
+    TRACE_INTEGER("quotRemInteger q: " + q.toString());
     var r = abits.subtract(q.multiply(bbits));
-//    h$logInt("### r: " + r.toString());
+    TRACE_INTEGER("quotRemInteger r: " + r.toString());
     h$ret1 = q;
     h$ret2 = 0;
     h$ret3 = r;
@@ -187,7 +191,7 @@ function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
 
 function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
     h$ret1 = abits.subtract(bbits.multiply(abits.divide(bbits)));
-//    h$logInt("### result: " + ret1.toString());
+    TRACE_INTEGER("remInteger result: " + ret1.toString());
     return 0;
 }
 

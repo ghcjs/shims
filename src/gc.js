@@ -22,15 +22,20 @@
   - mark posted exceptions to thread
 */
 
+
+#ifdef GHCJS_TRACE_GC
+function h$traceGC() { h$log.apply(h$log, arguments); }
+#define TRACE_GC(args...) h$traceGC(args)
+#else
+#define TRACE_GC(args...)
+#endif
+
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
 var h$gcTime = 0;
 
 var h$retainCAFs = false;
 var h$CAFs = [];
 var h$CAFsReset = [];
-
-// var traceGc = log;
-function traceGc() { return; }
 
 function h$gcQuick(t) {
   var start = Date.now();
@@ -54,8 +59,8 @@ function h$gcQuick(t) {
   }
   var time = Date.now() - start;
   h$gcTime += time;
-  traceGc("time (quick): " + time + "ms");
-  traceGc("time (total): " + h$gcTime + "ms");
+  TRACE_GC("time (quick): " + time + "ms");
+  TRACE_GC("time (total): " + h$gcTime + "ms");
 }
 
 // run full marking for threads in h$blocked and h$threads, optionally t if t /= null
@@ -63,7 +68,7 @@ var h$marked = 0;
 function h$gc(t) {
 //  return; // fixme debug
   h$marked = 0;
-  traceGc("gc: " + (t!==null?h$threadString(t):"null"));
+  TRACE_GC("gc: " + (t!==null?h$threadString(t):"null"));
   var start = Date.now();
   h$resetRegisters();
   h$resetResultVars();
@@ -109,14 +114,14 @@ function h$gc(t) {
   var time = now - start;
   h$gcTime += time;
   h$lastGc = now;
-  traceGc("time: " + time + "ms");
-  traceGc("time (total): " + h$gcTime + "ms");
-  traceGc("marked objects: " + h$marked);
+  TRACE_GC("time: " + time + "ms");
+  TRACE_GC("time (total): " + h$gcTime + "ms");
+  TRACE_GC("marked objects: " + h$marked);
 }
 
 function h$markThread(t,work,weaks) {
   var start = Date.now();
-  traceGc("marking thread: " + h$threadString(t));
+  TRACE_GC("marking thread: " + h$threadString(t));
   var stack = t.stack;
   if(stack === null) { return; } // thread finished
   var sp = t.sp;
@@ -125,7 +130,7 @@ function h$markThread(t,work,weaks) {
 //  for(i=0;i<=sp;i++) {
 //    work.push(stack[i]);
 //  }
-  traceGc("h$markThread: " + (Date.now()-start) + "ms");
+  TRACE_GC("h$markThread: " + (Date.now()-start) + "ms");
   h$follow(stack, sp, work, weaks, null);
   h$resetThread(t);
 }
@@ -167,14 +172,14 @@ function h$follow(stack, sp, work, weaks, ignore) {
   var mark = h$gcMark;
   if(stack === null) { sp = -1; }
   while(sp >= 0 || work.length > 0) {
-    //traceGc(work.slice(-5).map(function(x) { if(typeof(x)==='object') { return h$collectProps(x).substring(0,40); } else {return (""+x).substring(0,40);}}));
+    // TRACE_GC(work.slice(-5).map(function(x) { if(typeof(x)==='object') { return h$collectProps(x).substring(0,40); } else {return (""+x).substring(0,40);}}));
     var c = (sp >= 0) ? stack[sp--] : work.pop();
-    //traceGc("mark step: " + typeof c);
+    // TRACE_GC("mark step: " + typeof c);
     if(c !== null && typeof c === 'object' && c !== ignore && (c.m === undefined || (c.m&3) !== mark)) {
       var doMark = false;
       var cf = c.f;
       if(cf !== undefined) { // c.f !== undefined && c.d1 !== undefined && c.d2 !== undefined) {
-        // traceGc("marking heap obj: " + c.f.n + " tag: " + c.f.gtag);
+        // TRACE_GC("marking heap obj: " + c.f.n + " tag: " + c.f.gtag);
         c.m = (c.m&-4)|mark;
         // dynamic references
         var d = c.d2;
@@ -197,32 +202,32 @@ function h$follow(stack, sp, work, weaks, ignore) {
         // static references
         var s = cf.s;
         if(s !== null) {
-          //traceGc("adding static marks:");
-          //traceGc(s);
+          // TRACE_GC("adding static marks:");
+          // TRACE_GC(s);
           // work.push.apply(work, s);
           for(var i=0;i<s.length;i++) { work.push(s[i]); }
         }
       } else if(c instanceof h$Thread) {
-        //traceGc("marking thread or array");
+        // TRACE_GC("marking thread or array");
         c.m = (c.m&-4)|mark;
       } else if(c instanceof h$Weak) {
-        //traceGc("marking weak");
+        // TRACE_GC("marking weak");
         weaks.push(c);
         c.m = (c.m&-4)|mark;
       } else if(c instanceof h$MVar) {
-        //traceGc("marking mvar");
+        // TRACE_GC("marking mvar");
         c.m = (c.m&-4)|mark;
         work.push.apply(work, c.readers.getValues());
         work.push.apply(work, c.writers.getValues());
         if(c.val !== null) { work.push(c.val); }
       } else if(c instanceof h$MutVar) {
-        //traceGc("marking mutvar");
+        // TRACE_GC("marking mutvar");
         c.m = (c.m&-4)|mark;
         work.push(c.val);
       } else if(c instanceof DataView) {
         doMark = true;
       } else if(c instanceof Array) {
-        //traceGc("marking array");
+        // TRACE_GC("marking array");
         doMark = true;
         for(var i=0;i<c.length;i++) {
           var x = c[i];
@@ -242,7 +247,7 @@ function h$follow(stack, sp, work, weaks, ignore) {
       }
     }
   }
-  traceGc("h$follow: " + (Date.now()-start) + "ms");
+  TRACE_GC("h$follow: " + (Date.now()-start) + "ms");
 }
 
 function h$resetThread(t) {
@@ -256,7 +261,7 @@ function h$resetThread(t) {
       stack[i] = null;
     }
   }
-  traceGc("h$resetThread: " + (Date.now()-start) + "ms");
+  TRACE_GC("h$resetThread: " + (Date.now()-start) + "ms");
 }
 
 function h$finalizeCAFs(t) {
@@ -268,12 +273,12 @@ function h$finalizeCAFs(t) {
     if(c.m & 3 !== mark) {
       var cr = h$CAFsReset[i];
       if(c.f !== cr) { // has been updated, reset it
-        traceGc("resetting CAF: " + cr.n);
+        TRACE_GC("resetting CAF: " + cr.n);
         c.f = cr;
         c.d1 = null;
         c.d2 = null;
       }
     }
   }
-  traceGc("h$finalizeCAFs: " + (Date.now()-start) + "ms");
+  TRACE_GC("h$finalizeCAFs: " + (Date.now()-start) + "ms");
 }

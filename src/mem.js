@@ -68,8 +68,8 @@ function h$initInfoTables(n, funcs, info) {
         srt.push(funcs[next()]);
       }
     }
-    // log("result: " + ot + " " + oa + " [" + srt + "] " + size);
-    // log("orig: " + o.t + " " + o.a + " [" + o.s + "] " + o.gtag);
+    // h$log("result: " + ot + " " + oa + " [" + srt + "] " + size);
+    // h$log("orig: " + o.t + " " + o.a + " [" + o.s + "] " + o.gtag);
     o.t    = ot;
     o.i    = [];
     o.n    = "";
@@ -221,7 +221,7 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
   }
   if(!offset) { offset = 0; }
   if(!length) { length = buf.byteLength - offset; }
-  // log("h$wrapBuffer: " + offset + " " + length);
+  // h$log("h$wrapBuffer: " + offset + " " + length);
   return { buf: buf
          , len: length
          , i3: (offset%4) ? null : new Int32Array(buf, offset, length >> 2)
@@ -269,7 +269,7 @@ function h$makeStableName(x) {
 }
 
 function h$stableNameInt(s) {
-  // log("h$stableNameInt: " + (typeof s[0]));
+  // h$log("h$stableNameInt: " + (typeof s[0]));
   var s0 = s[0];
   if(typeof s0 === 'boolean') { return s0?1:0; }
   if(typeof s0 === 'number') { return s0|0; } // fixme this won't work well with small floats 
