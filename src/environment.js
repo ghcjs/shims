@@ -1,3 +1,31 @@
+// set up debug logging for the current JS environment/engine
+// browser also logs to <div id="output"> if jquery is detected
+// the various debug tracing options use h$log
+var h$glbl;
+function h$getGlbl() { h$glbl = this; }
+h$getGlbl();
+function h$log() {
+  if(h$glbl) {
+    if(h$glbl.console && h$glbl.console.log) {
+      h$glbl.console.log.apply(h$glbl.console,arguments);
+    } else {
+      h$glbl.print.apply(this,arguments);
+    }
+  } else {
+    print.apply(this, arguments);
+  }
+  // if we have jquery, add to <div id='output'> element
+  if(typeof(jQuery) !== 'undefined') {
+    var x = '';
+    for(var i=0;i<arguments.length;i++) { x = x + arguments[i]; }
+    var xd = jQuery("<div></div>");
+    xd.text(x);
+    jQuery('#output').append(xd);
+  }
+}
+
+// load the command line arguments in h$programArgs
+// the first element is the program name
 var h$programArgs;
 if(typeof scriptArgs !== 'undefined') {
   h$programArgs = scriptArgs.slice(0);
