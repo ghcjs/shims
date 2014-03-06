@@ -4,7 +4,18 @@
 var h$glbl;
 function h$getGlbl() { h$glbl = this; }
 h$getGlbl();
+#ifdef GHCJS_LOG_BUFFER
+var h$logBufferSize = 6000;
+var h$logBufferShrink = 1000;
+var h$logBuffer = [];
+#endif
 function h$log() {
+#ifdef GHCJS_LOG_BUFFER
+  var s = '';
+  for(var i=0;i<arguments.length;i++) { s = s + arguments[i]; }
+  h$logBuffer.push(s);
+  if(h$logBuffer.length > h$logBufferSize) h$logBuffer = h$logBuffer.slice(h$logBufferShrink);
+#else
   if(h$glbl) {
     if(h$glbl.console && h$glbl.console.log) {
       h$glbl.console.log.apply(h$glbl.console,arguments);
@@ -14,6 +25,7 @@ function h$log() {
   } else {
     print.apply(this, arguments);
   }
+#endif
   // if we have jquery, add to <div id='output'> element
   if(typeof(jQuery) !== 'undefined') {
     var x = '';
