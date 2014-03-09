@@ -168,22 +168,30 @@ function h$followObjGen(c, work) {
 }
 
 function h$follow(stack, sp, work, weaks, ignore) {
+#ifdef GHCJS_TRACE_GC
+  TRACE_GC("GC marking stack");
+  h$dumpStackTop(stack, 0, sp);
+#endif
   var start = Date.now();
   var mark = h$gcMark;
   if(stack === null) { sp = -1; }
   while(sp >= 0 || work.length > 0) {
-    // TRACE_GC(work.slice(-5).map(function(x) { if(typeof(x)==='object') { return h$collectProps(x).substring(0,40); } else {return (""+x).substring(0,40);}}));
+    TRACE_GC(work.slice(-5).map(function(x) { if(typeof(x)==='object') { return h$collectProps(x).substring(0,40); } else {return (""+x).substring(0,40);}}));
     var c = (sp >= 0) ? stack[sp--] : work.pop();
-    // TRACE_GC("mark step: " + typeof c);
+    TRACE_GC("mark step: " + typeof c);
+    if(typeof c === 'object') {
+      TRACE_GC("object: " + c.toString());
+      TRACE_GC("object props: " + h$collectProps(c));
+    }
     if(c !== null && typeof c === 'object' && c !== ignore && (c.m === undefined || (c.m&3) !== mark)) {
       var doMark = false;
       var cf = c.f;
       if(cf !== undefined) { // c.f !== undefined && c.d1 !== undefined && c.d2 !== undefined) {
-        // TRACE_GC("marking heap obj: " + c.f.n + " tag: " + c.f.gtag);
+        TRACE_GC("marking heap obj: " + c.f.n + " size: " + c.f.size);
         c.m = (c.m&-4)|mark;
         // dynamic references
         var d = c.d2;
-        switch(cf.gtag) {
+        switch(cf.size) {
           case 0: break;
           case 1: work.push(c.d1); break;
           case 2: work.push(c.d1, d); break;
@@ -202,32 +210,33 @@ function h$follow(stack, sp, work, weaks, ignore) {
         // static references
         var s = cf.s;
         if(s !== null) {
-          // TRACE_GC("adding static marks:");
-          // TRACE_GC(s);
+          TRACE_GC("adding static marks:");
+          TRACE_GC(s);
           // work.push.apply(work, s);
           for(var i=0;i<s.length;i++) { work.push(s[i]); }
         }
       } else if(c instanceof h$Thread) {
-        // TRACE_GC("marking thread or array");
+        TRACE_GC("marking thread or array");
         c.m = (c.m&-4)|mark;
       } else if(c instanceof h$Weak) {
-        // TRACE_GC("marking weak");
+        TRACE_GC("marking weak");
         weaks.push(c);
         c.m = (c.m&-4)|mark;
       } else if(c instanceof h$MVar) {
-        // TRACE_GC("marking mvar");
+        TRACE_GC("marking mvar");
         c.m = (c.m&-4)|mark;
         work.push.apply(work, c.readers.getValues());
         work.push.apply(work, c.writers.getValues());
         if(c.val !== null) { work.push(c.val); }
       } else if(c instanceof h$MutVar) {
-        // TRACE_GC("marking mutvar");
+        TRACE_GC("marking mutvar");
         c.m = (c.m&-4)|mark;
         work.push(c.val);
       } else if(c instanceof DataView) {
+        TRACE_GC("marking dataview");
         doMark = true;
       } else if(c instanceof Array) {
-        // TRACE_GC("marking array");
+        TRACE_GC("marking array");
         doMark = true;
         for(var i=0;i<c.length;i++) {
           var x = c[i];
