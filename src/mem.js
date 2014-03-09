@@ -39,22 +39,28 @@ function h$initInfoTables(n, funcs, info) {
   }
   for(var i=0;i<n;i++) {
     var o = funcs[i];
-    var ot, oa;
+    var ot;
+    var oa = 0;
+    var oregs = 256; // one register no skip
     switch(next()) {
       case 0: // thunk
         ot = 0;
-        oa = 0;
         break;
       case 1: // fun
+        ot        = 1
         var arity = next();
-        var regs  = next();
-        ot = 1
-        oa = arity + (regs << 8);
+        oregs     = next();
+        oregs     = ((oregs >> 1) << 8) | (oregs & 1);
+        oa        = arity + (oregs & 0xff00);
         break;
       case 2:  // con
-        var tag = next();
         ot = 2;
-        oa = tag;
+        oa = next();
+        break;
+      case 3: // stack frame
+        ot = -1;
+        oregs = next();
+        oregs = ((oregs >> 1) << 8) | (oregs & 1);
         break;
       default: throw ("h$initInfoTables: invalid closure type: " + 3)
     }
@@ -68,17 +74,17 @@ function h$initInfoTables(n, funcs, info) {
         srt.push(funcs[next()]);
       }
     }
-    // h$log("result: " + ot + " " + oa + " [" + srt + "] " + size);
-    // h$log("orig: " + o.t + " " + o.a + " [" + o.s + "] " + o.gtag);
+    // h$log("result: " + ot + " " + oa + " " + oregs + " [" + srt + "] " + size);
+    // h$log("orig: " + o.t + " " + o.a + " " + o.r + " [" + o.s + "] " + o.gtag);
     o.t    = ot;
     o.i    = [];
     o.n    = "";
     o.a    = oa;
-    o.gai  = [];
+    o.r    = oregs;
+//    o.gai  = [];
     o.s    = srt;
     o.m    = null;
-    o.gtag = size;
-    o.gi   = [];
+    o.size = size;
   }
 }
 
