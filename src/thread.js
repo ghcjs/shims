@@ -20,6 +20,20 @@ function h$logSched() { if(arguments.length == 1) {
 #define TRACE_SCHEDULER(args...)
 #endif
 
+#ifdef GHCJS_TRACE_CALLS
+// print function to be called from trampoline and first few registers
+function h$logCall(c) {
+  var f = c;
+  if(c && c.n) {
+    f = c.n;
+  } else {
+    f = c.toString().substring(0,20); // h$collectProps(c);
+  }
+  h$log(h$threadString(h$currentThread) + ":" + h$sp + "  calling: " + f + "    " + JSON.stringify([h$printReg(h$r1), h$printReg(h$r2), h$printReg(h$r3), h$printReg(h$r4), h$printReg(h$r5)]));
+  h$checkStack();
+}
+#endif
+
 // thread status
 var h$threadRunning  = 0;
 var h$threadBlocked  = 1;
@@ -45,7 +59,9 @@ function h$Thread() {
   this.blockedOn = null; // object on which thread is blocked
   this.retryInterrupted = null; // how to retry blocking operation when interrupted
   this.transaction = null; // for STM
-  this.m = 0;
+  this.isSynchronous = false;
+  this.continueAsync = false;
+  this.m = 0; // gc mark
 }
 
 function h$rts_getThreadId(t) {
@@ -594,6 +610,8 @@ function h$runSync(a, cont) {
   h$run_init_static();
   var c = h$return;
   var t = new h$Thread();
+  t.isSynchronous = true;
+  t.continueAsync = cont;
   var ct = h$currentThread;
   var csp = h$sp;
   var cr1 = h$r1; // do we need to save more than this?
@@ -748,6 +766,11 @@ function h$runBlackholeThreadSync(bh) {
   return success;
 }
 
+function h$syncThreadState(tid) {
+  return (tid.isSynchronous ? 1 : 0) |
+         (tid.continueAsync ? 2 : 0);
+}
+
 // run the supplied IO action in a main thread
 // (program exits when this thread finishes)
 function h$main(a) {
@@ -770,13 +793,13 @@ function h$main(a) {
 // MVar support
 var h$mvarId = 0;
 function h$MVar() {
-  //TRACE_SCHEDULER("h$MVar constructor");
+  TRACE_SCHEDULER("h$MVar constructor");
   this.val     = null;
   this.readers = new goog.structs.Queue();
   this.writers = new goog.structs.Queue();
   this.waiters = null;  // waiting for a value in the MVar with ReadMVar
-  this.m = 0;
-  this.id = ++h$mvarId;
+  this.m       = 0; // gc mark
+  this.id      = ++h$mvarId;
 }
 
 // set the MVar to empty unless there are writers
@@ -873,7 +896,7 @@ function h$putMVar(mv,val) {
   if(mv.val !== null) {
     mv.writers.enqueue([h$currentThread,val]);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$putMVar,mv]);
+    h$blockThread(h$currentThread,mv,[h$putMVar,mv,val]);
     return h$reschedule;
   } else {
     h$notifyMVarFull(mv,val);

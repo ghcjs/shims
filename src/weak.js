@@ -11,44 +11,53 @@ function h$traceWeak() { h$log.apply(h$log, arguments) }
 
 // called by the GC with a set of still reachable
 function h$finalizeWeaks() {
-  var mark = h$gcMark;
   TRACE_WEAK("finalizeWeaks: " + mark);
-  var iter = h$weaks.__iterator__();
+  var i, w;
   var toFinalize = [];
-  var needFinalizeThread = false;
-  var checked = 0;
+  var toRemove   = [];
+  var iter = h$weaks.__iterator__();
   try {
     while(true) {
-      checked++;
-      var w = iter.next();
+      w = iter.next();
+      TRACE_WEAK("checking weak of: " + h$collectProps(w.key));
       TRACE_WEAK("key mark: " + w.key.m + " - " + mark);
-      if(w.key.m === undefined || w.key.m & 3 !== mark) {
-        if(w.finalizer !== null) needFinalizeThread = true; 
-        toFinalize.push(w);
+      if(!h$isMarked(w.key)) {
+        if(w.finalizer === null) {
+          toRemove.push(w);
+        } else {
+          toFinalize.push(w);
+        }
+      } else if(!h$isMarked(w) && w.finalizer === null) {
+        toRemove.push(w);
       }
     }
   } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  TRACE_WEAK("to finalize: " + toFinalize.length + " checked: " + checked);
+  TRACE_WEAK("to remove: " + toRemove.length);
+  for(i=0;i<toRemove.length;i++) {
+    w = toRemove[i];
+    w.key = null;
+    w.val = null;
+    h$weaks.remove(w);
+  }
+  TRACE_WEAK("to finalize: " + toFinalize.length);
   // start a finalizer thread if any finalizers need to be run
   if(toFinalize.length > 0) {
-    var t = needFinalizeThread ? new h$Thread() : null;
-    for(var i=0;i<toFinalize.length;i++) {
-      var w = toFinalize[i];
-      if(w.finalizer !== null) {
-        t.sp += 6;
-        t.stack[t.sp-5] = 0;      // mask
-        t.stack[t.sp-4] = h$noop; // handler, dummy
-        t.stack[t.sp-3] = h$catch_e;
-        t.stack[t.sp-2] = h$ap_1_0;
-        t.stack[t.sp-1] = w.finalizer;
-        t.stack[t.sp]   = h$return;
-      }
-      h$weaks.remove(w);
+    var t = new h$Thread();
+    for(i=0;i<toFinalize.length;i++) {
+      w = toFinalize[i];
+      t.sp += 6;
+      t.stack[t.sp-5] = 0;      // mask
+      t.stack[t.sp-4] = h$noop; // handler, dummy
+      t.stack[t.sp-3] = h$catch_e;
+      t.stack[t.sp-2] = h$ap_1_0;
+      t.stack[t.sp-1] = w.finalizer;
+      t.stack[t.sp]   = h$return;
       w.key = null;
       w.val = null;
       w.finalizer = null;
+      h$weaks.remove(w);
     }
-    if(needFinalizeThread) h$wakeupThread(t);
+    h$wakeupThread(t);
   }
 }
 
@@ -62,14 +71,17 @@ function h$Weak(key, val, finalizer) {
 }
 
 function h$makeWeak(key, val, fin) {
+  TRACE_WEAK("h$makeWeak");
   return new h$Weak(key, val, fin)
 }
 
 function h$makeWeakNoFinalizer(key, val) {
+  TRACE_WEAK("h$makeWeakNoFinalizer");
   return new h$Weak(key, val, null);
 }
 
 function h$finalizeWeak(w) {
+  TRACE_WEAK("finalizing weak of: " + h$collectProps(w.key));
   h$weaks.remove(w);
   w.key = null;
   w.val = null;

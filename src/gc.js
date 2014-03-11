@@ -6,6 +6,11 @@
   - reset unused parts of stacks to null
   - reset registers to null
   - reset return variables to null
+  - throw exceptions to threads that are blocked on an unreachable MVar
+
+  the gc uses the .m field to store its mark in all the objects it marks. for heap objects,
+  the .m field is also used for other things, like stable names, the gc only changes
+  the two least significant bits for these.
 
   assumptions:
   - all threads suspended, no active registers
@@ -30,20 +35,41 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 #define TRACE_GC(args...)
 #endif
 
+// requires target to be an object
+#define IS_OBJ_MARKED(obj, mark) obj && typeof obj.m === 'number' && obj.m & 3 === mark
+
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
 var h$gcTime = 0;
 
+#ifdef GHCJS_RETAIN_CAFS
+var h$retainCAFs = true;
+#else
 var h$retainCAFs = false;
+#endif
 var h$CAFs = [];
 var h$CAFsReset = [];
 
+// check whether the object is marked by the latest gc
+function h$isMarked(obj) {
+  return (typeof obj === 'object' || typeof obj === 'function') &&
+         typeof obj.m === 'number' && (obj.m & 3) === h$gcMark;
+}
+
+// do a quick gc of a thread:
+// - reset the stack (possibly shrinking storage for it)
+// - reset all global data
+// checks all known threads if t is null, but not h$currentThread
 function h$gcQuick(t) {
   var start = Date.now();
   h$resetRegisters();
   h$resetResultVars();
   var i;
-  if(t !== null) { // only thread t
-    h$resetThread(t);
+  if(t !== null) { // reset specified threads
+    if(t instanceof h$Thread) {  // only thread t
+      h$resetThread(t);
+    } else { // assume it's an array
+      for(var i=0;i<t.length;i++) h$resetThread(t[i]);
+    }
   } else { // all threads, h$currentThread assumed unused
     var runnable = h$threads.getValues();
     for(i=0;i<runnable.length;i++) {
@@ -51,11 +77,8 @@ function h$gcQuick(t) {
     }
     var iter = h$blocked.__iterator__();
     try {
-      while(true) {
-        t = iter.next();
-        h$resetThread(t, work, weaks);
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+      while(true) h$resetThread(iter.next());
+    } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
   }
   var time = Date.now() - start;
   h$gcTime += time;
@@ -66,7 +89,6 @@ function h$gcQuick(t) {
 // run full marking for threads in h$blocked and h$threads, optionally t if t /= null
 var h$marked = 0;
 function h$gc(t) {
-//  return; // fixme debug
   h$marked = 0;
   TRACE_GC("gc: " + (t!==null?h$threadString(t):"null"));
   var start = Date.now();
@@ -75,41 +97,70 @@ function h$gc(t) {
   h$gcMark = 5-h$gcMark;
   var i;
   var runnable = h$threads.getValues();
-  var work = [];
-  var weaks = [];
-  if(t !== null) {
-    h$markThread(t, work, weaks);
-  }
-  for(i=0;i<runnable.length;i++) {
-    h$markThread(runnable[i], work, weaks);
-  }
+  if(t !== null) h$markThread(t);
+  for(i=0;i<runnable.length;i++) h$markThread(runnable[i]);
   var iter = h$blocked.__iterator__();
   try {
-    while(true) {
-      t = iter.next();
-      h$markThread(t, work, weaks);
-    }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
+    while(true) h$markThread(iter.next());
+  } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
 
   iter = h$extraRoots.__iterator__();
   try {
-    while(true) {
-      var c = iter.next();
-      work.push(c.root);
-    }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  h$follow(null, -1, work, weaks, null);
+    while(true) h$follow(iter.next().root);
+  } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
 
-  // we now have a bunch of weak refs, mark their finalizers and
-  // values, both should not keep the key alive
-  while(weaks.length > 0) {
-    var w = weaks.pop();
-    work.push(w.finalizer, w.val);
-    h$follow(null, -1, work, weaks, w.key);
-  }
+  // now we've marked all the regular Haskell data, continue marking
+  // weak references and everything retained by DOM retainers
+  var marked;
+  do {
+    marked = false;
+    // mark all finalizers and values of weak references where the key is reachable
+    iter = h$weaks.__iterator__();
+    try {
+      while(true) {
+        TRACE_GC("recursive marking");
+        c = iter.next();
+        if(h$isMarked(c.key) && !h$isMarked(c.val)) {
+          TRACE_GC("recursively marking weak value");
+          h$follow(c.val);
+          marked = true;
+        }
+        if(c.finalizer && !h$isMarked(c.finalizer)) {
+          TRACE_GC("recursively marking weak finalizer: " + h$collectProps(c.finalizer));
+          h$follow(c.finalizer);
+          marked = true;
+        }
+      }
+    } catch (e) { if(e !== goog.iter.StopIteration) throw e; }
 
-  h$finalizeWeaks();
-  h$finalizeCAFs();
+    // mark all callbacks where at least one of the DOM retainers is reachable
+    iter = h$domRoots.__iterator__();
+    try {
+      while(true) {
+        c = iter.next();
+        if(!h$isMarked(c.root) && c.domRoots && c.domRoots.size() > 0) {
+          var domRetainers = c.domRoots.__iterator__();
+          try {
+            while(true) {
+              if(h$isReachableDom(c.next())) {
+                TRACE_GC("recursively marking weak DOM retained root");
+                h$follow(c.root);
+                marked = true;
+                break;
+              }
+            }
+          } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
+        }
+      }
+    } catch (e) { if(e !== goog.iter.StopIteration) throw e; }
+    // continue for a next round if we have marked something more
+    // note: this will be slow for very deep chains of weak refs,
+    // change this if that becomes a problem.
+  } while(marked);
+
+  h$finalizeDom();    // remove all unreachable DOM retainers
+  h$finalizeWeaks();  // run finalizers for all weak references with unreachable keys
+  h$finalizeCAFs();   // restore all unreachable
   var now = Date.now();
   var time = now - start;
   h$gcTime += time;
@@ -119,42 +170,15 @@ function h$gc(t) {
   TRACE_GC("marked objects: " + h$marked);
 }
 
-function h$markThread(t,work,weaks) {
-  var start = Date.now();
+function h$markThread(t) {
+#ifdef GHCJS_TRACE_GC
   TRACE_GC("marking thread: " + h$threadString(t));
-  var stack = t.stack;
-  if(stack === null) { return; } // thread finished
-  var sp = t.sp;
-  var i,c;
-  var mark = h$gcMark;
-//  for(i=0;i<=sp;i++) {
-//    work.push(stack[i]);
-//  }
-  TRACE_GC("h$markThread: " + (Date.now()-start) + "ms");
-  h$follow(stack, sp, work, weaks, null);
+#endif
+  if(t.stack === null) return;  // thread finished
+  h$follow(t.stack, t.sp);
   h$resetThread(t);
 }
-/*
-function h$followObj1(c, work) {
-  work.push(c.d1);
-}
 
-function h$followObj7(c, work) {
-  var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3, d7.d4, d7.d5, d7.d6);
-}
-
-function h$followObj6(c, work) {
-  var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3, d7.d4, d7.d5);
-}
-
-function h$followObj5(c, work) {
-  var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3, d7.d4);
-}
-
-function h$followObj4(c, work) {
-  var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3);
-}
-*/
 // big object, not handled by 0..7 cases
 // keep out of h$follow to prevent deopt
 function h$followObjGen(c, work) {
@@ -167,28 +191,39 @@ function h$followObjGen(c, work) {
    }
 }
 
-function h$follow(stack, sp, work, weaks, ignore) {
+// follow all references in the object obj and mark them with the current mark
+// if sp is a number, obj is assumed to be an array for which indices [0..sp] need
+// to be followed (used for thread stacks)
+function h$follow(obj, sp) {
+  var i, iter, c, work;
 #ifdef GHCJS_TRACE_GC
-  TRACE_GC("GC marking stack");
-  h$dumpStackTop(stack, 0, sp);
-#endif
   var start = Date.now();
-  var mark = h$gcMark;
-  if(stack === null) { sp = -1; }
-  while(sp >= 0 || work.length > 0) {
-    TRACE_GC(work.slice(-5).map(function(x) { if(typeof(x)==='object') { return h$collectProps(x).substring(0,40); } else {return (""+x).substring(0,40);}}));
-    var c = (sp >= 0) ? stack[sp--] : work.pop();
-    TRACE_GC("mark step: " + typeof c);
+#endif
+  var mark  = h$gcMark;
+  var work;
+  if(typeof sp === 'number') {
+    work = obj.slice(0, sp+1);
+  } else {
+    work = [obj];
+  }
+  while(work.length > 0) {
+    TRACE_GC("work length: " + work.length);
+    c = work.pop();
+    TRACE_GC("[" + work.length + "] mark step: " + typeof c);
+#ifdef GHCJS_TRACE_GC
     if(typeof c === 'object') {
       TRACE_GC("object: " + c.toString());
       TRACE_GC("object props: " + h$collectProps(c));
+      TRACE_GC("object mark: " + c.m + " (" + typeof(c.m) + ")" + "(current: " + mark + ")");
     }
-    if(c !== null && typeof c === 'object' && c !== ignore && (c.m === undefined || (c.m&3) !== mark)) {
+#endif
+    if(c !== null && typeof c === 'object' && (c.m === undefined || (c.m&3) !== mark)) {
       var doMark = false;
       var cf = c.f;
-      if(cf !== undefined) { // c.f !== undefined && c.d1 !== undefined && c.d2 !== undefined) {
-        TRACE_GC("marking heap obj: " + c.f.n + " size: " + c.f.size);
-        c.m = (c.m&-4)|mark;
+      TRACE_GC("checking blar: " + (typeof cf) + " " + typeof c.m);
+      if(typeof cf === 'function' && typeof c.m === 'number') {
+        TRACE_GC("marking heap object: " + c.f.n + " size: " + c.f.size);
+        c.m = (c.m&-4)|mark; // only change the two least significant bits for heap objects
         // dynamic references
         var d = c.d2;
         switch(cf.size) {
@@ -202,9 +237,9 @@ function h$follow(stack, sp, work, weaks, ignore) {
           case 7: var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3, d7.d4, d7.d5, d7.d6); break;
           case 8: var d8=c.d2; work.push(c.d1, d8.d1, d8.d2, d8.d3, d8.d4, d8.d5, d8.d6, d8.d7); break;
           case 9: var d9=c.d2; work.push(c.d1, d9.d1, d9.d2, d9.d3, d9.d4, d9.d5, d9.d6, d9.d7, d9.d8); break;
-//          case 10: var d10=c.d2; work.push(c.d1, d10.d1, d10.d2, d10.d3, d10.d4, d10.d5, d10.d6, d10.d7, d10.d8, d10.d9); break;
-//          case 11: var d11=c.d2; work.push(c.d1, d11.d1, d11.d2, d11.d3, d11.d4, d11.d5, d11.d6, d11.d7, d11.d8, d11.d9, d11.d10); break;
-//          case 12: var d12=c.d2; work.push(c.d1, d12.d1, d12.d2, d12.d3, d12.d4, d12.d5, d12.d6, d12.d7, d12.d8, d12.d9, d12.d10, d12.d11); break;
+          case 10: var d10=c.d2; work.push(c.d1, d10.d1, d10.d2, d10.d3, d10.d4, d10.d5, d10.d6, d10.d7, d10.d8, d10.d9); break;
+          case 11: var d11=c.d2; work.push(c.d1, d11.d1, d11.d2, d11.d3, d11.d4, d11.d5, d11.d6, d11.d7, d11.d8, d11.d9, d11.d10); break;
+          case 12: var d12=c.d2; work.push(c.d1, d12.d1, d12.d2, d12.d3, d12.d4, d12.d5, d12.d6, d12.d7, d12.d8, d12.d9, d12.d10, d12.d11); break;
           default: h$followObjGen(c,work);
         }
         // static references
@@ -212,55 +247,80 @@ function h$follow(stack, sp, work, weaks, ignore) {
         if(s !== null) {
           TRACE_GC("adding static marks:");
           TRACE_GC(s);
-          // work.push.apply(work, s);
-          for(var i=0;i<s.length;i++) { work.push(s[i]); }
+          for(var i=0;i<s.length;i++) work.push(s[i]);
         }
-      } else if(c instanceof h$Thread) {
-        TRACE_GC("marking thread or array");
-        c.m = (c.m&-4)|mark;
-      } else if(c instanceof h$Weak) {
-        TRACE_GC("marking weak");
-        weaks.push(c);
-        c.m = (c.m&-4)|mark;
+      } else if(c instanceof h$Thread || c instanceof h$Weak) {
+        /* - a h$Thread is a ThreadId on the Haskell side, which by itself doesn't keep
+               data alive
+           - weak references are marked later in a separate loop, so we don't need to add
+               the finalizer or value to the work queue
+         */
+        TRACE_GC("marking RTS object");
+        c.m = mark;
       } else if(c instanceof h$MVar) {
-        TRACE_GC("marking mvar");
-        c.m = (c.m&-4)|mark;
-        work.push.apply(work, c.readers.getValues());
-        work.push.apply(work, c.writers.getValues());
+        TRACE_GC("marking MVar");
+        c.m = mark;
+        // work.push.apply(work, c.readers.getValues()); // fixme is this ok?
+        work.push.apply(work, c.writers.getValues()); // fixme is this ok?
         if(c.val !== null) { work.push(c.val); }
       } else if(c instanceof h$MutVar) {
-        TRACE_GC("marking mutvar");
-        c.m = (c.m&-4)|mark;
+        TRACE_GC("marking MutVar");
+        c.m = mark;
         work.push(c.val);
-      } else if(c instanceof DataView) {
-        TRACE_GC("marking dataview");
-        doMark = true;
+      } else if(c instanceof h$TVar) {
+        TRACE_GC("marking TVar");
+        c.m = mark;
+        work.push(c.val);
+      } else if(c instanceof h$Transaction) {
+        /* - the accessed TVar values don't need to be marked
+           - parents are also on the stack, so they should've been marked already
+         */
+        TRACE_GC("marking STM transaction");
+        c.m = mark;
+        work.push.apply(work, c.invariants);
+        work.push(c.action);
+        iter = c.tvars.__iterator__();
+        try {
+          while(true) work.push(c.next());
+        } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
       } else if(c instanceof Array) {
+        // could be a boxed array or any JS object, we only need to follow boxed arrays
+        // we check that the first element is something that looks like a heap object
+        // before we proceed to scan the thing
         TRACE_GC("marking array");
-        doMark = true;
-        for(var i=0;i<c.length;i++) {
-          var x = c[i];
-          if(x && typeof x === 'object' && (x.m === undefined || (x.m&3) !== mark)) {
-            work.push(x);
+        if(((typeof c.m === 'number' && c.m !== mark) || typeof c.m === 'undefined') &&
+           (c.length === 0 || (typeof c[0] === 'object' && typeof c[0].f === 'function' && typeof c[0].m === 'number'))) {
+          c.m = mark;
+          for(i=0;i<c.length;i++) {
+            var x = c[i];
+            if(x && typeof x === 'object' && typeof x.f === 'function' && typeof x.m === 'number') {
+              if(x.m !== mark) work.push(x);
+            } else {
+              break; // not a boxed array, don't scan the remainder
+            }
           }
         }
-      }
-      // safe marking for when we don't know that c.m exists
-      if(doMark) {
-//        h$marked++;
-        if(c.m === undefined) {
-          c.m = mark;
-        } else {
-          c.m = (c.m&-4)|mark;
-        }
+//      } else if(c instanceof EventTarget) { // HTMLElement) { // DOM retention
+//        TRACE_GC("marking DOM element");
+        // fixme
+      } else {
+#ifdef GHCJS_TRACE_GC_UNKNOWN
+        // everything else is unknown, no followable values, this gets spammy
+       TRACE_GC("unknown object: " + h$collectProps(c));
+#endif
       }
     }
   }
   TRACE_GC("h$follow: " + (Date.now()-start) + "ms");
 }
 
+// resetThread clears the stack above the stack pointer
+// and shortens the stack array if there is too much
+// unused space
 function h$resetThread(t) {
+#ifdef GHCJS_TRACE_GC
   var start = Date.now();
+#endif
   var stack = t.stack;
   var sp = t.sp;
   if(stack.length - sp > sp && stack.length > 100) {
@@ -273,9 +333,33 @@ function h$resetThread(t) {
   TRACE_GC("h$resetThread: " + (Date.now()-start) + "ms");
 }
 
-function h$finalizeCAFs(t) {
-  if(h$retainCAFs) { return; }
+// throw blocked indefinitely exceptions to threads waiting on unreferenced MVars
+function h$finalizeThreads() {
+  var iter = h$blocked.__iterator__();
+  try {
+    while(true) {
+      var t = iter.next();
+      if(t.status === h$threadBlocked && t.blockedOn instanceof h$MVar) {
+        if(t.blockedOn.m !== h$gcMark) {
+          // thread waiting on unreferenced MVar, raise exception
+          // fixme
+        }
+      }
+    }
+  } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
+}
+
+// clear DOM retainers
+function h$finalizeDom() {
+  // fixme
+}
+
+// reset unreferenced CAFs to their initial value
+function h$finalizeCAFs() {
+  if(h$retainCAFs) return;
+#ifdef GHCJS_TRACE_GC
   var start = Date.now();
+#endif
   var mark = h$gcMark;
   for(var i=0;i<h$CAFs.length;i++) {
     var c = h$CAFs[i];

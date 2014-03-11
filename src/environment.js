@@ -36,6 +36,14 @@ function h$log() {
   }
 }
 
+function h$collectProps(o) {
+  var props = [];
+  for(var p in o) { props.push(p); }
+  return("{"+props.join(",")+"}");
+}
+
+
+
 // load the command line arguments in h$programArgs
 // the first element is the program name
 var h$programArgs;

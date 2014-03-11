@@ -28,6 +28,7 @@ function h$Transaction(o, parent) {
   this.parent        = parent;
   this.state         = h$stmTransactionActive;
   this.invariants    = []; // invariants added in this transaction
+  this.m             = 0;  // gc mark
 }
 
 function h$StmInvariant(a) {
@@ -41,9 +42,10 @@ function h$WrittenTVar(tv,v) {
 
 function h$TVar(v) {
   TRACE_STM("creating tvar, value: " + h$collectProps(v));
-  this.val     = v;                         // current value
-  this.blocked = new goog.structs.Set();    // threads that get woken up if this TVar is updated
-  this.invariants = null;                   // invariants that use this tvar
+  this.val        = v;                      // current value
+  this.blocked    = new goog.structs.Set(); // threads that get woken up if this TVar is updated
+  this.invariants = null;                   // invariants that use this tvar (goog.structs.Set)
+  this.m          = 0;                      // gc mark
 }
 
 function h$TVarsWaiting(s) {
@@ -57,7 +59,7 @@ function h$LocalInvariant(o) {
 
 // local view of a TVar
 function h$LocalTVar(v) {
-  TRACE_STM("creating tvar view for: " + h$collectProps(v));
+  TRACE_STM("creating TVar view for: " + h$collectProps(v));
   this.readVal = v.val;  // the value when read from environment
   this.val     = v.val;  // the current uncommitted value
   this.tvar    = v;
@@ -101,7 +103,7 @@ function h$stmAddTVarInvariant(tv, inv) {
 }
 
 // commit current transaction,
-// if it's top-level, commit the tvars, otherwise commit to parent
+// if it's top-level, commit the TVars, otherwise commit to parent
 function h$stmCommitTransaction() {
   var t = h$currentThread.transaction;
   var tvs = t.tvars;

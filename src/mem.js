@@ -10,13 +10,13 @@ function h$sti(f) {
 }
 
 // initialize packed info tables
-// see Compactor for how the data is encoded
+// see Gen2.Compactor for how the data is encoded
 function h$initInfoTables(n, funcs, info) {
   var pos = 0;
   function code(c) {
     if(c < 34) return c - 32;
     if(c < 92) return c - 33;
-    return c -34;
+    return c - 34;
   }
   function next() {
     var c = info.charCodeAt(pos);
@@ -89,19 +89,9 @@ function h$initInfoTables(n, funcs, info) {
 }
 
 // slice an array of heap objects
-var h$sliceArray = /* ArrayBuffer.prototype.slice ?
-  function(a, start, n) {
-    return new Int32Array(a.buffer.slice(start, n));
-  }
-  : */
-  function(a, start, n) {
-    var tgt = [];
-    for(var i=0;i<n;i++) {
-      tgt[i] = a[start+i];
-    }
-    return tgt;
-  }
-
+function h$sliceArray(a, start, n) {
+  return a.slice(start, n);
+}
 
 function h$memcpy() {
   if(arguments.length === 3) {  // ByteArray# -> ByteArray# copy
@@ -217,17 +207,42 @@ function h$newByteArray(len) {
          }
 }
 
-// wrap an ArrayBuffer so that it can be used as a ByteArray#
-// with the most common view prespun
-// offset and length are optional, both are in bytes
-// if unaligned ok, then unaligned fields will be null
+/*
+  Unboxed arrays in GHC use the ByteArray# and MutableByteArray#
+  primitives. In GHCJS these primitives are represented by an
+  object that contains a JavaScript ArrayBuffer and several views
+  (typed arrays) on that buffer.
+
+  Usually you can use GHCJS.Foreign.wrapBuffer and
+  GHCJS.Foreign.wrapMutableBuffer to do the conversion. If you need
+  more control or lower level acces, read on.
+
+  You can use h$wrapBuffer to wrap any JavaScript ArrayBuffer
+  into such an object, without copying the buffer. Since typed array
+  access is aligned, not all views are available
+  if the offset of the buffer is not a multiple of 8.
+
+  Since IO has kind * -> *, you cannot return IO ByteArray#
+  from a foreign import, even with the UnliftedFFITypes
+  extension. Return a JSRef instead and use unsafeCoerce
+  to convert it to a Data.Primitive.ByteArray.ByteArray or
+  Data.Primitive.ByteArray.MutableByteArray (primitive package)
+  and pattern match on the constructor to get the
+  primitive value out.
+
+  These types have the same runtime representation (a data
+  constructor with one regular (one JavaScript variable)
+  field) as a JSRef, so the conversion is safe, as long
+  as everything is fully evaluated.
+*/
 function h$wrapBuffer(buf, unalignedOk, offset, length) {
-  if(!unalignedOk && offset && offset % 8 != 0) {
-    throw ("h$wrapBuffer offset not aligned:" + offset);
+  if(!unalignedOk && offset && offset % 8 !== 0) {
+    throw ("h$wrapBuffer: offset not aligned:" + offset);
   }
+  if(!buf || !(buf instanceof ArrayBuffer))
+    throw "h$wrapBuffer: not an ArrayBuffer"
   if(!offset) { offset = 0; }
   if(!length) { length = buf.byteLength - offset; }
-  // h$log("h$wrapBuffer: " + offset + " " + length);
   return { buf: buf
          , len: length
          , i3: (offset%4) ? null : new Int32Array(buf, offset, length >> 2)
@@ -377,6 +392,9 @@ function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
 // extra roots for the heap scanner: objects with root property
 var h$extraRoots = new goog.structs.Set();
 
+// 
+var h$domRoots = new goog.structs.Set();
+
 function h$makeCallback(retain, f, extraArgs, action) {
   var args = extraArgs.slice(0);
   args.unshift(action);
@@ -409,9 +427,11 @@ function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
   } else {
     throw "h$makeCallbackApply: unsupported arity";
   }
-  if(retain) {
+  if(retain === true) {
     c.root = fun;
     h$extraRoots.add(c);
+  } else if(retain) {
+
   }
   return c;
 }
@@ -420,8 +440,27 @@ function h$mkJSRef(x) {
   return h$c1(h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e, x);
 }
 
-function h$freeCallback(c) {
+function h$retain(c) {
+  h$extraRoots.add(c);
+}
+
+function h$retainDom(d, c) {
+  h$domRoots.add(c);
+  c.domRoots = new goog.structs.Set();
+}
+
+function h$releasePermanent(c) {
   h$extraRoots.remove(c);
+}
+
+function h$release(c) {
+  h$extraRoots.remove(c);
+  h$domRoots.remove(c);
+}
+
+function h$releaseDom(c,d) {
+  if(c.domRoots) c.domRoots.remove(d);
+  if(!c.domRoots || c.domRoots.size() == 0) h$domRoots.remove(c);
 }
 
 function h$isInstanceOf(o,c) {
