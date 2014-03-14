@@ -11,6 +11,9 @@ function h$traceWeak() { h$log.apply(h$log, arguments) }
 
 // called by the GC with a set of still reachable
 function h$finalizeWeaks() {
+#ifdef GHCJS_TRACE_WEAK
+  var mark = h$gcMark;
+#endif
   TRACE_WEAK("finalizeWeaks: " + mark);
   var i, w;
   var toFinalize = [];

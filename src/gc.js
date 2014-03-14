@@ -39,7 +39,10 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 #define IS_OBJ_MARKED(obj, mark) obj && typeof obj.m === 'number' && obj.m & 3 === mark
 
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
+
+#ifdef GHCJS_TRACE_GC
 var h$gcTime = 0;
+#endif
 
 #ifdef GHCJS_RETAIN_CAFS
 var h$retainCAFs = true;
@@ -60,7 +63,10 @@ function h$isMarked(obj) {
 // - reset all global data
 // checks all known threads if t is null, but not h$currentThread
 function h$gcQuick(t) {
+  if(h$currentThread !== null) throw "h$gcQuick: GC can only be run when no thread is running";
+#ifdef GHCJS_TRACE_GC
   var start = Date.now();
+#endif
   h$resetRegisters();
   h$resetResultVars();
   var i;
@@ -80,17 +86,24 @@ function h$gcQuick(t) {
       while(true) h$resetThread(iter.next());
     } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
   }
+#ifdef GHCJS_TRACE_GC
   var time = Date.now() - start;
   h$gcTime += time;
   TRACE_GC("time (quick): " + time + "ms");
   TRACE_GC("time (total): " + h$gcTime + "ms");
+#endif
 }
 
 // run full marking for threads in h$blocked and h$threads, optionally t if t /= null
+#ifdef GHCJS_TRACE_GC
 var h$marked = 0;
+#endif
 function h$gc(t) {
+  if(h$currentThread !== null) throw "h$gc: GC can only be run when no thread is running";
+#ifdef GHCJS_TRACE_GC
   h$marked = 0;
   TRACE_GC("gc: " + (t!==null?h$threadString(t):"null"));
+#endif
   var start = Date.now();
   h$resetRegisters();
   h$resetResultVars();
@@ -101,9 +114,13 @@ function h$gc(t) {
   for(i=0;i<runnable.length;i++) h$markThread(runnable[i]);
   var iter = h$blocked.__iterator__();
   try {
-    while(true) h$markThread(iter.next());
+    while(true) {
+      var nt = iter.next();
+      if(!(nt.blockedOn instanceof h$MVar)) {
+        h$markThread(nt);
+      }
+    }
   } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
-
   iter = h$extraRoots.__iterator__();
   try {
     while(true) h$follow(iter.next().root);
@@ -111,6 +128,48 @@ function h$gc(t) {
 
   // now we've marked all the regular Haskell data, continue marking
   // weak references and everything retained by DOM retainers
+  h$markRetained();
+
+  // now all running threads and threads blocked on something that's
+  // not an MVar operation have been marked, including other threads
+  // they reference through their ThreadId
+
+  // clean up threads waiting on unreachable MVars:
+  // throw an exception to a thread (which brings it back
+  // to life), then scan it. Killing one thread might be enough
+  // since the killed thread could make other threads reachable again.
+  var killedThread;
+  while(killedThread = h$finalizeMVars()) {
+    h$markThread(killedThread);
+    h$markRetained();
+  }
+
+  // mark all blocked threads
+  iter = h$blocked.__iterator__();
+  try {
+    while(true) h$markThread(iter.next());
+  } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
+
+  // and their weak references etc
+  h$markRetained();
+
+  // now everything has been marked, bring out your dead references
+  h$finalizeDom();    // remove all unreachable DOM retainers
+  h$finalizeWeaks();  // run finalizers for all weak references with unreachable keys
+  h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
+
+  var now = Date.now();
+  h$lastGc = now;
+#ifdef GHCJS_TRACE_GC
+  h$gcTime += time;
+  var time = now - start;
+  TRACE_GC("time: " + time + "ms");
+  TRACE_GC("time (total): " + h$gcTime + "ms");
+  TRACE_GC("marked objects: " + h$marked);
+#endif
+}
+
+function h$markRetained() {
   var marked;
   do {
     marked = false;
@@ -157,23 +216,15 @@ function h$gc(t) {
     // note: this will be slow for very deep chains of weak refs,
     // change this if that becomes a problem.
   } while(marked);
-
-  h$finalizeDom();    // remove all unreachable DOM retainers
-  h$finalizeWeaks();  // run finalizers for all weak references with unreachable keys
-  h$finalizeCAFs();   // restore all unreachable
-  var now = Date.now();
-  var time = now - start;
-  h$gcTime += time;
-  h$lastGc = now;
-  TRACE_GC("time: " + time + "ms");
-  TRACE_GC("time (total): " + h$gcTime + "ms");
-  TRACE_GC("marked objects: " + h$marked);
 }
 
+
 function h$markThread(t) {
+  if(t.m === h$gcMark) return;
 #ifdef GHCJS_TRACE_GC
   TRACE_GC("marking thread: " + h$threadString(t));
 #endif
+  t.m = h$gcMark;
   if(t.stack === null) return;  // thread finished
   h$follow(t.stack, t.sp);
   h$resetThread(t);
@@ -214,13 +265,12 @@ function h$follow(obj, sp) {
     if(typeof c === 'object') {
       TRACE_GC("object: " + c.toString());
       TRACE_GC("object props: " + h$collectProps(c));
-      TRACE_GC("object mark: " + c.m + " (" + typeof(c.m) + ")" + "(current: " + mark + ")");
+      TRACE_GC("object mark: " + c.m + " (" + typeof(c.m) + ") (current: " + mark + ")");
     }
 #endif
     if(c !== null && typeof c === 'object' && (c.m === undefined || (c.m&3) !== mark)) {
       var doMark = false;
       var cf = c.f;
-      TRACE_GC("checking blar: " + (typeof cf) + " " + typeof c.m);
       if(typeof cf === 'function' && typeof c.m === 'number') {
         TRACE_GC("marking heap object: " + c.f.n + " size: " + c.f.size);
         c.m = (c.m&-4)|mark; // only change the two least significant bits for heap objects
@@ -249,19 +299,23 @@ function h$follow(obj, sp) {
           TRACE_GC(s);
           for(var i=0;i<s.length;i++) work.push(s[i]);
         }
-      } else if(c instanceof h$Thread || c instanceof h$Weak) {
-        /* - a h$Thread is a ThreadId on the Haskell side, which by itself doesn't keep
-               data alive
+      } else if(c instanceof h$Weak) {
+        /*
            - weak references are marked later in a separate loop, so we don't need to add
                the finalizer or value to the work queue
          */
-        TRACE_GC("marking RTS object");
+        TRACE_GC("marking weak reference");
         c.m = mark;
       } else if(c instanceof h$MVar) {
         TRACE_GC("marking MVar");
         c.m = mark;
-        // work.push.apply(work, c.readers.getValues()); // fixme is this ok?
-        work.push.apply(work, c.writers.getValues()); // fixme is this ok?
+        // only push the values in the queues, the threads will
+        // be scanned after threads waiting on unreachable MVars have
+        // been cleaned up
+        iter = c.writers.getValues();
+        for(i=0;i<iter.length;i++) {
+          work.push(iter[i][1]);
+        }
         if(c.val !== null) { work.push(c.val); }
       } else if(c instanceof h$MutVar) {
         TRACE_GC("marking MutVar");
@@ -271,6 +325,12 @@ function h$follow(obj, sp) {
         TRACE_GC("marking TVar");
         c.m = mark;
         work.push(c.val);
+      } else if(c instanceof h$Thread) {
+        TRACE_GC("marking Thread");
+        if(c.m !== mark) {
+          c.m = mark;
+          if(c.stack) work.push.apply(work, c.stack.slice(0, c.sp));
+        }
       } else if(c instanceof h$Transaction) {
         /* - the accessed TVar values don't need to be marked
            - parents are also on the stack, so they should've been marked already
@@ -333,20 +393,22 @@ function h$resetThread(t) {
   TRACE_GC("h$resetThread: " + (Date.now()-start) + "ms");
 }
 
-// throw blocked indefinitely exceptions to threads waiting on unreferenced MVars
-function h$finalizeThreads() {
-  var iter = h$blocked.__iterator__();
+// throw blocked indefinitely exception to the first thread waiting on an unreferenced MVar
+function h$finalizeMVars() {
+  TRACE_GC("finalizing MVars");
+  var i, iter = h$blocked.__iterator__();
   try {
     while(true) {
       var t = iter.next();
       if(t.status === h$threadBlocked && t.blockedOn instanceof h$MVar) {
         if(t.blockedOn.m !== h$gcMark) {
-          // thread waiting on unreferenced MVar, raise exception
-          // fixme
+          h$killThread(t, h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar);
+          return t;
         }
       }
     }
   } catch(e) { if(e !== goog.iter.StopIteration) throw e; }
+  return null;
 }
 
 // clear DOM retainers
