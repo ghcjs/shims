@@ -243,7 +243,7 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
   if(!buf || !(buf instanceof ArrayBuffer))
     throw "h$wrapBuffer: not an ArrayBuffer"
   if(!offset) { offset = 0; }
-  if(!length) { length = buf.byteLength - offset; }
+  if(!length || length < 0) { length = buf.byteLength - offset; }
   return { buf: buf
          , len: length
          , i3: (offset%4) ? null : new Int32Array(buf, offset, length >> 2)
