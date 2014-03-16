@@ -148,88 +148,107 @@ function h$encodeNumber(big,e) {
 }
 
 function h$integer_cmm_cmpIntegerzh(sa, abits, sb, bbits) {
+  TRACE_INTEGER("cmpInteger: " + abits + " " + bbits);
   var c = abits.compareTo(bbits);
   return c == 0 ? 0 : c > 0 ? 1 : -1;
 }
 
 function h$integer_cmm_cmpIntegerIntzh(sa, abits, b) {
-  var res = abits.compareTo(h$bigFromInt(b));
-  return res;
+  TRACE_INTEGER("cmpIntegerInt: " + abits + " " + b);
+  var c = abits.compareTo(h$bigFromInt(b));
+  return c == 0 ? 0 : c > 0 ? 1 : -1;
 }
 
 function h$integer_cmm_plusIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.add(bbits);
-    return 0;
+    TRACE_INTEGER("plusInteger: " + abits + " " + bbits);
+    return abits.add(bbits);
+}
+
+function h$integer_cmm_plusIntegerIntzh(sa, abits, b) {
+  TRACE_INTEGER("plusIntegerInt: " + abits + " " + b);
+  return abits.add(h$bigFromInt(b));
 }
 
 function h$integer_cmm_minusIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.subtract(bbits);
-    return 0;
+    TRACE_INTEGER("minusInteger: " + abits + " " + bbits);
+    return abits.subtract(bbits);
 }
 
 function h$integer_cmm_timesIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.multiply(bbits);
-    return 0;
+    TRACE_INTEGER("timesInteger: " + abits + " " + bbits);
+    return abits.multiply(bbits);
+}
+
+function h$integer_cmm_timesIntegerIntzh(sa, abits, b) {
+  TRACE_INTEGER("timesIntegerInt: " + abits + " " + b);
+  return abits.multiply(h$bigFromInt(b));
 }
 
 // fixme make more efficient, divideRemainder
 function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
+    TRACE_INTEGER("quotRemInteger: " + abits + " " + bbits);
     var q = abits.divide(bbits);
     TRACE_INTEGER("quotRemInteger q: " + q.toString());
     var r = abits.subtract(q.multiply(bbits));
     TRACE_INTEGER("quotRemInteger r: " + r.toString());
-    h$ret1 = q;
-    h$ret2 = 0;
-    h$ret3 = r;
-    return 0;
+    h$ret1 = r;
+    return q;
 }
 
 function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.divide(bbits);
-    return 0;
+    TRACE_INTEGER("quotInteger: " + abits + " " + bbits);
+    return abits.divide(bbits);
 }
 
 function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.subtract(bbits.multiply(abits.divide(bbits)));
-    TRACE_INTEGER("remInteger result: " + ret1.toString());
-    return 0;
+    TRACE_INTEGER("remInteger: " + abits + " " + bbits);
+    return abits.subtract(bbits.multiply(abits.divide(bbits)));
 }
 
 function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
+    TRACE_INTEGER("divModInteger: " + abits + " " + bbits);
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         d = d.subtract(h$bigOne);
-        m = m.add(bbits);
-    }
-    h$ret1 = d;
-    h$ret2 = 0;
-    h$ret3 = m;
-    return 0;
-}
-
-function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
-    var d = abits.divide(bbits);
-    var m = abits.subtract(d.multiply(bbits));
-    if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        d = d.subtract(h$bigOne);
-    }
-    h$ret1 = d;
-    return 0;
-}
-
-function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
-    var d = abits.divide(bbits);
-    var m = abits.subtract(d.multiply(bbits));
-    if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         m = m.add(bbits);
     }
     h$ret1 = m;
-    return 0;
+    return d;
+}
+
+function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
+    TRACE_INTEGER("gcdDivInteger "  + abits + " " + bbits);
+    var d = abits.divide(bbits);
+    var m = abits.subtract(d.multiply(bbits));
+    if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
+        d = d.subtract(h$bigOne);
+    }
+    return d;
+}
+
+function h$integer_cmm_divIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("divIntegerWord "  + abits + " " + b);
+    return h$integer_cmm_divInteger(sa, abits, 0, h$bigFromWord(b));
+}
+
+function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
+    TRACE_INTEGER("modInteger "  + abits + " " + bbits);
+    var d = abits.divide(bbits);
+    var m = abits.subtract(d.multiply(bbits));
+    if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
+        m = m.add(bbits);
+    }
+    return m;
 }
 function h$integer_cmm_divExactIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.divide(bbits);
-    return 0;
+    TRACE_INTEGER("divExactInteger "  + abits + " " + bbits);
+    return abits.divide(bbits);
+}
+
+function h$integer_cmm_divExactIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("divExactIntegerWord "  + abits + " " + b);
+    return abits.divide(h$bigFromWord(b));
 }
 
 function h$gcd(a, b) {
@@ -253,11 +272,12 @@ function h$gcd(a, b) {
 }
 
 function h$integer_cmm_gcdIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = h$gcd(abits, bbits);
-    return 0;
+    TRACE_INTEGER("gcdInteger "  + abits + " " + bbits);
+    return h$gcd(abits, bbits);
 }
 
 function h$integer_cmm_gcdIntegerIntzh(sa, abits, b) {
+    TRACE_INTEGER("gcdIntegerInt "  + abits + " " + b);
     var r = h$gcd(abits, h$bigFromInt(b));
     return r.intValue();
 }
@@ -285,19 +305,16 @@ var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
     if(isNaN(x)) {
-      h$ret2 = h$bigFromInt(3).shiftLeft(51).negate();
-      h$ret1 = 0;
+      h$ret1 = h$bigFromInt(3).shiftLeft(51).negate();
       return 972;
     }
     if( x < 0 ) {
         var result = h$integer_cmm_decodeDoublezh(-x);
-        h$ret2 = h$ret2.negate();
-        h$ret1 = h$ret2.signum();
+        h$ret1 = h$ret1.negate();
         return result;
     }
     if(x === Number.POSITIVE_INFINITY) {
-        h$ret2 = h$bigOne.shiftLeft(52);
-        h$ret1 = 0;
+        h$ret1 = h$bigOne.shiftLeft(52);
         return 972;
     }
     var exponent = Math.floor(Math.log(x) * h$oneOverLog2)-52;
@@ -315,34 +332,35 @@ function h$integer_cmm_decodeDoublezh(x) {
       exponent--;
       n *= 2;
     }
-    h$ret2 = h$bigFromNumber(n);
-    h$ret1 = 0;
+    h$ret1 = h$bigFromNumber(n);
     return exponent;
 }
 
 function h$integer_cmm_int2Integerzh(i) {
+    TRACE_INTEGER("int2Integer "  + i);
     h$ret1 = h$bigFromInt(i);
     return 0;
 }
 
 function h$integer_cmm_word2Integerzh(i) {
+    TRACE_INTEGER("word2Integer "  + i);
     h$ret1 = h$bigFromWord(i);
     return 0;
 }
 
 function h$integer_cmm_andIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.and(bbits);
-    return 0;
+    TRACE_INTEGER("andInteger "  + abits + " " + bbits);
+    return abits.and(bbits);
 }
 
 function h$integer_cmm_orIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.or(bbits);
-    return 0;
+    TRACE_INTEGER("orInteger "  + abits + " " + bbits);
+    return abits.or(bbits);
 }
 
 function h$integer_cmm_xorIntegerzh(sa, abits, sb, bbits) {
-    h$ret1 = abits.xor(bbits);
-    return 0;
+    TRACE_INTEGER("xorInteger "  + abits + " " + bbits);
+    return abits.xor(bbits);
 }
 
 function h$integer_cmm_testBitIntegerzh(sa, abits, bit) {
@@ -350,49 +368,56 @@ function h$integer_cmm_testBitIntegerzh(sa, abits, bit) {
 }
 
 function h$integer_cmm_mul2ExpIntegerzh(sa, abits, b) {
-    h$ret1 = abits.shiftLeft(b);
-    return 0;
+    TRACE_INTEGER("mul2ExpInteger "  + abits + " " + b);
+    return abits.shiftLeft(b);
 }
 
 function h$integer_cmm_fdivQ2ExpIntegerzh(sa, abits, b) {
-    h$ret1 = abits.shiftRight(b);
-    return 0;
+    TRACE_INTEGER("fdivQ2ExpInteger "  + abits + " " + b);
+    return abits.shiftRight(b);
 }
 
 function h$integer_cmm_complementIntegerzh(sa, abits) {
-    h$ret1 = abits.not();
-    return 0;
+    TRACE_INTEGER("complementInteger "  + abits);
+    return abits.not();
 }
 
 function h$integer_cmm_int64ToIntegerzh(a0, a1) {
+    TRACE_INTEGER("int64ToInteger "  + a0 + " " + a1);
     h$ret1 = h$bigFromInt64(a0,a1);
     return 0;
 }
 
 function h$integer_cmm_word64ToIntegerzh(a0, a1) {
+    TRACE_INTEGER("word64ToInteger "  + a0 + " " + a1);
     h$ret1 = h$bigFromWord64(a0,a1);
     return 0;
 }
 
 function h$hs_integerToInt64(as, abits) {
+    TRACE_INTEGER("integerToInt64 "  + abits);
     h$ret1 = abits.intValue();
     return abits.shiftRight(32).intValue();
 }
 
 function h$hs_integerToWord64(as, abits) {
+    TRACE_INTEGER("integerToWord64 "  + abits);
     h$ret1 = abits.intValue();
     return abits.shiftRight(32).intValue();
 }
 
 function h$integer_cmm_integer2Intzh(as, abits) {
+   TRACE_INTEGER("integer2Int "  + abits);
    return abits.intValue();
 }
 
 function h$integer_cbits_encodeDouble(as,abits,e) {
+    TRACE_INTEGER("encodeDouble "  + abits + " " + e);
    return h$encodeNumber(abits,e);
 }
 
 function h$integer_cbits_encodeFloat(as,abits,e) {
+    TRACE_INTEGER("integerToInt64 "  + abits + " " + e);
    return h$encodeNumber(abits,e);
 }
 
@@ -403,5 +428,4 @@ function h$__int_encodeDouble(i,e) {
 function h$__int_encodeFloat(i,e) {
    return i * Math.pow(2,e);
 }
-
 

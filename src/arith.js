@@ -355,7 +355,7 @@ function h$decodeFloatInt(d) {
       return -12582912;
     }
     var exponent    = h$integer_cmm_decodeDoublezh(d)+29;
-    var significand = h$ret2.shiftRight(29).intValue();
+    var significand = h$ret1.shiftRight(29).intValue();
     if(exponent > 105) {
       exponent = 105;
       significand = significand > 0 ? 8388608 : -8388608;
@@ -369,7 +369,7 @@ function h$decodeFloatInt(d) {
 
 function h$decodeDouble2Int(d) {
    var exponent    = h$integer_cmm_decodeDoublezh(d);
-   var significand = h$ret2;
+   var significand = h$ret1;
    var sign = d<0?-1:1;
    h$ret1 = significand.shiftRight(32).intValue(); // correct sign?
    h$ret2 = significand.intValue();
