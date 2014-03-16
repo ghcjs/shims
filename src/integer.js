@@ -174,6 +174,11 @@ function h$integer_cmm_minusIntegerzh(sa, abits, sb, bbits) {
     return abits.subtract(bbits);
 }
 
+function h$integer_cmm_minusIntegerIntzh(sa, abits, b) {
+   TRACE_INTEGER("minusIntegerInt: " + abits + " " + b);
+   return abits.subtract(h$bigFromInt(b));
+}
+
 function h$integer_cmm_timesIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("timesInteger: " + abits + " " + bbits);
     return abits.multiply(bbits);
@@ -195,13 +200,32 @@ function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
     return q;
 }
 
+function h$integer_cmm_quotRemIntegerWordzh(sa, abits, b) {
+    var bbits = h$bigFromWord(b);
+    TRACE_INTEGER("quotRemIntegerWord: " + abits + " " + b);
+    var q = abits.divide(bbits);
+    h$ret1 = abits.subtract(q.multiply(bbits));
+    return q;
+}
+
 function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("quotInteger: " + abits + " " + bbits);
     return abits.divide(bbits);
 }
 
+function h$integer_cmm_quotIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("quotIntegerWord: " + abits + " " + b);
+    return abits.divide(h$bigFromWord(b));
+}
+
 function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("remInteger: " + abits + " " + bbits);
+    return abits.subtract(bbits.multiply(abits.divide(bbits)));
+}
+
+function h$integer_cmm_remIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("remInteger: " + abits + " " + bbits);
+    var bbits = h$bigFromWord(b);
     return abits.subtract(bbits.multiply(abits.divide(bbits)));
 }
 
@@ -229,7 +253,7 @@ function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
 
 function h$integer_cmm_divIntegerWordzh(sa, abits, b) {
     TRACE_INTEGER("divIntegerWord "  + abits + " " + b);
-    return h$integer_cmm_divInteger(sa, abits, 0, h$bigFromWord(b));
+    return h$integer_cmm_divIntegerzh(sa, abits, 0, h$bigFromWord(b));
 }
 
 function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
@@ -241,6 +265,12 @@ function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
     }
     return m;
 }
+
+function h$integer_cmm_modIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("modInteger "  + abits + " " + bbits);
+    return h$integer_cmm_modIntegerzh(sa, abits, 0, h$bigFromWord(b));
+}
+
 function h$integer_cmm_divExactIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("divExactInteger "  + abits + " " + bbits);
     return abits.divide(bbits);
