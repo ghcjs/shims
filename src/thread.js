@@ -420,11 +420,16 @@ function h$scheduler(next) {
     if(h$currentThread && h$currentThread.status === h$threadRunning) {
       // do gc after a while
       if(now - h$lastGc > h$gcInterval) {
+        // save active data for the thread on its stack
         if(next !== h$reschedule && next !== null) {
           h$suspendCurrentThread(next);
           next = h$stack[h$sp];
         }
+        var ct = h$currentThread;
+        h$currentThread = null;
         h$gc(h$currentThread);
+        h$currentThread = ct;
+        // gc might replace the stack of a thread, so reload it
         h$stack = h$currentThread.stack;
       }
 //      if(h$postAsync(next === h$reschedule, next)) {
@@ -463,8 +468,10 @@ function h$scheduler(next) {
       TRACE_SCHEDULER("sched: no suspend needed, no running thread");
     }
     // gc if needed
-    if(now - h$lastGc > h$gcInterval)
+    if(now - h$lastGc > h$gcInterval) {
+      h$currentThread = null;
       h$gc(t);
+    }
     // schedule new one
     h$currentThread = t;
     h$stack = t.stack;
