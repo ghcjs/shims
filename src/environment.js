@@ -127,6 +127,7 @@ function h$performMajorGC() {
   h$stack[h$sp]   = h$return;
   h$stack[h$sp-1] = h$r1;
   t.sp = h$sp;
+  h$currentThread = null;
 
   h$gc(t);
 

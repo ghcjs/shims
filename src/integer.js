@@ -241,6 +241,11 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     return d;
 }
 
+function h$integer_cmm_divModIntegerWordzh(sa, abits, b) {
+    TRACE_INTEGER("divModIntegerWord: " + abits + " " + b);
+    return h$integer_cmm_divModIntegerWordzh(sa, abits, 0, h$bigFromWord(b));
+}
+
 function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("gcdDivInteger "  + abits + " " + bbits);
     var d = abits.divide(bbits);
