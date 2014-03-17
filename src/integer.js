@@ -234,8 +234,8 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        d = d.subtract(h$bigOne);
-        m = m.add(bbits);
+        d.subtractTo(h$bigOne, d);
+        m.addTo(bbits, m);
     }
     h$ret1 = m;
     return d;
@@ -251,7 +251,7 @@ function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        d = d.subtract(h$bigOne);
+        d.subtractTo(h$bigOne, d);
     }
     return d;
 }
@@ -266,13 +266,13 @@ function h$integer_cmm_modIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        m = m.add(bbits);
+        m.addTo(bbits, m);
     }
     return m;
 }
 
 function h$integer_cmm_modIntegerWordzh(sa, abits, b) {
-    TRACE_INTEGER("modInteger "  + abits + " " + bbits);
+    TRACE_INTEGER("modIntegerWord "  + abits + " " + b);
     return h$integer_cmm_modIntegerzh(sa, abits, 0, h$bigFromWord(b));
 }
 
@@ -334,6 +334,51 @@ function h$integer_cmm_gcdIntzh(a, b) {
             small = r;
         }
         return big;
+}
+
+function h$integer_cmm_powIntegerzh(sa, abits, b) {
+    TRACE_INTEGER("powInteger "  + abits + " " + b);
+    if(b >= 0) {
+      return abits.pow(b);
+    } else {
+      return abits.pow(b + 2147483648);
+    }
+}
+
+// (a ^ b) % c
+function h$integer_cmm_powModIntegerzh(sa, abits, sb, bbits, sc, cbits) {
+    TRACE_INTEGER("powModInteger "  + abits + " " + bbits + " " + cbits);
+    return abits.modPow(bbits, cbits);
+}
+
+// warning, there is no protection against side-channel attacks here
+function h$integer_cmm_powModSecIntegerzh(sa, abits, sb, bbits, sc, cbits) {
+    TRACE_INTEGER("powModSecInteger "  + abits + " " + bbits + " " + cbits);
+    return h$integer_cmm_powModIntegerzh(sa, abits, sb, bbits, sc, cbits);
+}
+
+function h$integer_cmm_recipModIntegerzh(sa, abits, sb, bbits) {
+    TRACE_INTEGER("recipModInteger "  + abits + " " + bbits);
+    return abits.modInverse(bbits);
+}
+
+function h$integer_cmm_nextPrimeIntegerzh(sa, abits) {
+    TRACE_INTEGER("nextPrimeInteger "  + abits);
+    var n = abits.add(BigInteger.ONE);
+    while(true) {
+      if(n.isProbablePrime(50)) return n;
+      n.addTo(BigInteger.ONE, n);
+    }
+}
+
+function h$integer_cmm_testPrimeIntegerzh(sa, abits, b) {
+    TRACE_INTEGER("testPrimeInteger "  + abits + " " + b);
+    return abits.isProbablePrime(b) ? 1 : 0;
+}
+
+function h$integer_cmm_sizeInBasezh(sa, abits, b) {
+    TRACE_INTEGER("sizeInBase " + abits);
+    return Math.ceil(abits.bitLength() * Math.log(2) / Math.log(b));
 }
 
 var h$oneOverLog2 = 1 / Math.log(2);
