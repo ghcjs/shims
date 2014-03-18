@@ -81,14 +81,14 @@ function h$JSObjectCallAsConstructor(ctx, ctx_2, f, f_2, argc, argv, argv_2, pex
             a[i] = argv.arr[argv_2+(i<<2)][0];
         }
         switch(argc) {
-            case 0 : return new f();
-            case 1 : return new f(a[0]);
-            case 2 : return new f(a[0],a[1]);
-            case 3 : return new f(a[0],a[1],a[2]);
-            case 4 : return new f(a[0],a[1],a[2],a[3]);
-            case 5 : return new f(a[0],a[1],a[2],a[3],a[4]);
-            case 6 : return new f(a[0],a[1],a[2],a[3],a[4],a[5]);
-            case 6 : return new f(a[0],a[1],a[2],a[3],a[4],a[5],a[6]);
+            case 0 : return new f();break;
+            case 1 : return new f(a[0]);break;
+            case 2 : return new f(a[0],a[1]);break;
+            case 3 : return new f(a[0],a[1],a[2]);break;
+            case 4 : return new f(a[0],a[1],a[2],a[3]);break;
+            case 5 : return new f(a[0],a[1],a[2],a[3],a[4]);break;
+            case 6 : return new f(a[0],a[1],a[2],a[3],a[4],a[5]);break;
+            case 7 : return new f(a[0],a[1],a[2],a[3],a[4],a[5],a[6]);break;
             default:
                 var ret;
                 var temp = function() {
@@ -96,7 +96,10 @@ function h$JSObjectCallAsConstructor(ctx, ctx_2, f, f_2, argc, argv, argv_2, pex
                 };
                 temp.prototype = f.prototype;
                 var instance = new temp();
-                return ret instanceof Object ? ret : instance;
+                if (ret instanceof Object)
+                    return ret;
+                instance.constructor = f;
+                return instance;
         }
     }
     catch(e) {
