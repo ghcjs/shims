@@ -295,8 +295,7 @@ function h$follow(obj, sp) {
         // static references
         var s = cf.s;
         if(s !== null) {
-          TRACE_GC("adding static marks:");
-          TRACE_GC(s);
+          TRACE_GC("adding static marks");
           for(var i=0;i<s.length;i++) work.push(s[i]);
         }
       } else if(c instanceof h$Weak) {
@@ -401,7 +400,9 @@ function h$finalizeMVars() {
     while(true) {
       var t = iter.next();
       if(t.status === h$threadBlocked && t.blockedOn instanceof h$MVar) {
-        if(t.blockedOn.m !== h$gcMark) {
+        // if h$unboxFFIResult is the top of the stack, then we cannot kill
+        // the thread since it's waiting for async FFI
+        if(t.blockedOn.m !== h$gcMark && t.stack[t.sp] !== h$unboxFFIResult) {
           h$killThread(t, h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar);
           return t;
         }

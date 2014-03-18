@@ -432,7 +432,9 @@ function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
     c.root = fun;
     h$extraRoots.add(c);
   } else if(retain) {
-
+    // fixme: retain this while `retain' is in some DOM
+  } else {
+    // no retainer
   }
   return c;
 }
