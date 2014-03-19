@@ -61,11 +61,11 @@ function h$_hs_text_decode_utf8_internal ( dest_v
   var ddv = dest_v.dv;
   var sdv = src_v.dv;
 
-  function decode(byte) {
-    var type = h$_text_utf8d[byte];
+  function decode(b) {
+    var type = h$_text_utf8d[b];
     codepoint = (state !== h$_text_UTF8_ACCEPT) ?
-      (byte & 0x3f) | (codepoint << 6) :
-      (0xff >>> type) & byte;
+      (b & 0x3f) | (codepoint << 6) :
+      (0xff >>> type) & b;
     state = h$_text_utf8d[256 + state + type];
     return state;
   }

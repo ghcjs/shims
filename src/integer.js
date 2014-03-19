@@ -234,7 +234,7 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        d.subtractTo(h$bigOne, d);
+        d = d.subtract(h$bigOne);
         m.addTo(bbits, m);
     }
     h$ret1 = m;
@@ -247,11 +247,11 @@ function h$integer_cmm_divModIntegerWordzh(sa, abits, b) {
 }
 
 function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
-    TRACE_INTEGER("gcdDivInteger "  + abits + " " + bbits);
+    TRACE_INTEGER("divInteger "  + abits + " " + bbits);
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
-        d.subtractTo(h$bigOne, d);
+        d = d.subtract(h$bigOne);
     }
     return d;
 }
@@ -384,6 +384,7 @@ function h$integer_cmm_sizeInBasezh(sa, abits, b) {
 var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
+    TRACE_INTEGER("decodeDouble " + x);
     if(isNaN(x)) {
       h$ret1 = h$bigFromInt(3).shiftLeft(51).negate();
       return 972;
@@ -397,7 +398,7 @@ function h$integer_cmm_decodeDoublezh(x) {
         h$ret1 = h$bigOne.shiftLeft(52);
         return 972;
     }
-    var exponent = Math.floor(Math.log(x) * h$oneOverLog2)-52;
+    var exponent = (Math.floor(Math.log(x) * h$oneOverLog2)-52)|0;
     var n;
     // prevent overflow
     if(exponent < -1000) {

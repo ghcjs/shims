@@ -1,3 +1,10 @@
+#ifdef GHCJS_TRACE_ARITH
+function h$logArith() { h$log.apply(h$log,arguments); }
+#define TRACE_ARITH(args...) h$logArith(args)
+#else
+#define TRACE_ARITH(args...)
+#endif
+
 function h$hs_eqWord64(a1,a2,b1,b2) {
   return (a1===b1 && a2===b2) ? 1 : 0;
 }
@@ -310,10 +317,12 @@ function h$uncheckedShiftRL64(a1,a2,n) {
 }
 
 function h$isDoubleNegativeZero(d) {
+  TRACE_ARITH("isDoubleNegativeZero: " + d);
   return (d===0 && (1/d) === -Infinity) ? 1 : 0;
 }
 
 function h$isFloatNegativeZero(d) {
+  TRACE_ARITH("isFloatNegativeZero: " + d);
   return (d===0 && (1/d) === -Infinity) ? 1 : 0;
 }
 
