@@ -1,5 +1,20 @@
 // preemptive threading support
 
+// run gc when this much time has passed (ms)
+#ifndef GHCJS_GC_INTERVAL
+#define GHCJS_GC_INTERVAL 1000
+#endif
+
+// preempt threads after the scheduling quantum (ms)
+#ifndef GHCJS_SCHED_QUANTUM
+#define GHCJS_SCHED_QUANTUM 25
+#endif
+
+// timeout (ms) when there are no running threads
+#ifndef GHCJS_IDLE_YIELD
+#define GHCJS_IDLE_YIELD 20
+#endif
+
 #ifdef GHCJS_TRACE_SCHEDULER
 function h$logSched() { if(arguments.length == 1) {
                           if(h$currentThread != null) {
@@ -394,7 +409,7 @@ function h$blockThread(t,o,resume) {
 // returns null if nothing to do, otherwise
 // the next function to run
 var h$lastGc = Date.now();
-var h$gcInterval = 1000; // ms
+var h$gcInterval = GHCJS_GC_INTERVAL; // ms
 function h$scheduler(next) {
   TRACE_SCHEDULER("sched: scheduler: " + h$sp);
   var now = Date.now();
@@ -431,6 +446,7 @@ function h$scheduler(next) {
         h$currentThread = ct;
         // gc might replace the stack of a thread, so reload it
         h$stack = h$currentThread.stack;
+        h$sp    = h$currentThread.sp
       }
 //      if(h$postAsync(next === h$reschedule, next)) {
 //        TRACE_SCHEDULER("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
@@ -530,7 +546,11 @@ function h$mainLoop() {
   h$running = true;
   h$run_init_static();
   h$currentThread = h$next;
-  var c = null; // fixme is this ok?
+  if(h$next !== null) {
+    h$stack = h$currentThread.stack;
+    h$sp    = h$currentThread.sp;
+  }
+  var c = null;
   var count;
   var start = Date.now();
   do {
@@ -540,7 +560,7 @@ function h$mainLoop() {
       h$running = false;
       if(typeof setTimeout !== 'undefined') {
         h$next = null;
-        setTimeout(h$mainLoop, 20);
+        setTimeout(h$mainLoop, GHCJS_IDLE_YIELD);
         return;
       } else {
         while(c === null) { c = h$scheduler(c); }
@@ -559,9 +579,11 @@ function h$mainLoop() {
       }
     }
     // preemptively schedule threads after 9990 calls
-    // but not earlier than after 25ms
+    // but not before the end of the scheduling quantum
+#ifndef GHCJS_NO_CATCH_MAINLOOP
     try {
-      while(c !== h$reschedule && Date.now() - scheduled < 25) {
+#endif
+      while(c !== h$reschedule && Date.now() - scheduled < GHCJS_SCHED_QUANTUM) {
         count = 0;
         while(c !== h$reschedule && ++count < 1000) {
 #ifdef GHCJS_TRACE_CALLS
@@ -584,6 +606,7 @@ function h$mainLoop() {
 #endif
         }
       }
+#ifndef GHCJS_NO_CATCH_MAINLOOP
     } catch(e) {
       // uncaught exception in haskell code, kill thread
       // would we ever need to remove the thread from queues?
@@ -594,6 +617,7 @@ function h$mainLoop() {
       c = null;
       h$log("uncaught exception in Haskell thread: " + e.toString());
     }
+#endif
   } while(true);
 }
 
