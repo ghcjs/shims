@@ -1015,12 +1015,14 @@ function h$mkForeignCallback(x) {
 
 // event listeners through MVar
 function h$makeMVarListener(mv, stopProp, stopImmProp, preventDefault) {
-  return function(event) {
+  var f = function(event) {
     TRACE_SCHEDULER("MVar listener callback");
     h$writeMVarJs1(mv,event);
     if(stopProp) { event.stopPropagation(); }
     if(stopImmProp) { event.stopImmediatePropagation(); }
     if(preventDefault) { event.preventDefault(); }
   }
+  f.root = mv;
+  return f;
 }
 
