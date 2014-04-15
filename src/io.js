@@ -1,3 +1,5 @@
+// #define GHCJS_TRACE_IO 1
+
 #ifdef GHCJS_TRACE_IO
 function h$logIO() { h$log.apply(h$log, arguments); }
 #define TRACE_IO(args...) h$logIO(args)
@@ -6,7 +8,8 @@ function h$logIO() { h$log.apply(h$log, arguments); }
 #endif
 
 function h$stdFd(n,readReady,writeReady,buf) {
-  return new h$Fd(buf, readReady, writeReady, n);
+  // fixme isATTY should check
+  return new h$Fd(buf, readReady, writeReady, true, n);
 }
 
 var h$stdinBuf = { write: function() { throw "can't write to stdin"; } };
@@ -15,6 +18,7 @@ var h$stderrBuf = { read: function () { throw "can't read from stderr"; } };
 
 function h$initStdioBufs() {
   if(typeof process !== 'undefined' && process && process.stdin) { // node.js
+    TRACE_IO("setting up node.js stdio");
     h$stdinBuf.isATTY  = process.stdin.isTTY;
     h$stdoutBuf.isATTY = process.stdout.isTTY;
     h$stderrBuf.isATTY = process.stderr.isTTY;
@@ -25,41 +29,52 @@ function h$initStdioBufs() {
     h$stdinBuf.eof = false;
     h$stdinBuf.readReady = false;
     h$stdinBuf.writeReady = false;
-    process.stdin.on('data', function(chunk) {
-      h$stdinBuf.chunks.enqueue(chunk);
+    setTimeout(function() {
+    process.stdin.on('readable', function() {
+      TRACE_IO("stdin readable:");
       h$stdin.readReady = true;
       h$notifyRead(h$stdin);
     });
     process.stdin.on('end', function() {
+      TRACE_IO("stdin eof");
       h$stdinBuf.eof = true;
       h$stdin.readReady = true; // for eof, the fd is ready but read returns 0 bytes
       h$notifyRead(h$stdin);
     });
+  },1);
     h$stdinBuf.read = function(fd, buf, buf_offset, n) {
+      TRACE_IO("stdin read: " + n);
       if(fd.buf.chunks.getCount() === 0) {
-        return 0;
-      } else {
-        var h = fd.buf.chunks.peek();
-        var o = fd.buf.chunkOff;
-        var left = h.length - o;
-        var u8 = buf.u8;
-        if(left > n) {
-          for(var i=0;i<n;i++) {
-            u8[buf_offset+i] = h[o+i];
-          }
-          fd.buf.chunkOff += n;
-          return n;
+        var ch = process.stdin.read();
+        if(ch) {
+          fd.buf.chunks.enqueue(ch);
         } else {
-          for(var i=0;i<left;i++) {
-            u8[buf_offset+i] = h[o+i];
-          }
-          fd.buf.chunkOff = 0;
-          fd.buf.chunks.dequeue();
-          if(fd.buf.chunks.getCount() === 0 && !fd.buf.eof) {
-            h$stdin.readReady = false;
-          }
-          return left;
+          h$stdin.readReady = false;
+          return 0;
         }
+      }
+      var h = fd.buf.chunks.peek();
+      var o = fd.buf.chunkOff;
+      var left = h.length - o;
+      var u8 = buf.u8;
+      if(left > n) {
+        for(var i=0;i<n;i++) {
+          u8[buf_offset+i] = h[o+i];
+        }
+        fd.buf.chunkOff += n;
+        TRACE_IO("stdin read " + n + " bytes");
+        return n;
+      } else {
+        for(var i=0;i<left;i++) {
+          u8[buf_offset+i] = h[o+i];
+        }
+        fd.buf.chunkOff = 0;
+        fd.buf.chunks.dequeue();
+        if(fd.buf.chunks.getCount() === 0 && !fd.buf.eof) {
+          h$stdin.readReady = false;
+        }
+        TRACE_IO("stdin read " + left + " bytes (remainder of chunk)");
+        return left;
       }
     }
 
@@ -108,6 +123,8 @@ var h$stdin  = h$stdFd(0, false, false, h$stdinBuf);
 var h$stdout = h$stdFd(1, false, true, h$stdoutBuf);
 var h$stderr = h$stdFd(2, false, true, h$stderrBuf);
 
+TRACE_IO("std buffers set up");
+
 var h$fdN = 3;
 var h$fds = { '0': h$stdin
             , '1': h$stdout
@@ -118,14 +135,18 @@ var h$filesMap = {}; // new Map(); // path -> file
 
 // fixme remove file from h$filesMap?
 function h$close(fd) {
+  TRACE_IO("close: " + fd);
   var f = h$fds[fd];
   if(f) {
     for(var i=0;i<f.waitRead.length;i++) {
-      h$throwTo(f.waitRead[i], h$IOException);
+      TRACE_IO("killing reader thread: " + h$threadString(f.waitRead[i]));
+      // h$throwTo(f.waitRead[i], h$IOException);
     }
     for(var i=0;i<f.waitWrite.length;i++) {
-      h$throwTo(f.waitWrite[i], h$IOException);
+      TRACE_IO("killing writer thread: " + h$threadString(f.waitWrite[i]));
+      // h$throwTo(f.waitWrite[i], h$IOException);
     }
+    if(f.buf.close) f.buf.close();
     delete h$fds[fd];
     return 0;
   } else {
@@ -140,6 +161,7 @@ function h$Fd(buf, readReady, writeReady, isATTY, n) {
   } else {
     this.fd  = h$fdN++;
   }
+  TRACE_IO("created fd: " + this.fd + " ("  + readReady + "," + writeReady + ")");
   this.pos = 0;
   this.buf = buf;
   this.waitRead = [];
@@ -151,6 +173,7 @@ function h$Fd(buf, readReady, writeReady, isATTY, n) {
 
 function h$newFd(file) {
   var fd = new h$Fd(file, true, true, false);
+  TRACE_IO("creating file fd: " + file);
   h$fds[fd.fd] = fd;
   return fd;
 }
@@ -169,6 +192,7 @@ function h$newFile(path, data) {
 
 // notify threads waiting, call after new data for fd comes in
 function h$notifyRead(fd) {
+  TRACE_IO("notify read fd: " + fd.fd);
   var a = fd.waitRead;
   for(var i=0;i<a.length;i++) {
     h$wakeupThread(a[i]);
@@ -178,9 +202,10 @@ function h$notifyRead(fd) {
 
 // notify threads waiting, call when we can write more
 function h$notifyWrite(fd) {
+  TRACE_IO("notify write fd: " + fd.fd);
   var a = fd.waitWrite;
   for(var i=0;i<a.length;i++) {
-    h$wakupThread(a[i]);
+    h$wakeupThread(a[i]);
   }
   fd.waitRead.length = 0;
 }
@@ -192,6 +217,7 @@ function h$readFile() {
 // use the system specific way to load the file (either AJAX or directly)
 // return a buffer with the contents
 function h$loadFileData(path) {
+  TRACE_IO("loading file data: " + path);
   if(path.charCodeAt(path.length-1) === 0) {
     path = path.substring(0,path.length-1);
   }
@@ -233,7 +259,13 @@ function h$findFile(path) {
 }
 
 function h$isatty(d) {
+  TRACE_IO("isatty: " + d);
   return h$fds[d].buf.isATTY?1:0;
+}
+
+function h$__hscore_ftruncate(fd, x, y) {
+  TRACE_IO("ftruncate: " + fd);
+  return 0; // fixme
 }
 
 function h$__hscore_bufsiz() { return 4096; }
@@ -276,9 +308,15 @@ function h$__hscore_fstat(fd, buf, off) {
   buf.dv.setUint32(off, f.buf.len, true);
   return 0;
 }
+function h$__hscore_stat(path_d, path_off, buf_d, buf_off) {
+  var p = h$decodeUtf8z(path_d, path_off);
+  TRACE_IO('__hscore_stat: ' + p);
+  buf_d.dv.setUint32(buf_off, 1, true); // fixme
+  return 0;
+}
 function h$__hscore_st_mode(st) { return 0; }
 function h$__hscore_st_dev() { return 0; }
-function h$__hscore_st_ino() { return 0; }
+function h$__hscore_st_ino() { h$ret1 = 0; return 0; }
 function h$__hscore_st_size(st, off) {
     // return 64 bit
     h$ret1 = st.dv.getInt32(off, true);
@@ -344,11 +382,11 @@ var h$baseZCSystemziPosixziInternalsZCSzuISREG = h$__hscore_s_isreg;
 var h$baseZCSystemziPosixziInternalsZCread = h$read;
 
 function h$lockFile(fd, dev, ino, for_writing) {
-    TRACE_IO("lockFile");
+    TRACE_IO("lockFile:" + fd);
     return 0;
 }
 function h$unlockFile(fd) {
-    TRACE_IO("unlockFile");
+    TRACE_IO("unlockFile:" + fd);
     return 0;
 }
 function h$fdReady(fd, write, msecs, isSock) {

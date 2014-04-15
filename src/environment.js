@@ -1,3 +1,10 @@
+#ifdef GHCJS_TRACE_ENV
+function h$logEnv() { h$log.apply(h$log,arguments); }
+#define TRACE_ENV(args...) h$logEnv(args)
+#else
+#define TRACE_ENV(args...)
+#endif
+
 // set up debug logging for the current JS environment/engine
 // browser also logs to <div id="output"> if jquery is detected
 // the various debug tracing options use h$log
@@ -23,7 +30,7 @@ function h$log() {
       h$glbl.print.apply(this,arguments);
     }
   } else {
-    print.apply(this, arguments);
+    console.log.apply(console, arguments);
   }
 #endif
   // if we have jquery, add to <div id='output'> element
@@ -60,6 +67,7 @@ if(typeof scriptArgs !== 'undefined') {
 }
 
 function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
+  TRACE_ENV("getProgArgV");
   var c = h$programArgs.length;
   if(c === 0) {
     argc_v.dv.setInt32(argc_off, 0, true);
@@ -73,6 +81,16 @@ function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
     if(!argv_v.arr) { argv_v.arr = []; }
     argv_v.arr[argv_off] = [argv, 0];
   }
+}
+
+function h$setProgArgv(n, ptr_d, ptr_o) {
+  args = [];
+  for(var i=0;i<n;i++) {
+    var p = ptr_d.arr[ptr_o+4*i];
+    var arg = h$decodeUtf8z(p[0], p[1]);
+    args.push(arg);
+  }
+  h$programArgs = args;
 }
 
 function h$getpid() {

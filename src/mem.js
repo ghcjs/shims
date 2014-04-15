@@ -1,18 +1,90 @@
+#ifdef GHCJS_TRACE_META
+function h$logMeta(args) { h$log.apply(h$log,arguments); }
+#define TRACE_META(args...) h$logMeta(args)
+#else
+#define TRACE_META(args...)
+#endif
 // memory management and pointer emulation
 
-// static initialize
-function h$sti(f) {
-  h$initStatic.push(function() {
-    var xs = f();
-    var to = xs.shift();
-    h$init_closure(to, xs);
-  });
+// static init, non-caf
+function h$sti(i,c,xs) {
+    i.f = c;
+    h$init_closure(i,xs);
+}
+
+// static init, caf
+function h$stc(i,c) {
+    i.f = c;
+    h$init_closure(i,[]);
+    h$CAFs.push(i);
+    h$CAFsReset.push(i.f);
+}
+
+function h$stl(o, xs, t) {
+    var r = t ? t : h$ghczmprimZCGHCziTypesziZMZN;
+    var x;
+    if(xs.length > 0) {
+        for(var i=xs.length-1;i>=0;i--) {
+            x = xs[i];
+            if(!x && x !== false && x !== 0) throw "h$toHsList: invalid element";
+            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r);
+        }
+    }
+    o.f  = r.f;
+    o.d1 = r.d1;
+    o.d2 = r.d2;
+    o.m  = r.m;
+}
+
+// delayed init for top-level closures
+h$staticDelayed = [];
+function h$d() {
+    var c = h$c(null);
+    h$staticDelayed.push(c);
+    return c;
+}
+
+// initialize global object to primitive value
+function h$p(x) {
+    h$staticDelayed.push(x);
+    return x;
+}
+
+var h$entriesStack = [];
+var h$staticsStack = [];
+
+function h$scheduleInit(entries, objs, infos, statics) {
+    var d = h$entriesStack.length;
+    h$initStatic.push(function() {
+        h$initInfoTables(d, entries, objs, infos, statics);
+    });
+    h$entriesStack.push(entries);
+    h$staticsStack.push(objs);
+}
+
+function h$runInitStatic() {
+    if(h$initStatic.length > 0) {
+        for(var i=h$initStatic.length - 1;i>=0;i--) {
+            h$initStatic[i]();
+        }
+        h$initStatic = [];
+    }
+    // free the references to the temporary tables used for
+    // initialising all our static data
+    h$entriesStack = null;
+    h$staticsStack = null;
 }
 
 // initialize packed info tables
 // see Gen2.Compactor for how the data is encoded
-function h$initInfoTables(n, funcs, info) {
-  var pos = 0;
+function h$initInfoTables ( depth      // depth in the base chain
+                          , funcs      // array with all entry functions
+                          , objects    // array with all the global heap objects
+                          , infoMeta   // packed info
+                          , infoStatic
+                          ) {
+  TRACE_META("decoding info tables");
+  var i, j, o, pos = 0;
   function code(c) {
     if(c < 34) return c - 32;
     if(c < 92) return c - 33;
@@ -21,24 +93,176 @@ function h$initInfoTables(n, funcs, info) {
   function next() {
     var c = info.charCodeAt(pos);
     if(c < 124) {
+      TRACE_META("pos: " + pos + " decoded: " + code(c));
       pos++;
       return code(c);
     }
     if(c === 124) {
       pos+=3;
-      return 90 + 90 * code(info.charCodeAt(pos-2))
-                + code(info.charCodeAt(pos-1));
+      var r =  90 + 90 * code(info.charCodeAt(pos-2))
+                  + code(info.charCodeAt(pos-1));
+      TRACE_META("pos: " + (pos-3) + " decoded: " + r);
+      return r;
     }
     if(c === 125) {
       pos+=4;
-      return 8190 + 8100 * code(info.charCodeAt(pos-3)) 
-                  + 90 * code(info.charCodeAt(pos-2))
-                  + code(info.charCodeAt(pos-1));
+      var r = 8190 + 8100 * code(info.charCodeAt(pos-3))
+                   + 90 * code(info.charCodeAt(pos-2))
+                   + code(info.charCodeAt(pos-1));
+      TRACE_META("pos: " + (pos-4) + " decoded: " + r);
+      return r;
     }
     throw "h$initInfoTables: invalid code in info table"
   }
-  for(var i=0;i<n;i++) {
-    var o = funcs[i];
+  function nextCh() {
+        return next(); // fixme map readable chars
+  }
+    function nextInt() {
+        var n = next();
+        var r;
+        if(n === 0) {
+            var n1 = next();
+            var n2 = next();
+            r = n1 << 16 | n2;
+        } else {
+            r = n - 12;
+        }
+        TRACE_META("decoded int: " + r);
+        return r;
+    }
+    function nextSignificand() {
+        var n = next();
+        var n1, n2, n3, n4, n5;
+        var r;
+        if(n < 2) {
+            n1 = next();
+            n2 = next();
+            n3 = next();
+            n4 = next();
+            n5 = n1 * 281474976710656 + n2 * 4294967296 + n3 * 65536 + n4;
+            r = n === 0 ? -n5 : n5;
+        } else {
+            r = n - 12;
+        }
+        TRACE_META("decoded significand:" + r);
+        return r;
+    }
+    function nextEntry() {
+        var n = next();
+        var i = depth;
+        while(n > h$entriesStack[i].length) {
+            n -= h$entriesStack[i].length;
+            i--;
+            if(i < 0) throw "nextEntry: cannot find entry";
+        }
+        return h$entriesStack[i][n];
+    }
+    function nextObj(o) {
+        var n = (o === undefined) ? next() : o;
+        var i = depth;
+        while(n > h$staticsStack[i].length) {
+            n -= h$staticsStack[i].length;
+            i--;
+            if(i < 0) throw "nextObj: cannot find object";
+        }
+        return h$staticsStack[i][n];
+    }
+    function nextArg() {
+        var o = next();
+        var n, n1, n2;
+        switch(o) {
+        case 0:
+            TRACE_META("bool arg: false");
+            return false;
+        case 1:
+            TRACE_META("bool arg: true");
+            return true;
+        case 2:
+            TRACE_META("int constant: 0");
+            return 0;
+        case 3:
+            TRACE_META("int constant: 1");
+            return 1;
+        case 4:
+            TRACE_META("int arg");
+            return nextInt();
+        case 5:
+            TRACE_META("literal arg: null");
+            return null;
+        case 6:
+            TRACE_META("double arg");
+            n = next();
+            switch(n) {
+            case 0:
+                return -0.0;
+            case 1:
+                return 0.0;
+            case 2:
+                return 1/0;
+            case 3:
+                return -1/0;
+            case 4:
+                return 0/0;
+            case 5:
+                n1 = nextInt();
+                return nextSignificand() * Math.pow(2, n1)
+            default:
+                n1 = n - 36;
+                return nextSignicand() * Math.pow(2, n1);
+            }
+        case 7:
+            TRACE_META("string arg: fixme implement");
+            throw "string arg";
+            return ""; // fixme haskell string
+        case 8:
+            TRACE_META("binary arg");
+            n = next();
+            var ba = h$newByteArray(n);
+            var b8 = ba.u8;
+            var p  = 0;
+            while(n > 0) {
+                switch(n) {
+                case 1:
+                    d0 = next();
+                    d1 = next();
+                    b8[p] = ((d0 << 2) | (d1 >> 4));
+                    break;
+                case 2:
+                    d0 = next();
+                    d1 = next();
+                    d2 = next();
+                    b8[p++] = ((d0 << 2) | (d1 >> 4));
+                    b8[p]   = ((d1 << 4) | (d2 >> 2));
+                    break;
+                default:
+                    d0 = next();
+                    d1 = next();
+                    d2 = next();
+                    d3 = next();
+                    b8[p++] = ((d0 << 2) | (d1 >> 4));
+                    b8[p++] = ((d1 << 4) | (d2 >> 2));
+                    b8[p++] = ((d2 << 6) | d3);
+                    break;
+                }
+                n -= 3;
+            }
+            return ba;
+        case 9:
+            var c = { f: nextEntry(), d1: null, d2: null, m: 0 };
+            var n = next();
+            var args = [];
+            while(n--) {
+                args.push(nextArg());
+            }
+            return h$init_closure(c, args);
+        default:
+            TRACE_META("object arg: " + (o-10));
+            return nextObj(o-10);
+        }
+    }
+    info = infoMeta; pos = 0;
+  for(i=0;i<funcs.length;i++) {
+    o = funcs[i];
     var ot;
     var oa = 0;
     var oregs = 256; // one register no skip
@@ -73,11 +297,14 @@ function h$initInfoTables(n, funcs, info) {
     if(nsrts > 0) {
       srt = [];
       for(var j=0;j<nsrts;j++) {
-        srt.push(funcs[next()]);
+          srt.push(nextObj()); // h$staticDelayed[next()]);
       }
     }
+
     // h$log("result: " + ot + " " + oa + " " + oregs + " [" + srt + "] " + size);
     // h$log("orig: " + o.t + " " + o.a + " " + o.r + " [" + o.s + "] " + o.size);
+    // if(ot !== o.t || oa !== o.a || oregs !== o.r || size !== o.size) throw "inconsistent";
+
     o.t    = ot;
     o.i    = [];
     o.n    = "";
@@ -87,11 +314,123 @@ function h$initInfoTables(n, funcs, info) {
     o.m    = 0;
     o.size = size;
   }
+    info = infoStatic;
+    pos = 0;
+    for(i=0;i<objects.length;i++) {
+      TRACE_META("start iteration");
+        o = objects[i];
+        // traceMetaObjBefore(o);
+      var nx = next();
+      TRACE_META("static init object: " + i + " tag: " + nx);
+      switch(nx) {
+      case 0:  // no init, could be a primitive value (still in the list since others might reference it)
+          break;
+      case 1: // staticfun
+          o.f = nextEntry();
+          TRACE_META("staticFun");
+          break;
+      case 2:  // staticThunk
+          TRACE_META("staticThunk");
+          o.f = nextEntry();
+          h$CAFs.push(o);
+          h$CAFsReset.push(o.f);
+          break;
+      case 3: // staticPrim false, no init
+          TRACE_META("staticBool false");
+          break;
+      case 4: // staticPrim true, no init
+          TRACE_META("staticBool true");
+          break;
+      case 5:
+          TRACE_META("staticInt");
+          break;
+      case 6: // staticString
+          TRACE_META("staticDouble");
+          break;
+      case 7: // staticBin
+          TRACE_META("staticBin: error unused");
+          n = next();
+          var b = h$newByteArray(n);
+          for(j=0;j>n;j++) {
+              b.u8[j] = next();
+          }
+          break;
+      case 8: // staticEmptyList
+          TRACE_META("staticEmptyList");
+          o.f = h$ghczmprimZCGHCziTypesziZMZN.f;
+          break;
+      case 9: // staticList
+          TRACE_META("staticList");
+          n = next();
+          var hasTail = next();
+          var c = (hasTail === 1) ? nextObj() : h$ghczmprimZCGHCziTypesziZMZN;
+          TRACE_META("list length: " + n);
+          while(n--) {
+              c = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, nextArg(), c);
+          }
+          o.f  = c.f;
+          o.d1 = c.d1;
+          o.d2 = c.d2;
+          break;
+      case 10:  // staticData n args
+          TRACE_META("staticData");
+          n = next();
+          TRACE_META("args: " + n);
+          o.f = nextEntry();
+          for(j=0;j<n;j++) {
+              h$setField(o, j, nextArg());
+          }
+          break;
+      case 11: // staticData 0 args
+          TRACE_META("staticData0");
+          o.f = nextEntry();
+          break;
+      case 12: // staticData 1 args
+          TRACE_META("staticData1");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          break;
+      case 13: // staticData 2 args
+          TRACE_META("staticData2");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          o.d2 = nextArg();
+          break;
+      case 14: // staticData 3 args
+          TRACE_META("staticData3");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          // should be the correct order
+          o.d2 = { d1: nextArg(), d2: nextArg()};
+          break;
+      case 15: // staticData 4 args
+          TRACE_META("staticData4");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          // should be the correct order
+          o.d2 = { d1: nextArg(), d2: nextArg(), d3: nextArg() };
+          break;
+      case 16: // staticData 5 args
+          TRACE_META("staticData5");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          o.d2 = { d1: nextArg(), d2: nextArg(), d3: nextArg(), d4: nextArg() };
+          break;
+      case 17: // staticData 6 args
+          TRACE_META("staticData6");
+          o.f  = nextEntry();
+          o.d1 = nextArg();
+          o.d2 = { d1: nextArg(), d2: nextArg(), d3: nextArg(), d4: nextArg(), d5: nextArg() };
+          break;
+      default:
+          throw ("invalid static data initializer: " + nx);
+      }
+  }
+  h$staticDelayed = null;
 }
-
 // slice an array of heap objects
 function h$sliceArray(a, start, n) {
-  return a.slice(start, n);
+  return a.slice(start, start+n);
 }
 
 function h$memcpy() {
@@ -118,6 +457,85 @@ function h$memcpy() {
   } else {
     throw "h$memcpy: unexpected argument";
   }
+}
+
+// note: only works for objects bigger than two!
+function h$setField(o,n,v) {
+    if(n > 0 && !o.d2) o.d2 = {};
+    switch(n) {
+    case 0:
+        o.d1 = v;
+        return;
+    case 1:
+        o.d2.d1 = v;
+        return;
+    case 2:
+        o.d2.d2 = v;
+        return;
+    case 3:
+        o.d2.d3 = v;
+        return;
+    case 4:
+        o.d2.d4 = v;
+        return;
+    case 5:
+        o.d2.d5 = v;
+        return;
+    case 6:
+        o.d2.d6 = v;
+        return;
+    case 7:
+        o.d2.d7 = v;
+        return;
+    case 8:
+        o.d2.d8 = v;
+        return;
+    case 9:
+        o.d2.d9 = v;
+        return;
+    case 10:
+        o.d2.d10 = v;
+        return;
+    case 11:
+        o.d2.d11 = v;
+        return;
+    case 12:
+        o.d2.d12 = v;
+        return;
+    case 13:
+        o.d2.d13 = v;
+        return;
+    case 14:
+        o.d2.d14 = v;
+        return;
+    case 15:
+        o.d2.d15 = v;
+        return;
+    case 16:
+        o.d2.d16 = v;
+        return;
+    case 17:
+        o.d2.d17 = v;
+        return;
+    case 18:
+        o.d2.d18 = v;
+        return;
+    case 19:
+        o.d2.d19 = v;
+        return;
+    case 20:
+        o.d2.d20 = v;
+        return;
+    case 21:
+        o.d2.d21 = v;
+        return;
+    case 22:
+        o.d2.d22 = v;
+        return;
+    default:
+        throw ("h$setField: setter not implemented for field: " + n)
+
+    }
 }
 
 function h$memchr(a_v, a_o, c, n) {

@@ -544,7 +544,7 @@ var h$next = null;
 function h$mainLoop() {
   if(h$running) return;
   h$running = true;
-  h$run_init_static();
+  h$runInitStatic();
   h$currentThread = h$next;
   if(h$next !== null) {
     h$stack = h$currentThread.stack;
@@ -638,7 +638,7 @@ function h$run(a) {
 
 // cont :: bool, continue thread asynchronously after h$runSync returns
 function h$runSync(a, cont) {
-  h$run_init_static();
+  h$runInitStatic();
   var c = h$return;
   var t = new h$Thread();
   t.isSynchronous = true;
