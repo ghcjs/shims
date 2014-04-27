@@ -116,7 +116,7 @@ function h$gc(t) {
   try {
     while(true) {
       var nt = iter.next();
-      if(!(nt.blockedOn instanceof h$MVar)) {
+      if(!(nt.blockedOn instanceof h$MVar) || (nt.stack && nt.stack[nt.sp] === h$unboxFFIResult)) {
         h$markThread(nt);
       }
     }
