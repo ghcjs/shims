@@ -557,50 +557,6 @@ function h$strlen(a_v, a_o) {
   }
 }
 
-function h$fps_reverse(a_v, a_o, b_v, b_o, n) {
-  for(var i=0;i<n;i++) {
-    a_v.u8[a_o+n-i-1] = b_v.u8[b_o+i];
-  }
-}
-
-function h$fps_intersperse(a_v,a_o,b_v,b_o,n,c) {
-  var dst_o = a_o;
-  for(var i=0;i<n-1;i++) {
-    a_v.u8[dst_o] = b_v.u8[b_o+i];
-    a_v.u8[dst_o+1] = c;
-    dst_o += 2;
-  }
-  if(n > 0) {
-    a_v.u8[dst_o] = v_c.u8[b_o+n-1];
-  }
-}
-
-function h$fps_maximum(a_v,a_o,n) {
-  var max = a_v.u8[a_o];
-  for(var i=1;i<n;i++) {
-    var c = a_v.u8[a_o+i];
-    if(c > max) { max = c; }
-  }
-  return max;
-}
-
-function h$fps_minimum(a_v,a_o,n) {
-  var min = a_v.u8[a_o];
-  for(var i=1;i<n;i++) {
-    var c = a_v.u8[a_o+i];
-    if(c < min) { min = c; }
-  }
-  return min;
-}
-
-function h$fps_count(a_v,a_o,n,c) {
-  var count = 0;
-  for(var i=0;i<n;i++) {
-    if(a_v.u8[a_o+i] === c) { count++; }
-  }
-  return count|0;
-}
-
 function h$newArray(len,e) {
   var r = [];
   for(var i=0;i<len;i++) { r[i] = e; }
