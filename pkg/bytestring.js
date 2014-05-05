@@ -1,47 +1,46 @@
 // translated from bytestring cbits/fpstring.c
 
 function h$fps_reverse(a_v, a_o, b_v, b_o, n) {
-  for(var i=0;i<n;i++) {
-    a_v.u8[a_o+n-i-1] = b_v.u8[b_o+i];
-  }
+    var au8 = a_v.u8, bu8 = b_v.u8;
+    for(var i=0;i<n;i++) {
+        au8[a_o+n-i-1] = bu8[b_o+i];
+    }
 }
 
 function h$fps_intersperse(a_v,a_o,b_v,b_o,n,c) {
-  var dst_o = a_o;
-  for(var i=0;i<n-1;i++) {
-    a_v.u8[dst_o] = b_v.u8[b_o+i];
-    a_v.u8[dst_o+1] = c;
-    dst_o += 2;
-  }
-  if(n > 0) {
-    a_v.u8[dst_o] = v_c.u8[b_o+n-1];
-  }
+    var au8 = a_v.u8, bu8 = b_v.u8, dst_o = a_o;
+    for(var i=0;i<n-1;i++) {
+        au8[dst_o]   = bu8[b_o+i];
+        au8[dst_o+1] = c;
+        dst_o += 2;
+    }
+    if(n > 0) au8[dst_o] = bu8[b_o+n-1];
 }
 
 function h$fps_maximum(a_v,a_o,n) {
-  var max = a_v.u8[a_o];
-  for(var i=1;i<n;i++) {
-    var c = a_v.u8[a_o+i];
-    if(c > max) { max = c; }
-  }
-  return max;
+    var au8 = a_v.u8, max = au8[a_o];
+    for(var i=1;i<n;i++) {
+    var c = au8[a_o+i];
+        if(c > max) { max = c; }
+    }
+    return max;
 }
 
 function h$fps_minimum(a_v,a_o,n) {
-  var min = a_v.u8[a_o];
-  for(var i=1;i<n;i++) {
-    var c = a_v.u8[a_o+i];
-    if(c < min) { min = c; }
-  }
-  return min;
+    var au8 = a_v.u8, min = a_v.u8[a_o];
+    for(var i=1;i<n;i++) {
+        var c = au8[a_o+i];
+        if(c < min) { min = c; }
+    }
+    return min;
 }
 
 function h$fps_count(a_v,a_o,n,c) {
-  var count = 0;
-  for(var i=0;i<n;i++) {
-    if(a_v.u8[a_o+i] === c) { count++; }
-  }
-  return count|0;
+    var au8 = a_v.u8, count = 0;
+    for(var i=0;i<n;i++) {
+        if(au8[a_o+i] === c) { count++; }
+    }
+    return count|0;
 }
 
 function h$fps_memcpy_offsets(dst_d, dst_o, dst_off
