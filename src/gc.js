@@ -184,7 +184,7 @@ function h$markRetained() {
           h$follow(c.val);
           marked = true;
         }
-        if(c.finalizer && !h$isMarked(c.finalizer)) {
+        if(c.finalizer && !h$isMarked(c.finalizer) && h$isMarked(c.key)) {
           TRACE_GC("recursively marking weak finalizer: " + h$collectProps(c.finalizer));
           h$follow(c.finalizer);
           marked = true;
