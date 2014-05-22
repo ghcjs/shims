@@ -7,13 +7,13 @@ var h$CC_DONT_CARE  = h$mkCC("DONT_CARE", "MAIN", "<built-in>", false);
 var h$CC_PINNED     = h$mkCC("PINNED", "SYSTEM", "<built-in>", false);
 var h$CC_IDLE       = h$mkCC("IDLE", "IDLE", "<built-in>", false);
 
-var h$CCS_MAIN      = h$mkCCS(CC_MAIN);
-var h$CCS_SYSTEM    = h$mkCCS(CC_SYSTEM);
-var h$CCS_GC        = h$mkCCS(CC_GC);
-var h$CCS_OVERHEAD  = h$mkCCS(CC_OVERHEAD);
-var h$CCS_DONT_CARE = h$mkCCS(CC_DONT_CARE);
-var h$CCS_PINNED    = h$mkCCS(CC_PINNED);
-var h$CCS_IDLE      = h$mkCCS(CC_IDLE);
+var h$CCS_MAIN      = h$mkCCS(h$CC_MAIN);
+var h$CCS_SYSTEM    = h$mkCCS(h$CC_SYSTEM);
+var h$CCS_GC        = h$mkCCS(h$CC_GC);
+var h$CCS_OVERHEAD  = h$mkCCS(h$CC_OVERHEAD);
+var h$CCS_DONT_CARE = h$mkCCS(h$CC_DONT_CARE);
+var h$CCS_PINNED    = h$mkCCS(h$CC_PINNED);
+var h$CCS_IDLE      = h$mkCCS(h$CC_IDLE);
 
 function h$mkCC(label, module, srcloc, isCaf) {
   return { label: label, module: module, srcloc: srcloc, isCaf: isCaf,
