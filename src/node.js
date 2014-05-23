@@ -1,3 +1,6 @@
+// top-level debug initialization needs this. declare it in case we aren't in the same file as out.js
+function h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e() { return h$stack[h$sp]; };
+
 /* node.js support for GHCJS */
 if(typeof require !== 'undefined') {
   var h$nodeFs = require('fs');
