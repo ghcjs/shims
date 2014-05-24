@@ -138,22 +138,19 @@ function h$errorMsg(pat) {
   }
 }
 
+// this needs to be imported with foreign import ccall safe/interruptible
 function h$performMajorGC() {
-  // save current thread state so we can enter the GC
-  var t = h$currentThread;
-  h$sp += 2;
-  h$stack[h$sp]   = h$return;
-  h$stack[h$sp-1] = h$r1;
-  t.sp = h$sp;
-  h$currentThread = null;
+    // save current thread state so we can enter the GC
+    var t = h$currentThread;
+    t.sp = h$sp;
+    h$currentThread = null;
 
-  h$gc(t);
+    h$gc(t);
 
-  // restore thread state
-  h$currentThread = t;
-  h$stack = t.stack;
-  h$r1 = h$stack[t.sp-1];
-  h$sp = t.sp-2;
+    // restore thread state
+    h$currentThread = t;
+    h$sp = t.sp;
+    h$stack = t.stack;
 }
 
 
