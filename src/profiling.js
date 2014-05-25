@@ -77,7 +77,7 @@ function h$buildCCSPtr(o) {
   if (o.parent !== null) {
     ccs.arr[h$ccsParent_offset] = h$buildCCSPtr(o.parent);
   }
-  ccs.arr[h$ccsCC_offset] = h$buildCCPtr(o.cc);
+  ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
   console.log("returning ccs:", ccs);
   return ccs;
 }
