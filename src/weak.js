@@ -1,6 +1,10 @@
 // weak reference support
 
-var h$weaks = new goog.structs.Set();
+// contains all pending finalizers
+var h$finalizers = new h$Set();
+
+// filled at scan time, weak refs with possible work to do
+var h$scannedWeaks = [];
 
 #ifdef GHCJS_TRACE_WEAK
 function h$traceWeak() { h$log.apply(h$log, arguments) }
@@ -9,91 +13,102 @@ function h$traceWeak() { h$log.apply(h$log, arguments) }
 #define TRACE_WEAK(args...)
 #endif
 
-// called by the GC with a set of still reachable
+// called by the GC after marking the heap
 function h$finalizeWeaks() {
-#ifdef GHCJS_TRACE_WEAK
-  var mark = h$gcMark;
-#endif
-  TRACE_WEAK("finalizeWeaks: " + mark);
-  var i, w;
-  var toFinalize = [];
-  var toRemove   = [];
-  var iter = h$weaks.__iterator__();
-  try {
-    while(true) {
-      w = iter.next();
-      TRACE_WEAK("checking weak of: " + h$collectProps(w.key));
-      TRACE_WEAK("key mark: " + w.key.m + " - " + mark);
-      if(!h$isMarked(w.key)) {
-        if(w.finalizer === null) {
-          toRemove.push(w);
-        } else {
-          toFinalize.push(w);
+    var mark = h$gcMark;
+    TRACE_WEAK("finalizeWeaks: " + mark + " " + h$finalizers.size());
+    var i, w, toFinalize = [];
+    var iter = h$finalizers.iter();
+    while((w = iter.next()) !== null) {
+        TRACE_WEAK("checking weak with finalizer: " + h$stableNameInt(w.m));
+        TRACE_WEAK("finalizer mark: " + w.m.m + " - " + mark);
+        if((w.m.m&3) !== mark) {
+            iter.remove();
+            toFinalize.push(w);
+            TRACE_WEAK("finalizer scheduled");
         }
-      } else if(!h$isMarked(w) && w.finalizer === null) {
-        toRemove.push(w);
-      }
     }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  TRACE_WEAK("to remove: " + toRemove.length);
-  for(i=0;i<toRemove.length;i++) {
-    w = toRemove[i];
-    w.key = null;
-    w.val = null;
-    h$weaks.remove(w);
-  }
-  TRACE_WEAK("to finalize: " + toFinalize.length);
-  // start a finalizer thread if any finalizers need to be run
-  if(toFinalize.length > 0) {
-    var t = new h$Thread();
-    for(i=0;i<toFinalize.length;i++) {
-      w = toFinalize[i];
-      t.sp += 6;
-      t.stack[t.sp-5] = 0;      // mask
-      t.stack[t.sp-4] = h$noop; // handler, dummy
-      t.stack[t.sp-3] = h$catch_e;
-      t.stack[t.sp-2] = h$ap_1_0;
-      t.stack[t.sp-1] = w.finalizer;
-      t.stack[t.sp]   = h$return;
-      w.key = null;
-      w.val = null;
-      w.finalizer = null;
-      h$weaks.remove(w);
+    TRACE_WEAK("to finalize: " + toFinalize.length);
+    // start a finalizer thread if any finalizers need to be run
+    if(toFinalize.length > 0) {
+        var t = new h$Thread();
+        for(i=0;i<toFinalize.length;i++) {
+            w = toFinalize[i];
+            t.sp += 6;
+            t.stack[t.sp-5] = 0;      // mask
+            t.stack[t.sp-4] = h$noop; // handler, dummy
+            t.stack[t.sp-3] = h$catch_e;
+            t.stack[t.sp-2] = h$ap_1_0;
+            t.stack[t.sp-1] = w.finalizer;
+            t.stack[t.sp]   = h$return;
+            w.finalizer = null;
+        }
+        h$wakeupThread(t);
     }
-    h$wakeupThread(t);
-  }
+    return toFinalize;
+
 }
 
+// clear references for reachable weak refs with unreachable keys
+function h$clearWeaks() {
+    var mark = h$gcMark;
+    TRACE_WEAK("clearing weak refs, to check: " + h$scannedWeaks.length);
+    for(i=h$scannedWeaks.length-1;i>=0;i--) {
+        w = h$scannedWeaks[i];
+        if(w.keym.m !== mark && w.val !== null) {
+            TRACE_WEAK("clearing weak ref of: " + h$stableNameInt(w.keym));
+            w.val = null;
+        }
+    }
+}
+
+var h$weakFinalizerN = 0;
 function h$Weak(key, val, finalizer) {
-  TRACE_WEAK("making weak of: " + h$collectProps(key));
-  if(key.f && key.f.n) { TRACE_WEAK("name: " + key.f.n); }
-  this.key = key;
-  this.val = val;
-  this.finalizer = finalizer;
-  h$weaks.add(this);
+    if(typeof key !== 'object') {
+        // can't attach a StableName to objects with unboxed storage
+        // our weak ref will be finalized soon.
+        TRACE_WEAK("WARNING: making weak for object with unboxed storage");
+        this.keym = new h$StableName(0);
+    } else {
+        if(typeof key.m !== 'object') key.m = new h$StableName(key.m);
+        this.keym = key.m;
+    }
+    TRACE_WEAK("making weak of: " + h$stableNameInt(this.keym));
+    this.keym      = key.m;
+    this.val       = val;
+    this.finalizer = null;
+    if(finalizer !== null) {
+        var fin = { m: this.keym, finalizer: finalizer, _key: ++h$weakFinalizerN };
+        h$finalizers.add(fin);
+        this.finalizer = fin;
+    }
+    this.m = 0;
+//    h$scannedWeaks.push(this); // fixme debug
 }
 
 function h$makeWeak(key, val, fin) {
-  TRACE_WEAK("h$makeWeak");
-  return new h$Weak(key, val, fin)
+    TRACE_WEAK("h$makeWeak");
+    return new h$Weak(key, val, fin)
 }
 
 function h$makeWeakNoFinalizer(key, val) {
-  TRACE_WEAK("h$makeWeakNoFinalizer");
-  return new h$Weak(key, val, null);
+    TRACE_WEAK("h$makeWeakNoFinalizer");
+    return new h$Weak(key, val, null);
 }
 
 function h$finalizeWeak(w) {
-  TRACE_WEAK("finalizing weak of: " + h$collectProps(w.key));
-  h$weaks.remove(w);
-  w.key = null;
-  w.val = null;
-  if(w.finalizer === null) {
-    return 0;
-  } else {
-    h$ret1 = w.finalizer;
-    w.finalizer = null;
-    return 1;
-  }
+    TRACE_WEAK("finalizing weak of " + h$stableNameInt(w.keym));
+    w.val  = null;
+    if(w.finalizer === null || w.finalizer.finalizer === null) {
+        h$ret1 = 0;
+        return null;
+    } else {
+        var r = w.finalizer.finalizer;
+        h$finalizers.remove(w.finalizer);
+        w.finalizer = null;
+        h$ret1 = 1;
+        return r;
+    }
 }
+
 

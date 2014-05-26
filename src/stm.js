@@ -17,44 +17,48 @@ var h$stmTransactionActive = 0;
 var h$stmTransactionWaiting = 4;
 
 function h$Transaction(o, parent) {
-  TRACE_STM("h$Transaction: " + o + " -> " + parent);
-  this.action        = o;
-  // h$TVar.id -> h$WrittenTVar, transaction-local changed values
-  this.tvars         = new goog.structs.Map();
-  // h$TVar.id -> h$LocalTVar, all local tvars accessed anywhere in the transaction
-  this.accessed      = parent===null?new goog.structs.Map():parent.accessed;
-  // nonnull while running a check, contains read variables in this part of the transaction
-  this.checkRead     = parent===null?null:parent.checkRead;
-  this.parent        = parent;
-  this.state         = h$stmTransactionActive;
-  this.invariants    = []; // invariants added in this transaction
-  this.m             = 0;  // gc mark
+    TRACE_STM("h$Transaction: " + o + " -> " + parent);
+    this.action        = o;
+    // h$TVar -> h$WrittenTVar, transaction-local changed values
+    this.tvars         = new h$Map();
+    // h$TVar -> h$LocalTVar, all local tvars accessed anywhere in the transaction
+    this.accessed      = parent===null?new h$Map():parent.accessed;
+    // nonnull while running a check, contains read variables in this part of the transaction
+    this.checkRead     = parent===null?null:parent.checkRead;
+    this.parent        = parent;
+    this.state         = h$stmTransactionActive;
+    this.invariants    = []; // invariants added in this transaction
+    this.m             = 0;  // gc mark
 }
 
+h$stmInvariantN = 0;
 function h$StmInvariant(a) {
-  this.action = a;
+    this.action = a;
+    this._key = ++h$stmInvariantN;
 }
 
 function h$WrittenTVar(tv,v) {
-  this.tvar = tv;
-  this.val = v;
+    this.tvar = tv;
+    this.val = v;
 }
 
+var h$TVarN = 0;
 function h$TVar(v) {
-  TRACE_STM("creating tvar, value: " + h$collectProps(v));
-  this.val        = v;                      // current value
-  this.blocked    = new goog.structs.Set(); // threads that get woken up if this TVar is updated
-  this.invariants = null;                   // invariants that use this tvar (goog.structs.Set)
-  this.m          = 0;                      // gc mark
+    TRACE_STM("creating TVar, value: " + h$collectProps(v));
+    this.val        = v;           // current value
+    this.blocked    = new h$Set(); // threads that get woken up if this TVar is updated
+    this.invariants = null;        // invariants that use this TVar (h$Set)
+    this.m          = 0;           // gc mark
+    this._key       = ++h$TVarN;   // for storing in h$Map/h$Set
 }
 
 function h$TVarsWaiting(s) {
-  this.tvars = s;  // goog.structs.Set of TVars we're waiting on
+  this.tvars = s;  // h$Set of TVars we're waiting on
 }
 
 function h$LocalInvariant(o) {
   this.action = o;
-  this.dependencies = new goog.structs.Set();
+  this.dependencies = new h$Set();
 }
 
 // local view of a TVar
@@ -79,68 +83,46 @@ function h$stmStartTransaction(o) {
 }
 
 function h$stmUpdateInvariantDependencies(inv) {
-  var i = h$currentThread.transaction.checkRead.__iterator__();
-  if(inv instanceof h$LocalInvariant) {
-    try {
-      while(true) {
-        inv.dependencies.add(i.next());
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  } else {
-    try {
-      while(true) {
-        h$stmAddTVarInvariant(i.next(), inv);
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  }
+    var ii, iter = h$currentThread.transaction.checkRead.iter();
+    if(inv instanceof h$LocalInvariant) {
+        while((ii = iter.next()) !== null) inv.dependencies.add(ii);
+    } else {
+        while((ii = iter.next()) !== null) h$stmAddTVarInvariant(ii, inv);
+    }
 }
 
 function h$stmAddTVarInvariant(tv, inv) {
-  if(tv.invariants === null) {
-    tv.invariants = new goog.structs.Set();
-  }
-  tv.invariants.add(inv);
+    if(tv.invariants === null) tv.invariants = new h$Set();
+    tv.invariants.add(inv);
 }
 
 // commit current transaction,
 // if it's top-level, commit the TVars, otherwise commit to parent
 function h$stmCommitTransaction() {
-  var t = h$currentThread.transaction;
-  var tvs = t.tvars;
-  var i = tvs.getValueIterator();
-  if(t.parent === null) { // real commit
-    try {
-      while(true) {
-        var wtv = i.next();
-        h$stmCommitTVar(wtv.tvar, wtv.val);
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-    for(var j=0;j<t.invariants.length;j++) {
-      h$stmCommitInvariant(t.invariants[j]);
+    var t      = h$currentThread.transaction;
+    var tvs    = t.tvars;
+    var wtv, i = tvs.iter();
+    if(t.parent === null) { // top-level commit
+        TRACE_STM("committing top-level transaction");
+        while((wtv = i.nextVal()) !== null) h$stmCommitTVar(wtv.tvar, wtv.val);
+        for(var j=0;j<t.invariants.length;j++) {
+            h$stmCommitInvariant(t.invariants[j]);
+        }
+    } else { // commit subtransaction
+        TRACE_STM("committing subtransaction");
+        var tpvs = t.parent.tvars;
+        while((wtv = i.nextVal()) !== null) tpvs.put(wtv.tvar, wtv);
+        t.parent.invariants = t.parent.invariants.concat(t.invariants);
     }
-  } else { // commit subtransaction
-    var tpvs = t.parent.tvars;
-    try {
-      while(true) {
-        var wtv = i.next();
-        tpvs.set(goog.getUid(wtv.tvar), wtv);
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-    t.parent.invariants = t.parent.invariants.concat(t.invariants);
-  }
-  h$currentThread.transaction = t.parent;
+    h$currentThread.transaction = t.parent;
 }
 
 function h$stmValidateTransaction() {
-  var i = h$currentThread.transaction.accessed.getValueIterator();
-  try {
-    while(true) {
-      var ltv = i.next();
-      TRACE_STM("h$stmValidateTransaction: " + ltv);
-      if(ltv.readVal !== ltv.tvar.val) return false;
+    var ltv, i = h$currentThread.transaction.accessed.iter();
+    while((ltv = i.nextVal()) !== null) {
+        if(ltv.readVal !== ltv.tvar.val) return false;
     }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  return true;
+    return true;
 }
 
 function h$stmAbortTransaction() {
@@ -191,36 +173,31 @@ function h$stmRetry() {
 }
 
 function h$stmSuspendRetry() {
-  var i = h$currentThread.transaction.accessed.__iterator__();
-  var tvs = new goog.structs.Set();
-  try {
-    while(true) {
-      var tv = i.next().tvar;
-      TRACE_STM("h$stmSuspendRetry, accessed: " + h$collectProps(tv));
-      tv.blocked.add(h$currentThread);
-      tvs.add(tv);
+    var tv, i = h$currentThread.transaction.accessed.iter();
+    var tvs = new h$Set();
+    while((tv = i.next()) !== null) {
+        TRACE_STM("h$stmSuspendRetry, accessed: " + h$collectProps(tv.tvar));
+        tv.tvar.blocked.add(h$currentThread);
+        tvs.add(tv.tvar);
     }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  waiting = new h$TVarsWaiting(tvs);
-  h$blockThread(h$currentThread, waiting);
-  h$p2(waiting, h$stmResumeRetry_e);
-  return h$reschedule;
+    waiting = new h$TVarsWaiting(tvs);
+    h$blockThread(h$currentThread, waiting);
+    h$p2(waiting, h$stmResumeRetry_e);
+    return h$reschedule;
 }
 
 function h$stmCatchRetry(a,b) {
-  h$currentThread.transaction = new h$Transaction(b, h$currentThread.transaction);
-  h$p2(b, h$stmCatchRetry_e);
-  h$r1 = a;
-  return h$ap_1_0_fast();
+    h$currentThread.transaction = new h$Transaction(b, h$currentThread.transaction);
+    h$p2(b, h$stmCatchRetry_e);
+    h$r1 = a;
+    return h$ap_1_0_fast();
 }
 
 function h$catchStm(a,handler) {
-  h$p4(h$currentThread.transaction, h$currentThread.mask, handler, h$catchStm_e);
-  h$r1 = a;
-  return h$ap_1_0_fast();
+    h$p4(h$currentThread.transaction, h$currentThread.mask, handler, h$catchStm_e);
+    h$r1 = a;
+    return h$ap_1_0_fast();
 }
-
-var h$catchSTM = h$catchStm; // fixme remove after reboot
 
 function h$newTVar(v) {
   return new h$TVar(v);
@@ -249,98 +226,81 @@ function h$readLocalTVar(t, tv) {
     t.checkRead.add(tv);
   }
   var t0 = t;
-  var tvi = goog.getUid(tv);
   while(t0 !== null) {
-    var v = t0.tvars.get(tvi);
-    if(v !== undefined) {
+    var v = t0.tvars.get(tv);
+    if(v !== null) {
       TRACE_STM("h$readLocalTVar: found locally modified value: " + h$collectProps(v));
       return v.val;
     }
     t0 = t0.parent;
   }
-  var lv = t.accessed.get(tvi);
-  if(lv !== undefined) {
-    TRACE_STM("h$readLocalTVar: found tvar value: " + h$collectProps(lv));
+  var lv = t.accessed.get(tv);
+  if(lv !== null) {
+    TRACE_STM("h$readLocalTVar: found TVar value: " + h$collectProps(lv));
     return lv.val;
   } else {
-    TRACE_STM("h$readLocalTVar: tvar value not found, adding: " + h$collectProps(tv));
-    t.accessed.set(tvi, new h$LocalTVar(tv));
+    TRACE_STM("h$readLocalTVar: TVar value not found, adding: " + h$collectProps(tv));
+    t.accessed.put(tv, new h$LocalTVar(tv));
     return tv.val;
   }
 }
 
 function h$setLocalTVar(t, tv, v) {
-  var tvi = goog.getUid(tv);
-  if(!t.accessed.containsKey(tvi)) {
-    t.accessed.set(tvi, new h$LocalTVar(tv));
-  }
-  if(t.tvars.containsKey(tvi)) {
-    t.tvars.get(tvi).val = v;
-  } else {
-    t.tvars.set(tvi, new h$WrittenTVar(tv, v))
-  }
+    if(!t.accessed.has(tv)) t.accessed.put(tv, new h$LocalTVar(tv));
+    if(t.tvars.has(tv)) {
+        t.tvars.get(tv).val = v;
+    } else {
+        t.tvars.put(tv, new h$WrittenTVar(tv, v))
+    }
 }
 
 function h$stmCheckInvariants() {
-  var t = h$currentThread.transaction;
-  function addCheck(inv) {
-    h$p5(inv, h$stmCheckInvariantResult_e, t, inv, h$stmCheckInvariantStart_e);
-  }
-  h$p2(h$r1, h$return);
-  var i = t.tvars.getValueIterator();
-  try {
-    while(true) {
-      var wtv = i.next();
-      TRACE_STM("h$stmCheckInvariants: checking: " + h$collectProps(wtv));
-      var ii = wtv.tvar.invariants;
-      if(ii) {
-        var iii = ii.__iterator__();
-        try {
-          while(true) {
-            addCheck(iii.next());
-          }
-        } catch(e) { if (e !== goog.iter.StopIteration) { throw e; } }
-      }
+    var t = h$currentThread.transaction;
+    function addCheck(inv) {
+        h$p5(inv, h$stmCheckInvariantResult_e, t, inv, h$stmCheckInvariantStart_e);
     }
-  } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-  for(j=0;j<t.invariants.length;j++) {
-    addCheck(t.invariants[j]);
-  }
-  return h$stack[h$sp];
+    h$p2(h$r1, h$return);
+    var wtv, i = t.tvars.iter();
+    while((wtv = i.nextVal()) !== null) {
+        TRACE_STM("h$stmCheckInvariants: checking: " + h$collectProps(wtv));
+        var ii = wtv.tvar.invariants;
+        if(ii) {
+            var iv, iii = ii.iter();
+            while((iv = iii.next()) !== null) addCheck(iv);
+        }
+    }
+    for(j=0;j<t.invariants.length;j++) {
+        addCheck(t.invariants[j]);
+    }
+    return h$stack[h$sp];
 }
 
 function h$stmCommitTVar(tv, v) {
-  if(v !== tv.val) {
-    var iter = tv.blocked.__iterator__();
-    try {
-      while(true) {
-        var thr = iter.next();
-        if(thr.status === h$threadBlocked) {
-          TRACE_STM("h$stmCommitTVar: waking up thread: " + h$threadString(thr));
-          h$wakeupThread(thr);
+    TRACE_STM("committing tvar: " + tv._key + " " + (v === tv.val));
+    if(v !== tv.val) {
+        var thr, iter = tv.blocked.iter();
+        while((thr = iter.next()) !== null) {
+            if(thr.status === h$threadBlocked) {
+                TRACE_STM("h$stmCommitTVar: waking up thread: " + h$threadString(thr));
+                h$wakeupThread(thr);
+            }
         }
-      }
-    } catch(e) { if(e !== goog.iter.StopIteration) { throw e; } }
-    tv.val = v;
-  }
+        tv.val = v;
+    }
 }
 
 // remove the thread from the queues of the TVars in s
 function h$stmRemoveBlockedThread(s, thread) {
-  var i = s.tvars.__iterator__();
-  try {
-    while(true) {
-      i.next().blocked.remove(thread);
+    var tv, i = s.tvars.iter();
+    while((tv = i.next()) !== null) {
+        tv.blocked.remove(thread);
     }
-  } catch (e) { if(e !== goog.iter.StopIteration) { throw e; } }
 }
 
 function h$stmCommitInvariant(localInv) {
-  var inv = new h$StmInvariant(localInv.action);
-  var i = localInv.dependencies.__iterator__();
-  try {
-    while(true) {
-      h$stmAddTVarInvariant(i.next(), inv);
+    var inv = new h$StmInvariant(localInv.action);
+    var dep, i = localInv.dependencies.iter();
+    while((dep = i.next()) !== null) {
+        h$stmAddTVarInvariant(dep, inv);
     }
-  } catch (e) { if(e !== goog.iter.StopIteration) { throw e; } }
 }

@@ -104,8 +104,9 @@ function h$__hscore_environ() {
 }
 
 function h$getenv() {
-  h$ret1 = 0;
-  return null;
+    TRACE_ENV("getenv");
+    h$ret1 = 0;
+    return null;
 }
 
 function h$errorBelch() {
@@ -141,16 +142,22 @@ function h$errorMsg(pat) {
 // this needs to be imported with foreign import ccall safe/interruptible
 function h$performMajorGC() {
     // save current thread state so we can enter the GC
-    var t = h$currentThread;
+    var t = h$currentThread, err = null;
     t.sp = h$sp;
     h$currentThread = null;
 
-    h$gc(t);
+    try {
+        h$gc(t);
+    } catch(e) {
+        err = e;
+    }
 
     // restore thread state
     h$currentThread = t;
     h$sp = t.sp;
     h$stack = t.stack;
+
+    if(err) throw err;
 }
 
 

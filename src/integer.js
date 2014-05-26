@@ -243,7 +243,7 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
 
 function h$integer_cmm_divModIntegerWordzh(sa, abits, b) {
     TRACE_INTEGER("divModIntegerWord: " + abits + " " + b);
-    return h$integer_cmm_divModIntegerWordzh(sa, abits, 0, h$bigFromWord(b));
+    return h$integer_cmm_divModIntegerzh(sa, abits, 0, h$bigFromWord(b));
 }
 
 function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {

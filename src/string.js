@@ -20,6 +20,11 @@ function h$rstr(d) {
   }
 }
 
+// these aren't added to the CAFs, so the list stays in mem indefinitely, is that a problem?
+function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }); }
+function h$strta(str) {return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
+function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }); }
+
 var h$toUpper = null;
 function h$u_towupper(ch) {
   if(h$toUpper == null) { h$toUpper = h$decodeMapping(h$toUpperMapping); }
@@ -35,7 +40,6 @@ function h$u_towlower(ch) {
 }
 
 function h$u_iswspace(ch) {
-//  h$log("### u_iswspace: " + ch);
   return /^\s$/.test(new String(ch)) ? 1 : 0;
 }
 
@@ -43,7 +47,6 @@ var h$alpha = null;
 function h$u_iswalpha(a) {
   if(h$alpha == null) { h$alpha = h$decodeRle(h$alphaRanges); }
   return h$alpha[a] == 1 ? 1 : 0;
-
 }
 
 var h$alnum = null;
@@ -105,6 +108,31 @@ function h$decodeMapping(arr) {
   }
   return r;
 }
+
+var h$unicodeCat = null;
+function h$u_gencat(a) {
+    if(h$unicodeCat == null) {
+        h$unicodeCat = [];
+        // concatMap (\run ->
+        //    case run of
+        //        [a]   -> [chr (a+64)]
+        //        (a:_) -> show (length run) ++ [chr (a+64)]) . group $ map (fromEnum . generalCategory) ['\x00'..'\xFFFF']
+        var s = "32YV3QS3QMNQRQL2Q10H2Q3R2Q26@MQNTKT26AMRNR33YVQ4S2UTUAORZUTUR2JTAUQTJAP3JQ23@R7@24AR8A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@2A@A@A@A@A@A@A@A@2A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A2@A@A@3A2@A@A2@A3@2A4@A2@A3@3A2@A2@A@A@A2@A@2A@A2@A3@A@A2@2AD@3A4D@BA@BA@BA@A@A@A@A@A@A@A@2A@A@A@A@A@A@A@A@A@2A@BA@A3@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@7A2@A2@2A@A4@A@A@A@A@69AD27A18C4T12C14T5C7TCTC17T112E@A@ACT@A2]C3AQ5]2T@Q3@]@]2@A17@]9@35A@2A3@3A@A@A@A@A@A@A@A@A@A@A@A@5A@AR@A2@2A51@48A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@AU5E2G@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A2@A@A@A@A@A@A@2A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A9]38@2]C6Q]39A]QL6]45ELEQ2EQ2EQE8]27D5]3D2Q11]4Z2]3R2QS2Q2U11EQ2]2Q32DC10D21E10H4Q2DE99DQD7EZU6E2C2EU4E2D10H3D2UD14Q]ZDE30D27E2]89D11ED14]10H33D9E2CU3QC5]22D4EC9EC3EC5E2]15Q]25D3E2]Q161]3EF54DEFED3F8E4FE2FD7E10D2E2Q10HQC6D]7D]E2F]8D2]2D2]22D]7D]D3]4D2]ED3F4E2]2F2]2FED8]F4]2D]3D2E2]10H2D2S6JUS5]2EF]6D4]2D2]22D]7D]2D]2D]2D2]E]3F2E4]2E2]3E3]E7]4D]D7]10H2E3DE11]2EF]9D]3D]22D]7D]2D]5D2]ED3F5E]2EF]2FE2]D15]2D2E2]10H]S15]E2F]8D2]2D2]22D]7D]2D]5D2]EDFEF4E2]2F2]2FE8]EF4]2D]3D2E2]10HUD6J10]ED]6D3]3D]4D3]2D]D]2D3]2D3]3D3]12D4]2FE2F3]3F]3FE2]D6]F14]10H3J6USU6]3F]8D]3D]23D]10D]5D3]D3E4F]3E]4E7]2E]2D6]2D2E2]10H8]7JU2]2F]8D]3D]23D]10D]5D2]EDFE5F]E2F]2F2E7]2F7]D]2D2E2]10H]2D15]2F]8D]3D]41D2]D3F4E]3F]3FED8]F8]2D2E2]10H6J3]U6D2]2F]18D3]24D]9D]D2]7D3]E4]3F3E]E]8F18]2FQ12]48DE2D7E4]S6DC8EQ10H2Q37]2D]D2]2D]D2]D6]4D]7D]3D]D]D2]2D]4DE2D6E]2ED2]5D]C]6E2]10H2]2D34]D3U15Q5U2E6U10H10JUEUEUEMNMN2F8D]36D4]14EF5EQ2E5D11E]36E]8UE6U]2U5Q4U2Q37]43D2F4EF6EF2E2F2ED10H6Q6D2F2E4D3ED3F2D7F3D4E13DE2F2E6FEDF10H3FE2U38@10]43DQC3]329D]4D2]7D]D]4D2]41D]4D2]33D]4D2]7D]D]4D2]15D]57D]4D2]67D2]3EU8Q20J3]16D10U6]85D11]L620D2Q17DV26DMN3]75D3Q3I15]13D]4D3E11]18D3E2Q9]18D2E12]13D]3D]2E12]52D2ZF7E8FE2F11E3QC3QSDE2]10H6]10J6]6QL4Q3EV]10H6]35DC52D8]41DED5]70D10]29D3]3E4F2E3F4]2FE6F3E4]U3]2Q10H30D2]5D11]44D4]17F7D2F6]10HJ3]34U23D2E3F2]2Q53DFEF7E]EFE2F8E6F10E2]E10H6]10H6]7QC6Q82]4EF47DEF5EFE5FE2F7D4]10H7Q10U9E9U3]2EF30DF4E2F2EF3]2D10H6]38DEF2E3FEF3E2F8]4Q36D8F8E2F2E3]5Q10H3]3D10H30D6C2Q80]3EQ13EF7E4DE4DF13]44A54C22AC34A37C39E21]4E@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@9A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@9A8@6A2]6@2]8A8@8A8@6A2]6@2]8A]@]@]@]@8A8@14A2]8A8B8A8B8A8B5A]2A4@BTA3T3A]2A4@B3T4A2]2A4@]3T8A5@3T2]3A]2A4@B2T]11V5Z6L2QOPM2OPMO8QWX5ZV9QOP4Q2K3QRMN11QRQK10QV5Z5]6ZJC2]6J3RMNC10J3RMN]13C3]26S22]13E4GE3G12E15]2U@4U@2UA3@2A3@AU@2UR5@6U@U@U@U4@UA4@A4DA2U2A2@5R@4AUR2UAU16J35I@A4IJ6]5R5U2R4UR2UR2UR7UR31U2R2URUR31U268R8U4R20U2R7UMN81UR30U25R40U6R18U12]39U25]11U21]60J78U22J183UR9UR54U8R111UR144U]103UMNMNMNMNMNMNMN30J44U5RMN4R]R]24RMNMNMNMNMN16R256U131RMNMNMNMNMNMNMNMNMNMNMN63RMNMN32RMN258R48U21R2U6R3]10U166]47@]47A]@A3@2A@A@A@A4@A@2A@7AC3@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@2A6U@A@A3E7]4QJ2Q38A10]54D9]CQ14]E23D9]7D]7D]7D]7D]7D]7D]7D]7D]32E2QOPOP3QOPQOP9QL2QLQOP2QOPMNMNMNMN5QC2Q78]26U]89U12]214U26]12U4]V3QUCDIMNMNMNMNMN2UMNMNMNMNLM2NU9I6EL5C2U3ICDQ2U]86D2]2E2T2CDL90DQ3CD5]41D3]94D]2U4J10U27D5]36U12]16D31U]10J39U15J32U10J39U15J63U]256U6582D10]64U20940D52]21DC1143D3]55U9]40D6C2Q268DC3Q16D10H2D20]@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@ADE3GQ8]2EQC@A@A@A@A@A@A@A@A@A@A@A@A8]70D10I2E6Q8]23T9C2T@A@A@A@A@A@A@3A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@A@AC8A@A@A2@A@A@A@A@AC2T@A@A]@A14]@A@A@A@A@A80]A7DE3DE4DE23D2F2EF4U4]6J2USU6]52D4Q8]2F50D16FE9]2Q10H6]18E6D3QD4]10H28D8E2Q23D11E2F11]Q29D3]3EF47DE2F4E2FE4F13Q]C10H4]2Q32]41D6E2F2E2F2E9]3DE8DEF2]10H2]4Q16DC6D3UDF4]48DED3E2D2E5D2EDED24]2DC2Q33]6D2]6D2]6D9]7D]7D145]35D2FE2FE2FQFE2]10H6]11172D12]23D4]49D4]2048[6400\\302D2]62D2]106D38]7A12]5A5]DE10DR13D]5D]D]2D]2D]108D16T17]363DMN16]64D2]54D40]12DSU2]16E7QMNQ6]7E9]Q2L2KMNMNMNMNMNMNMNMN2QMN4Q3K3Q]4QLMNMNMN3QRL3R]QS2Q4]5D]135D2]Z]3QS3QMNQRQL2Q10H2Q3R2Q26@MQNTKT26AMRNRMNQMN2Q10DC45D2C31D3]6D2]6D2]6D2]3D3]2SRTU2S]U4R2U10]3Z2U2]";
+        for(var n = 0; n != s.length; n++) {
+            var l = '';
+            while(strIsNumericAt(s,n)) {
+                l = l + s[n++];
+            }
+            l = (l === '') ? 1 : (l | 0);
+            var c = s[n].charCodeAt() - 64;
+            for(var x = 0; x !== l; x++)
+                h$unicodeCat[h$unicodeCat.length] = c;
+        }
+    }
+    function strIsNumericAt(s,n) { var ch = s.charCodeAt(n); return ch >= 48 && ch <= 57; }
+    return h$unicodeCat[a]|0;
+}
+
 
 function h$localeEncoding() {
     //   h$log("### localeEncoding");
@@ -389,9 +417,6 @@ function h$decodeUtf16(v) {
   return String.fromCharCode.apply(this, arr);
 }
 
-// var charsets = ["UTF-8"] -> UTF-32LE 
-
-
 function h$hs_iconv_open(to,to_off,from,from_off) {
   h$errno = h$EINVAL; // no encodings supported
   return -1;
@@ -403,20 +428,6 @@ function h$hs_iconv_open(to,to_off,from,from_off) {
 
 function h$hs_iconv_close(iconv) {
   return 0;
-}
-
-function h$hs_iconv(iconv, inbuf,  inbuf_off, insize, insize_off,
-                           outbuf, outbuf_off, outsize, outsize_off) {
-//  var inbuf2      = derefPtrA(inbuf, inbuf_off);
-//  var inbuf2_off  = derefPtrO(inbuf, inbuf_off);
-//  var outbuf2     = derefPtrA(outbuf, outbuf_off);
-//  var outbuf2_off = derefPtrO(outbuf, outbuf_off);
-//  var insiz       = insize.getUint32(insize_off);
-//  var outsiz      = outsize.getUint32(outsize_off);
-  // fixme support other encodings
-//  h$log("### hs_iconv");
-  return utf32leToUtf8(inbuf, inbuf_off, insize, insize_off,
-                       outbuf, outbuf_off, outsize, outsize_off);
 }
 
 // ptr* -> ptr (array)
@@ -508,6 +519,41 @@ function h$toHsStringA(str) {
   return r;
 }
 
+// convert array with modified UTF-8 encoded text
+function h$toHsStringMU8(arr) {
+    var accept = false, b, n = 0, cp = 0, r = h$ghczmprimZCGHCziTypesziZMZN, i = arr.length - 1;
+    while(i >= 0) {
+        b = arr[i];
+        if(!(b & 128)) {
+            cp = b;
+            accept = true;
+        } else if((b & 192) === 128) {
+            cp += (b & 32) * Math.pow(64, n)
+        } else {
+            cp += (b&((1<<(6-n))-1)) * Math.pow(64, n);
+            accept = true;
+        }
+        if(accept) {
+            r  = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
+            cp = 0
+            n  = 0;
+        } else {
+            n++;
+        }
+        accept = false;
+        i--;
+    }
+    return r;
+}
+
+function h$toHsList(arr) {
+  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  for(var i=arr.length-1;i>=0;i--) {
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
+  }
+  return r;
+}
+
 // unpack ascii string, append to existing Haskell string
 function h$appendToHsStringA(str, appendTo) {
   var i = str.length - 1;
@@ -528,118 +574,5 @@ function h$throwJSException(e) {
      h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException, jsE);
   return h$throw(someE, true);
 }
-
-// function encodeSame(inbuf, inbuf_off, insize, insize_off
-
-/* specialized implementations of utf8 <-> utf32, utf8 <-> utf16
- * since utf8 is the most used interchange format and utf32
- * is used by haskell internally, utf16 for the Text package
- */
-/* outdated, need to update to little endian if used again
-function h$utf32leToUtf8(inbuf0, inbuf_off0, insize, insize_off,
-                       outbuf0, outbuf_off0, outsize, outsize_off) {
-
-  var inbuf      = h$derefPtrA(inbuf0, inbuf_off0);
-  var inbuf_off  = h$derefPtrO(inbuf0, inbuf_off0);
-  var outbuf     = h$derefPtrA(outbuf0, outbuf_off0);
-  var outbuf_off = h$derefPtrO(outbuf0, outbuf_off0);
-
-  var inbuf_left = insize.getUint32(insize_off);
-  var outbuf_left = outsize.getUint32(outsize_off);
-  var in_max  = inbuf_off + inbuf_left;
-  var out_max = outbuf_off + outbuf_left;
-  var in_off    = inbuf_off;
-  var out_off   = outbuf_off;
-  var n = 0;
-  var partial = false;
-//  h$log("### converting utf8");
-//  h$log("### inbuf_off: " + inbuf_off);
-//  h$log("### inbuf_left: " + inbuf_left);
-//  h$log("### in_max: " + in_max);
-//  h$log("### nbuf length: " + inbuf.byteLength);
-  while(in_off + 3 < in_max) {
-//    h$log("### converting: " + in_off);
-    var codePoint = inbuf.getUint32(in_off);
-//    h$log("### converting " + codePoint + " to UTF-8: " + String.fromCodePoint(codePoint));
-    if(codePoint <= 0x7F) {
-      if(out_off + 1 < out_max) {
-        outbuf.setUint8(out_off, codePoint);
-        out_off++;
-      } else {
-        partial = true;
-        break;
-      }
-    } else if(codePoint <= 0x7FF) {
-      if(out_off + 2 < out_max) {
-        outbuf.setUint8(out_off, (codePoint >> 6) | 0xC0);
-        outbuf.setUint8(out_off+1, (codePoint & 0x3F) | 0x80);
-        out_off += 2;
-      } else {
-        partial = true;
-        break;
-      }
-    } else if(codePoint <= 0xFFFF) {
-      if(out_off + 3 < out_max) {
-        outbuf.setUint8(out_off, (codePoint >> 12) | 0xE0);
-        outbuf.setUint8(out_off+1, ((codePoint >> 6) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+2, (codePoint & 0x3F) | 0x80);
-//        h$log("### encoded triple: " + outbuf.getUint8(out_off) + ", " + outbuf.getUint8(out_off+1) + ", " + outbuf.getUint8(out_off+2));
-        out_off += 3;
-      } else {
-        partial = true;
-        break;
-      }
-    } else if(codePoint <= 0x1FFFFF) {
-      if(out_off + 4 < out_max) {
-        outbuf.setUint8(out_off, (codePoint >> 18) | 0xF0);
-        outbuf.setUint8(out_off+1, ((codePoint >> 12) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+2, ((codePoint >> 6) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+3, (codePoint & 0x3F) | 0x80);
-        out_off += 4;
-      } else {
-        partial = true;
-        break;
-      }
-    } else if(codePoint <= 0x3FFFFFF) {
-      if(out_off + 5 < out_max) {
-        outbuf.setUint8(out_off, (codePoint >> 24) | 0xF8);
-        outbuf.setUint8(out_off+1, ((codePoint >> 18) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+2, ((codePoint >> 12) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+3, ((codePoint >> 6) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+4, (codePoint & 0x3F) | 0x80);
-        out_off += 5;
-      } else {
-        partial = true;
-        break;
-      }
-    } else {
-      if(out_off + 6 < out_max) {
-        outbuf.setUint8(out_off, (codePoint >>> 30) | 0xFC);
-        outbuf.setUint8(out_off+1, ((codePoint >> 24) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+2, ((codePoint >> 18) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+3, ((codePoint >> 12) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+4, ((codePoint >> 6) & 0x3F) | 0x80);
-        outbuf.setUint8(out_off+5, (codePoint & 0x3F) | 0x80);
-        out_off += 6;
-      } else {
-        partial = true;
-        break;
-      }
-    }
-    in_off += 4;
-  }
-  outsize.setUint32(outsize_off, out_max - out_off);
-  insize.setUint32(insize_off, in_max - in_off);
-//  h$log("### converted chars: " + ((in_off - inbuf_off) / 4));
-//  return 0; // all conversions are reversible return (in_off - inbuf_off) / 4;
-  if(partial) {
-    inbuf0.arr[inbuf_off0][1] = in_off;
-    h$errno = h$E2BIG;
-    return -1;
-  } else {
-    return 0;
-  }
-}
-*/
 
 

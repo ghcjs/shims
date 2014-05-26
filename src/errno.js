@@ -1,18 +1,11 @@
+#include "HsBaseConfig.h"
+
 #ifdef GHCJS_TRACE_ERRNO
 function h$logErrno() { h$log.apply(h$log,arguments); }
 #define TRACE_ERRNO(args...) h$logErrno(args)
 #else
 #define TRACE_ERRNO(args...)
 #endif
-
-// keep these values the same as "include/HsBaseConfig.h"
-var h$ENOENT = 2;
-var h$E2BIG = 7;
-var h$EBADF = 9;
-var h$EACCES = 13;
-var h$ENOTDIR = 20;
-var h$EINVAL = 22;
-var h$EILSEQ = 92;
 
 var h$errno = 0;
 
@@ -21,22 +14,20 @@ function h$__hscore_get_errno() {
   return h$errno;
 }
 
+var h$errorStrs =  { CONST_E2BIG:   "too big"
+                   , CONST_EACCESS: "no access"
+                   , CONST_EINVAL:  "invalid"
+                   , CONST_EBADF:   "bad file descriptor"
+                   , CONST_ENOTDIR: "not a directory"
+                   , CONST_ENOENT:  "no such file or directory"
+                   , CONST_EPERM:   "operation not permitted"
+                   , CONST_EEXIST:  "file exists"
+                   }
+
 function h$strerror(err) {
-  h$ret1 = 0;
-  if(err === h$E2BIG) {
-    return h$encodeUtf8("too big");
-  } else if(err === h$EACCES) {
-    return h$encodeUtf8("no access");
-  } else if(err === h$EINVAL) {
-    return h$encodeUtf8("invalid");
-  } else if(err === h$EBADF) {
-    return h$encodeUtf8("invalid file descriptor");
-  } else if(err === h$ENOTDIR) {
-    return h$encodeUtf8("not a directory");
-  } else if(err === h$ENOENT) {
-    return h$encodeUtf8("no such file or directory");
-  } else {
-    return h$encodeUtf8("unknown error");
-  }
+    TRACE_ERRNO("strerror: " + err);
+    h$ret1 = 0;
+    return h$encodeUtf8(h$errorStrs[err] || "unknown error");
 }
+
 

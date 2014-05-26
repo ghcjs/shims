@@ -1,3 +1,5 @@
+// #define GHCJS_TRACE_META 1
+
 #ifdef GHCJS_TRACE_META
 function h$logMeta(args) { h$log.apply(h$log,arguments); }
 #define TRACE_META(args...) h$logMeta(args)
@@ -44,6 +46,11 @@ function h$d() {
     return c;
 }
 
+// fixme remove this when we have a better way to immediately init these things
+function h$di(c) {
+    h$staticDelayed.push(c);
+}
+
 // initialize global object to primitive value
 function h$p(x) {
     h$staticDelayed.push(x);
@@ -52,14 +59,16 @@ function h$p(x) {
 
 var h$entriesStack = [];
 var h$staticsStack = [];
+var h$labelsStack  = [];
 
-function h$scheduleInit(entries, objs, infos, statics) {
+function h$scheduleInit(entries, objs, lbls, infos, statics) {
     var d = h$entriesStack.length;
-    h$initStatic.push(function() {
-        h$initInfoTables(d, entries, objs, infos, statics);
-    });
     h$entriesStack.push(entries);
     h$staticsStack.push(objs);
+    h$labelsStack.push(lbls);
+    h$initStatic.push(function() {
+        h$initInfoTables(d, entries, objs, lbls, infos, statics);
+    });
 }
 
 function h$runInitStatic() {
@@ -80,6 +89,7 @@ function h$runInitStatic() {
 function h$initInfoTables ( depth      // depth in the base chain
                           , funcs      // array with all entry functions
                           , objects    // array with all the global heap objects
+                          , lbls       // array with non-haskell labels
                           , infoMeta   // packed info
                           , infoStatic
                           ) {
@@ -147,25 +157,18 @@ function h$initInfoTables ( depth      // depth in the base chain
         TRACE_META("decoded significand:" + r);
         return r;
     }
-    function nextEntry() {
-        var n = next();
-        var i = depth;
-        while(n > h$entriesStack[i].length) {
-            n -= h$entriesStack[i].length;
-            i--;
-            if(i < 0) throw "nextEntry: cannot find entry";
-        }
-        return h$entriesStack[i][n];
-    }
-    function nextObj(o) {
+    function nextEntry(o) { return nextIndexed("nextEntry", h$entriesStack, o); }
+    function nextObj(o)   { return nextIndexed("nextObj", h$staticsStack, o); }
+    function nextLabel(o) { return nextIndexed("nextLabel", h$labelsStack, o); }
+    function nextIndexed(msg, stack, o) {
         var n = (o === undefined) ? next() : o;
         var i = depth;
-        while(n > h$staticsStack[i].length) {
-            n -= h$staticsStack[i].length;
+        while(n > stack[i].length) {
+            n -= stack[i].length;
             i--;
-            if(i < 0) throw "nextObj: cannot find object";
+            if(i < 0) throw (msg + ": cannot find item " + n + ", stack length: " + stack.length + " depth: " + depth);
         }
-        return h$staticsStack[i][n];
+        return stack[i][n];
     }
     function nextArg() {
         var o = next();
@@ -208,7 +211,7 @@ function h$initInfoTables ( depth      // depth in the base chain
                 return nextSignificand() * Math.pow(2, n1)
             default:
                 n1 = n - 36;
-                return nextSignicand() * Math.pow(2, n1);
+                return nextSignificand() * Math.pow(2, n1);
             }
         case 7:
             TRACE_META("string arg: fixme implement");
@@ -248,6 +251,10 @@ function h$initInfoTables ( depth      // depth in the base chain
             }
             return ba;
         case 9:
+            var isFun = next() === 1;
+            var lbl   = nextLabel();
+            return h$initPtrLbl(isFun, lbl);
+        case 10:
             var c = { f: nextEntry(), d1: null, d2: null, m: 0 };
             var n = next();
             var args = [];
@@ -256,8 +263,8 @@ function h$initInfoTables ( depth      // depth in the base chain
             }
             return h$init_closure(c, args);
         default:
-            TRACE_META("object arg: " + (o-10));
-            return nextObj(o-10);
+            TRACE_META("object arg: " + (o-11));
+            return nextObj(o-11);
         }
     }
     info = infoMeta; pos = 0;
@@ -324,6 +331,7 @@ function h$initInfoTables ( depth      // depth in the base chain
       TRACE_META("static init object: " + i + " tag: " + nx);
       switch(nx) {
       case 0:  // no init, could be a primitive value (still in the list since others might reference it)
+          // h$log("zero init");
           break;
       case 1: // staticfun
           o.f = nextEntry();
@@ -428,6 +436,15 @@ function h$initInfoTables ( depth      // depth in the base chain
   }
   h$staticDelayed = null;
 }
+
+function h$initPtrLbl(isFun, lbl) {
+    return lbl;
+}
+
+function h$callDynamic(f) {
+    return f.apply(f, Array.prototype.slice.call(arguments, 2));
+}
+
 // slice an array of heap objects
 function h$sliceArray(a, start, n) {
   return a.slice(start, start+n);
@@ -532,10 +549,143 @@ function h$setField(o,n,v) {
     case 22:
         o.d2.d22 = v;
         return;
+    case 23:
+        o.d2.d23 = v;
+        return;
+    case 24:
+        o.d2.d24 = v;
+        return;
+    case 25:
+        o.d2.d25 = v;
+        return;
+    case 26:
+        o.d2.d26 = v;
+        return;
+    case 27:
+        o.d2.d27 = v;
+        return;
+    case 28:
+        o.d2.d28 = v;
+        return;
+    case 29:
+        o.d2.d29 = v;
+        return;
+    case 30:
+        o.d2.d30 = v;
+        return;
+    case 31:
+        o.d2.d31 = v;
+        return;
+    case 32:
+        o.d2.d32 = v;
+        return;
+    case 33:
+        o.d2.d33 = v;
+        return;
+    case 34:
+        o.d2.d34 = v;
+        return;
+    case 35:
+        o.d2.d35 = v;
+        return;
+    case 36:
+        o.d2.d36 = v;
+        return;
+    case 37:
+        o.d2.d37 = v;
+        return;
+    case 38:
+        o.d2.d38 = v;
+        return;
+    case 39:
+        o.d2.d39 = v;
+        return;
+    case 40:
+        o.d2.d40 = v;
+        return;
+    case 41:
+        o.d2.d41 = v;
+        return;
+    case 42:
+        o.d2.d42 = v;
+        return;
+    case 43:
+        o.d2.d43 = v;
+        return;
+    case 44:
+        o.d2.d44 = v;
+        return;
+    case 45:
+        o.d2.d45 = v;
+        return;
+    case 45:
+        o.d2.d45 = v;
+        return;
+    case 46:
+        o.d2.d46 = v;
+        return;
+    case 47:
+        o.d2.d47 = v;
+        return;
+    case 48:
+        o.d2.d48 = v;
+        return;
+    case 49:
+        o.d2.d49 = v;
+        return;
+    case 50:
+        o.d2.d50 = v;
+        return;
+    case 51:
+        o.d2.d51 = v;
+        return;
+    case 52:
+        o.d2.d52 = v;
+        return;
+    case 53:
+        o.d2.d53 = v;
+        return;
+    case 54:
+        o.d2.d54 = v;
+        return;
+    case 55:
+        o.d2.d55 = v;
+        return;
+    case 56:
+        o.d2.d56 = v;
+        return;
+    case 57:
+        o.d2.d57 = v;
+        return;
+    case 58:
+        o.d2.d58 = v;
+        return;
+    case 59:
+        o.d2.d59 = v;
+        return;
+    case 60:
+        o.d2.d60 = v;
+        return;
+    case 61:
+        o.d2.d61 = v;
+        return;
     default:
         throw ("h$setField: setter not implemented for field: " + n)
 
     }
+}
+
+
+function h$mkExportDyn(t, f) {
+    h$log("making dynamic export: " + t);
+    h$log("haskell fun: " + f + " " + h$collectProps(f));
+
+    // fixme register things, global static data
+    var ff = function() {
+        h$log("running some haskell for you");
+        return 12;
+    };
+    return h$mkPtr(ff, 0);
 }
 
 function h$memchr(a_v, a_o, c, n) {
@@ -557,10 +707,13 @@ function h$strlen(a_v, a_o) {
   }
 }
 
-function h$newArray(len,e) {
-  var r = [];
-  for(var i=0;i<len;i++) { r[i] = e; }
-  return r;
+function h$newArray(len, e) {
+    var r = [];
+    r.__ghcjsArray = true;
+    r.m = 0;
+    if(e === null) e = r;
+    for(var i=0;i<len;i++) r[i] = e;
+    return r;
 }
 
 function h$roundUpToMultipleOf(n,m) {
@@ -629,62 +782,33 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
          };
 }
 
-// try to compute a reasonably unique int key from object data
-// used to calculate the StableName int
-// note: be careful to not use any mutable properties for this
-// - numbers directly on the heap shouldn't change
-// - o.m >> 2 shouldn't change if it's nonzero
 h$stableNameN = 1;
-// semi-unique in the upper 14 bits of the .m thing
-function h$getObjectKey(o) {
-  var x = o.m;
-  if(o.m >> 18 === 0) {
-    o.m |= ++h$stableNameN << 18;
-  }
-  return o.m >> 18;
-}
-
-function h$getObjectHash(o) {
-  if(o === null) {
-    return 230948;
-  } if(typeof o === 'number') {
-    return o|0;
-  } else if(typeof o === 'object' && o.hasOwnProperty('m') && typeof o.m === 'number') {
-    return h$getObjectKey(o);
-  } else {
-    return 3456333333;
-  }
+function h$StableName(m) {
+    this.m = m;
+    this.s = null;
 }
 
 function h$makeStableName(x) {
-  if(typeof x === 'object') {
-    return [x,x.f];
-  } else {
-    return [x,null];
-  }
+    if(typeof x === 'object') {
+        if(typeof x.m !== 'object') {
+            x.m = new h$StableName(x.m);
+        }
+        return x.m;
+    } else {
+        return new h$StableName(0);
+    }
 }
 
 function h$stableNameInt(s) {
-  // h$log("h$stableNameInt: " + (typeof s[0]));
-  var s0 = s[0];
-  if(typeof s0 === 'boolean') { return s0?1:0; }
-  if(typeof s0 === 'number') { return s0|0; } // fixme this won't work well with small floats 
-  var hash = 23;
-  hash = (hash * 37 + h$getObjectKey(s0))|0;
-  hash = (hash * 37 + h$getObjectHash(s0.d1))|0;
-  hash = (hash * 37 + h$getObjectHash(s0.d2))|0;
-  return hash;
+    var x = s.s;
+    if(x === null) {
+        x = s.s = h$stableNameN = (h$stableNameN+1)|0;
+    }
+    return x;
 }
 
 function h$eqStableName(s1o,s2o) {
-  var s1 = s1o[0];
-  var s2 = s2o[0];
-  if(typeof s1 !== 'object' || typeof s2 !== 'object') {
-    return s1 === s2 ? 1 : 0;
-  }
-  var s1f = s1o[1];
-  var s2f = s2o[1];
-  return (s1f === s2f && (s1 === s2 || (s1.f === s2.f && s1.d1 === s2.d1 && s1.d2 === s2.d2)))?1:0;
+    return s1o === s2o ? 1 : 0;
 }
 
 function h$makeStablePtr(v) {
@@ -759,28 +883,34 @@ function h$mkFunctionPtr(f) {
 }
 h$freeHaskellFunctionPtr = function () {
 }
+/*
 function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
     h$ret1 = hptr_2;
     return hptr;
 };
+*/
 
 // extra roots for the heap scanner: objects with root property
-var h$extraRoots = new goog.structs.Set();
+var h$extraRootsN = 0;
+var h$extraRoots = new h$Set();
 
 // 
-var h$domRoots = new goog.structs.Set();
+var h$domRoots = new h$Set();
 
 function h$makeCallback(retain, f, extraArgs, action) {
-  var args = extraArgs.slice(0);
-  args.unshift(action);
-  var c = function() {
-    return f.apply(this, args);
-  }
-  if(retain) {
-    c.root = action;
-    h$extraRoots.add(c);
-  }
-  return c;
+    var args = extraArgs.slice(0);
+    args.unshift(action);
+    var c = function() {
+        return f.apply(this, args);
+    }
+    if(retain === true) {
+        c._key = ++h$extraRootsN;
+        c.root = action;
+        h$extraRoots.add(c);
+    } else if(retain) { // DOM retain
+
+    }
+    return c;
 }
 
 function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
@@ -803,8 +933,9 @@ function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
     throw "h$makeCallbackApply: unsupported arity";
   }
   if(retain === true) {
-    c.root = fun;
-    h$extraRoots.add(c);
+      c.root = fun;
+      c._key = ++h$extraRootsN;
+      h$extraRoots.add(c);
   } else if(retain) {
     // fixme: retain this while `retain' is in some DOM
   } else {
@@ -817,13 +948,14 @@ function h$mkJSRef(x) {
   return h$c1(h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e, x);
 }
 
+// fixme these don't guarantee that the object has a key!
 function h$retain(c) {
   h$extraRoots.add(c);
 }
 
 function h$retainDom(d, c) {
   h$domRoots.add(c);
-  c.domRoots = new goog.structs.Set();
+  c.domRoots = new h$Set();
 }
 
 function h$releasePermanent(c) {
