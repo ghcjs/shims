@@ -1,5 +1,4 @@
 js:
-  - src/rts_closures.js
   - src/node.js
   - lib/typedarray/typedarray.js
   - lib/jsbn/jsbn.js
