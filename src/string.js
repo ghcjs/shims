@@ -25,6 +25,13 @@ function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(st
 function h$strta(str) {return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
 function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }); }
 
+// unpack strings without thunks
+function h$ustra(str) { return h$toHsStringA(str); }  // ascii string, string argument
+function h$ustr(str) { return h$toHsString(str); }    // utf8 string, string argument
+function h$urstra(arr) { return h$toHsList(arr); }     // ascii string, array of codepoints argument
+function h$urstr(arr) { return h$toHsStringMU8(arr); } // utf8 string, array of bytes argumnt
+
+
 var h$toUpper = null;
 function h$u_towupper(ch) {
   if(h$toUpper == null) { h$toUpper = h$decodeMapping(h$toUpperMapping); }

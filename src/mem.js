@@ -158,7 +158,7 @@ function h$initInfoTables ( depth      // depth in the base chain
         return r;
     }
     function nextEntry(o) { return nextIndexed("nextEntry", h$entriesStack, o); }
-    function nextObj(o)   { return nextIndexed("nextObj", h$staticsStack, o); }
+    function nextObj(o)   { return nextIndexed("nextObj",   h$staticsStack, o); }
     function nextLabel(o) { return nextIndexed("nextLabel", h$labelsStack, o); }
     function nextIndexed(msg, stack, o) {
         var n = (o === undefined) ? next() : o;
@@ -296,7 +296,7 @@ function h$initInfoTables ( depth      // depth in the base chain
         oregs = next();
         oregs = ((oregs >>> 1) << 8) | (oregs & 1);
         break;
-      default: throw ("h$initInfoTables: invalid closure type: " + 3)
+      default: throw ("h$initInfoTables: invalid closure type")
     }
     var size = next() - 1;
     var nsrts = next();
@@ -304,7 +304,7 @@ function h$initInfoTables ( depth      // depth in the base chain
     if(nsrts > 0) {
       srt = [];
       for(var j=0;j<nsrts;j++) {
-          srt.push(nextObj()); // h$staticDelayed[next()]);
+          srt.push(nextObj());
       }
     }
 
@@ -325,7 +325,7 @@ function h$initInfoTables ( depth      // depth in the base chain
     pos = 0;
     for(i=0;i<objects.length;i++) {
       TRACE_META("start iteration");
-        o = objects[i];
+      o = objects[i];
         // traceMetaObjBefore(o);
       var nx = next();
       TRACE_META("static init object: " + i + " tag: " + nx);
