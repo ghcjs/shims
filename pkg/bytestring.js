@@ -222,7 +222,7 @@ function h$_hs_bytestring_long_long_int_dec_padded18(x_a, x_b, buf_d, buf_o) {
     var max_width_int64_dec = 18;
     var ptr = buf_o + max_width_int64_dec;
     var bu8 = buf_d.u8;
-    var x = goog.math.long.fromBits(x_b, x_a);
+    var x = goog.math.Long.fromBits(x_b, x_a);
 
     // encode positive number as little-endian decimal
     do {
