@@ -13,7 +13,7 @@ function h$makeEnum(tag) {
   var f = function() {
     return h$stack[h$sp];
   }
-  h$setObjInfo(f, 2, "Enum", [], tag+1, 0, [1], null);
+  h$setObjInfo(f, 2, "Enum", [], tag+1, 0, [1], null, h$CCS_SYSTEM);
   return h$c0(f);
 }
 
