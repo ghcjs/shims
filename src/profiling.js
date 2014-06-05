@@ -1,26 +1,36 @@
-var h$CC_MAIN       = h$registerCC("MAIN", "MAIN", "<built-in>", false);
-var h$CC_SYSTEM     = h$registerCC("SYSTEM", "SYSTEM", "<built-in>", false);
-var h$CC_GC         = h$registerCC("GC", "GC", "<built-in>", false);
-var h$CC_OVERHEAD   = h$registerCC("OVERHEAD_of", "PROFILING", "<built-in>", false);
-var h$CC_DONT_CARE  = h$registerCC("DONT_CARE", "MAIN", "<built-in>", false);
-var h$CC_PINNED     = h$registerCC("PINNED", "SYSTEM", "<built-in>", false);
-var h$CC_IDLE       = h$registerCC("IDLE", "IDLE", "<built-in>", false);
-
-var h$CCS_MAIN      = h$registerCCS(h$CC_MAIN);
-var h$CCS_SYSTEM    = h$registerCCS(h$CC_SYSTEM);
-var h$CCS_GC        = h$registerCCS(h$CC_GC);
-var h$CCS_OVERHEAD  = h$registerCCS(h$CC_OVERHEAD);
-var h$CCS_DONT_CARE = h$registerCCS(h$CC_DONT_CARE);
-var h$CCS_PINNED    = h$registerCCS(h$CC_PINNED);
-var h$CCS_IDLE      = h$registerCCS(h$CC_IDLE);
-
-var h$curCCS = h$CCS_MAIN;
+function assert(condition, message) {
+    if (!condition) {
+        console.trace(message || "Assertion failed");
+    }
+}
 
 var h$ccList  = [];
 var h$ccsList = [];
 
+var h$CC_MAIN       = h$registerCC("MAIN1", "MAIN1", "<built-in>", false);
+var h$CC_SYSTEM     = h$registerCC("SYSTEM", "SYSTEM", "<built-in>", false);
+var h$CC_GC         = h$registerCC("GC", "GC", "<built-in>", false);
+var h$CC_OVERHEAD   = h$registerCC("OVERHEAD_of", "PROFILING", "<built-in>", false);
+var h$CC_DONT_CARE  = h$registerCC("DONT_CARE", "MAIN1", "<built-in>", false);
+var h$CC_PINNED     = h$registerCC("PINNED", "SYSTEM", "<built-in>", false);
+var h$CC_IDLE       = h$registerCC("IDLE", "IDLE", "<built-in>", false);
+var h$CAF_cc        = h$registerCC("CAF", "CAF", "<built-in>", false);
+
+var h$CCS_MAIN      = h$registerCCS(h$CC_MAIN);
+h$CCS_MAIN.root     = h$CCS_MAIN;
+
+var h$CCS_SYSTEM    = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_SYSTEM));
+var h$CCS_GC        = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_GC));
+var h$CCS_OVERHEAD  = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_OVERHEAD));
+var h$CCS_DONT_CARE = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_DONT_CARE));
+var h$CCS_PINNED    = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_PINNED));
+var h$CCS_IDLE      = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_IDLE));
+var h$CAF_ccs       = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CAF_cc));
+
+var h$CCCS = h$CCS_MAIN;
+
 function h$getCurrentCostCentre() {
-  return h$curCCS;
+  return h$CCCS;
 }
 
 function h$mkCC(label, module, srcloc, isCaf) {
@@ -36,7 +46,7 @@ function h$mkCCS(cc) {
 }
 
 function h$registerCC(label, module, srcloc, isCaf) {
-  var cc = mkCC(label, module, srcloc, isCaf);
+  var cc = h$mkCC(label, module, srcloc, isCaf);
   h$ccList.push(cc);
   return cc;
 }
@@ -48,6 +58,9 @@ function h$registerCCS(cc) {
 }
 
 function h$enterFunCCS(ccsapp, ccsfn) {
+  assert (ccsapp !== null, "ccsapp is null");
+  assert (ccsfn  !== null, "ccsfn is null");
+
   // common case 1: both stacks are the same
   if (ccsapp === ccsfn) {
     return;
@@ -59,13 +72,13 @@ function h$enterFunCCS(ccsapp, ccsfn) {
   }
 
   // FIXME: do we need this?
-  h$curCCS = h$CC_OVERHEAD;
+  h$CCCS = h$CC_OVERHEAD;
 
   // common case 3: the stacks are completely different (e.g. one is a
   // descendent of MAIN and the other of a CAF): we append the whole
   // of the function stack to the current CCS.
   if (ccsfn.root !== ccsapp.root) {
-    h$curCCS = h$appendCCS(ccsapp, ccsfn);
+    h$CCCS = h$appendCCS(ccsapp, ccsfn);
     return;
   }
 
@@ -76,32 +89,32 @@ function h$enterFunCCS(ccsapp, ccsfn) {
     for (var i = 0; i < dif; i++) {
       tmp = tmp.prevStack;
     }
-    h$curCCS = h$enterFunEqualStacks(ccsapp, tmp, ccsfn);
+    h$CCCS = h$enterFunEqualStacks(ccsapp, tmp, ccsfn);
     return;
   }
 
   // uncommon case 5: ccsfn is deeper than CCCS
   if (ccsfn.depth > ccsapp.depth) {
-    h$curCCS = h$enterFunCurShorter(ccsapp, ccsfn, ccsfn.depth - ccsapp.depth);
+    h$CCCS = h$enterFunCurShorter(ccsapp, ccsfn, ccsfn.depth - ccsapp.depth);
     return;
   }
 
   // uncommon case 6: stacks are equal depth, but different
-  h$curCCS = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
+  h$CCCS = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
 }
 
 function h$enterFunCurShorter(ccsapp, ccsfn, n) {
   if (n === 0) {
-    assert(ccsapp.length === ccsfn.length);
+    assert(ccsapp.length === ccsfn.length, "ccsapp.length !== ccsfn.length");
     return h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
   } else {
-    assert(ccsfn.depth > ccsapp.depth);
+    assert(ccsfn.depth > ccsapp.depth, "ccsfn.depth <= ccsapp.depth");
     return h$pushCostCentre(h$enterFunCurShorter(ccsapp, ccsfn.prevStack, n-1), ccsfn.cc);
   }
 }
 
 function h$enterFunEqualStacks(ccs0, ccsapp, ccsfn) {
-  assert(ccsapp.depth === ccsfn.depth);
+  assert(ccsapp.depth === ccsfn.depth, "ccsapp.depth !== ccsfn.depth");
   if (ccsapp === ccsfn) return ccs0;
   return h$pushCostCentre(h$enterFunEqualStacks(ccs0, ccsapp.prevStack, ccsfn.prevStack), ccsfn.cc);
 }
@@ -144,7 +157,7 @@ function h$actualPush(ccs, cc) {
 }
 
 //
-// emulating pointers for cost-centres and cost-centre stacks
+// Emulating pointers for cost-centres and cost-centre stacks
 //
 
 var h$ccsCC_offset     = 8;  // ccs->cc
@@ -168,6 +181,12 @@ function h$buildCCPtr(o) {
 }
 
 function h$buildCCSPtr(o) {
+  if (o === null)
+    // `o` may be null when:
+    //   * f.ccs is null, which means either we have a bug in code generator,
+    //     or profiling is disabled and CCS field of ClosureInfo is left Nothing
+    // TODO: are there any other cases?
+    return null;
   console.log("buildCCSPtr called", o);
   // last used offset is 16, allocate 24 bytes
   var ccs = h$newByteArray(24);
