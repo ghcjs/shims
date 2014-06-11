@@ -9,14 +9,16 @@ function h$logMeta(args) { h$log.apply(h$log,arguments); }
 // memory management and pointer emulation
 
 // static init, non-caf
-function h$sti(i,c,xs) {
+function h$sti(i,c,xs,ccs) {
     i.f = c;
+    i.cc = ccs;
     h$init_closure(i,xs);
 }
 
 // static init, caf
-function h$stc(i,c) {
+function h$stc(i,c,ccs) {
     i.f = c;
+    i.cc = ccs;
     h$init_closure(i,[]);
     h$CAFs.push(i);
     h$CAFsReset.push(i.f);
