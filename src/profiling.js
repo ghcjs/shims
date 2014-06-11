@@ -19,13 +19,13 @@ var h$CAF_cc        = h$registerCC("CAF", "CAF", "<built-in>", false);
 var h$CCS_MAIN      = h$registerCCS(h$CC_MAIN);
 h$CCS_MAIN.root     = h$CCS_MAIN;
 
-var h$CCS_SYSTEM    = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_SYSTEM));
-var h$CCS_GC        = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_GC));
-var h$CCS_OVERHEAD  = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_OVERHEAD));
-var h$CCS_DONT_CARE = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_DONT_CARE));
-var h$CCS_PINNED    = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_PINNED));
-var h$CCS_IDLE      = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CC_IDLE));
-var h$CAF_ccs       = h$registerCCS(h$actualPush(h$CCS_MAIN, h$CAF_cc));
+var h$CCS_SYSTEM    = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_SYSTEM));
+var h$CCS_GC        = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_GC));
+var h$CCS_OVERHEAD  = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_OVERHEAD));
+var h$CCS_DONT_CARE = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_DONT_CARE));
+var h$CCS_PINNED    = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_PINNED));
+var h$CCS_IDLE      = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_IDLE));
+var h$CAF           = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CAF_cc));
 
 var h$CCCS = h$CCS_MAIN;
 
@@ -53,6 +53,11 @@ function h$registerCC(label, module, srcloc, isCaf) {
 
 function h$registerCCS(cc) {
   var ccs = h$mkCCS(cc);
+  h$ccsList.push(ccs);
+  return ccs;
+}
+
+function h$registerCCS1(ccs) {
   h$ccsList.push(ccs);
   return ccs;
 }
@@ -135,7 +140,7 @@ function h$checkLoop(ccs, cc) {
   while (ccs !== null) {
     if (ccs.cc === cc)
       return ccs;
-    ccs = cc.prevStack;
+    ccs = ccs.prevStack;
   }
   return null;
 }
