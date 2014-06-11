@@ -108,6 +108,19 @@ function h$enterFunCCS(ccsapp, ccsfn) {
   h$CCCS = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
 }
 
+function h$appendCCS(ccs1, ccs2) {
+  if (ccs1 === ccs2) {
+    return ccs1;
+  }
+
+  if (ccs2 === h$CCS_MAIN || ccs2.cc.isCaf) {
+    // stop at a CAF element
+    return ccs1;
+  }
+
+  return h$pushCostCentre(h$appendCCS(ccs1, ccs2.prevStack), ccs2.cc);
+}
+
 function h$enterFunCurShorter(ccsapp, ccsfn, n) {
   if (n === 0) {
     assert(ccsapp.length === ccsfn.length, "ccsapp.length !== ccsfn.length");
