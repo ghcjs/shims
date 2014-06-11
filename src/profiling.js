@@ -193,7 +193,7 @@ function h$buildCCSPtr(o) {
   ccs.myTag = "ccs pointer";
   ccs.arr = [];
   if (o.prevStack !== null) {
-    ccs.arr[h$ccsPrevStackOffset] = h$buildCCSPtr(o.prevStack);
+    ccs.arr[h$ccsPrevStackOffset] = [h$buildCCSPtr(o.prevStack), 0];
   }
   ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
   console.log("returning ccs:", ccs);
