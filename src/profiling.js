@@ -62,7 +62,14 @@ function h$registerCCS1(ccs) {
   return ccs;
 }
 
-function h$enterFunCCS(ccsapp, ccsfn) {
+
+function h$enterThunkCCS(ccsthunk) {
+  h$CCCS = ccsthunk;
+}
+
+function h$enterFunCCS(ccsapp, // stack at call site
+                       ccsfn   // stack of function
+                       ) {
   assert (ccsapp !== null, "ccsapp is null");
   assert (ccsfn  !== null, "ccsfn is null");
 
