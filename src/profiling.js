@@ -7,11 +7,11 @@ function assert(condition, message) {
 var h$ccList  = [];
 var h$ccsList = [];
 
-var h$CC_MAIN       = h$registerCC("MAIN1", "MAIN1", "<built-in>", false);
+var h$CC_MAIN       = h$registerCC("MAIN", "MAIN", "<built-in>", false);
 var h$CC_SYSTEM     = h$registerCC("SYSTEM", "SYSTEM", "<built-in>", false);
 var h$CC_GC         = h$registerCC("GC", "GC", "<built-in>", false);
 var h$CC_OVERHEAD   = h$registerCC("OVERHEAD_of", "PROFILING", "<built-in>", false);
-var h$CC_DONT_CARE  = h$registerCC("DONT_CARE", "MAIN1", "<built-in>", false);
+var h$CC_DONT_CARE  = h$registerCC("DONT_CARE", "MAIN", "<built-in>", false);
 var h$CC_PINNED     = h$registerCC("PINNED", "SYSTEM", "<built-in>", false);
 var h$CC_IDLE       = h$registerCC("IDLE", "IDLE", "<built-in>", false);
 var h$CAF_cc        = h$registerCC("CAF", "CAF", "<built-in>", false);
