@@ -9,16 +9,28 @@ function h$logMeta(args) { h$log.apply(h$log,arguments); }
 // memory management and pointer emulation
 
 // static init, non-caf
+#ifdef GHCJS_PROF
 function h$sti(i,c,xs,ccs) {
+#else
+function h$sti(i,c,xs) {
+#endif
     i.f = c;
+#ifdef GHCJS_PROF
     i.cc = ccs;
+#endif
     h$init_closure(i,xs);
 }
 
 // static init, caf
+#ifdef GHCJS_PROF
 function h$stc(i,c,ccs) {
+#else
+function h$stc(i,c) {
+#endif
     i.f = c;
+#ifdef GHCJS_PROF
     i.cc = ccs;
+#endif
     h$init_closure(i,[]);
     h$CAFs.push(i);
     h$CAFsReset.push(i.f);
