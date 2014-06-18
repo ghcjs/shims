@@ -17,7 +17,6 @@ var h$CC_IDLE       = h$registerCC("IDLE", "IDLE", "<built-in>", false);
 var h$CAF_cc        = h$registerCC("CAF", "CAF", "<built-in>", false);
 
 var h$CCS_MAIN      = h$registerCCS(h$CC_MAIN);
-h$CCS_MAIN.root     = h$CCS_MAIN;
 
 var h$CCS_SYSTEM    = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_SYSTEM));
 var h$CCS_GC        = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_GC));
@@ -41,8 +40,10 @@ function h$mkCC(label, module, srcloc, isCaf) {
 
 function h$mkCCS(cc) {
   console.log("h$mkCCS(", cc, ")");
-  return { cc: cc, sccCount: 0, timeTicks: 0, memAlloc: 0, inheritedTicks: 0,
-           inheritedAlloc: 0, prevStack: null, root: null, depth: 0 };
+  var ret = { cc: cc, sccCount: 0, timeTicks: 0, memAlloc: 0, inheritedTicks: 0,
+              inheritedAlloc: 0, prevStack: null, depth: 0 }
+  ret.root = ret;
+  return ret;
 }
 
 function h$registerCC(label, module, srcloc, isCaf) {
