@@ -216,12 +216,19 @@ function h$actualPush(ccs, cc) {
 // Emulating pointers for cost-centres and cost-centre stacks
 //
 
-var h$ccsCC_offset     = 8;  // ccs->cc
-var h$ccsPrevStackOffset = 16; // ccs->prevStack
+// var h$ccsCC_offset       = 8;  // ccs->cc
+// var h$ccsPrevStackOffset = 16; // ccs->prevStack
+//
+// var h$ccLabel_offset   = 8;  // cc->label
+// var h$ccModule_offset  = 16; // cc->module
+// var h$ccsrcloc_offset  = 24; // cc->srcloc
 
-var h$ccLabel_offset   = 8;  // cc->label
-var h$ccModule_offset  = 16; // cc->module
-var h$ccsrcloc_offset  = 24; // cc->srcloc
+var h$ccsCC_offset       = 4; // ccs->cc
+var h$ccsPrevStackOffset = 8; // ccs->prevStack
+
+var h$ccLabel_offset   = 4;   // cc->label
+var h$ccModule_offset  = 8;   // cc->module
+var h$ccsrcloc_offset  = 12;  // cc->srcloc
 
 function h$buildCCPtr(o) {
   // last used offset is 24, so we need to allocate 32 bytes
