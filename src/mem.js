@@ -36,7 +36,12 @@ function h$stc(i,c) {
     h$CAFsReset.push(i.f);
 }
 
+
+#ifdef GHCJS_PROF
+function h$stl(o, xs, t, ccs) {
+#else
 function h$stl(o, xs, t) {
+#endif
     var r = t ? t : h$ghczmprimZCGHCziTypesziZMZN;
     var x;
     if(xs.length > 0) {
@@ -50,6 +55,9 @@ function h$stl(o, xs, t) {
     o.d1 = r.d1;
     o.d2 = r.d2;
     o.m  = r.m;
+#ifdef GHCJS_PROF
+    o.cc = ccs;
+#endif
 }
 
 // delayed init for top-level closures
