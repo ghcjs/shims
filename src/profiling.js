@@ -1,8 +1,21 @@
+// Used definitions: GHCJS_TRACE_PROF and GHCJS_ASSERT_PROF
+
+#ifdef GHCJS_ASSERT_PROF
 function assert(condition, message) {
     if (!condition) {
         console.trace(message || "Assertion failed");
     }
 }
+#define ASSERT(args...) assert(args)
+#else
+#define ASSERT(args...)
+#endif
+
+#ifdef GHCJS_TRACE_PROF
+#define TRACE(args...) console.log(args)
+#else
+#define TRACE(args...)
+#endif
 
 var h$ccList  = [];
 var h$ccsList = [];
@@ -33,13 +46,13 @@ function h$getCurrentCostCentre() {
 }
 
 function h$mkCC(label, module, srcloc, isCaf) {
-  console.log("h$mkCC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
+  TRACE("h$mkCC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
   return { label: label, module: module, srcloc: srcloc, isCaf: isCaf,
            memAlloc: 0, timeTicks: 0 };
 }
 
 function h$mkCCS(cc) {
-  console.log("h$mkCCS(", cc, ")");
+  TRACE("h$mkCCS(", cc, ")");
   var ret = { cc: cc, sccCount: 0, timeTicks: 0, memAlloc: 0, inheritedTicks: 0,
               inheritedAlloc: 0, prevStack: null, depth: 0 }
   ret.root = ret;
@@ -63,6 +76,23 @@ function h$registerCCS1(ccs) {
   return ccs;
 }
 
+#ifdef GHCJS_TRACE_PROF
+function h$ccsString(ccs) {
+  var labels = [];
+  do {
+    labels.push(ccs.cc.label);
+    ccs = ccs.prevStack;
+  } while (ccs !== null);
+  str = "[";
+  for (var i = labels.length - 1; i > 0; i--) {
+    str = str + labels[i];
+    str = str + ", ";
+  }
+  str = str + labels[0];
+  str = str + "]";
+  return str;
+}
+#endif
 
 function h$enterThunkCCS(ccsthunk) {
   h$CCCS = ccsthunk;
@@ -71,8 +101,8 @@ function h$enterThunkCCS(ccsthunk) {
 function h$enterFunCCS(ccsapp, // stack at call site
                        ccsfn   // stack of function
                        ) {
-  assert (ccsapp !== null, "ccsapp is null");
-  assert (ccsfn  !== null, "ccsfn is null");
+  ASSERT(ccsapp !== null, "ccsapp is null");
+  ASSERT(ccsfn  !== null, "ccsfn is null");
 
   // common case 1: both stacks are the same
   if (ccsapp === ccsfn) {
@@ -131,16 +161,16 @@ function h$appendCCS(ccs1, ccs2) {
 
 function h$enterFunCurShorter(ccsapp, ccsfn, n) {
   if (n === 0) {
-    assert(ccsapp.length === ccsfn.length, "ccsapp.length !== ccsfn.length");
+    ASSERT(ccsapp.length === ccsfn.length, "ccsapp.length !== ccsfn.length");
     return h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
   } else {
-    assert(ccsfn.depth > ccsapp.depth, "ccsfn.depth <= ccsapp.depth");
+    ASSERT(ccsfn.depth > ccsapp.depth, "ccsfn.depth <= ccsapp.depth");
     return h$pushCostCentre(h$enterFunCurShorter(ccsapp, ccsfn.prevStack, n-1), ccsfn.cc);
   }
 }
 
 function h$enterFunEqualStacks(ccs0, ccsapp, ccsfn) {
-  assert(ccsapp.depth === ccsfn.depth, "ccsapp.depth !== ccsfn.depth");
+  ASSERT(ccsapp.depth === ccsfn.depth, "ccsapp.depth !== ccsfn.depth");
   if (ccsapp === ccsfn) return ccs0;
   return h$pushCostCentre(h$enterFunEqualStacks(ccs0, ccsapp.prevStack, ccsfn.prevStack), ccsfn.cc);
 }
@@ -194,26 +224,19 @@ var h$ccModule_offset  = 16; // cc->module
 var h$ccsrcloc_offset  = 24; // cc->srcloc
 
 function h$buildCCPtr(o) {
-  console.log("buildCCPtr called");
   // last used offset is 24, so we need to allocate 32 bytes
+  ASSERT(o !== null);
   var cc = h$newByteArray(32);
   cc.myTag = "cc pointer";
   cc.arr = [];
   cc.arr[h$ccLabel_offset]  = [h$encodeUtf8(o.label),   0];
   cc.arr[h$ccModule_offset] = [h$encodeUtf8(o.module),  0];
   cc.arr[h$ccsrcloc_offset] = [h$encodeUtf8(o.srcloc),  0];
-  console.log("returning cc:", cc);
   return cc;
 }
 
 function h$buildCCSPtr(o) {
-  if (o === null)
-    // `o` may be null when:
-    //   * f.ccs is null, which means either we have a bug in code generator,
-    //     or profiling is disabled and CCS field of ClosureInfo is left Nothing
-    // TODO: are there any other cases?
-    return null;
-  console.log("buildCCSPtr called", o);
+  ASSERT(o !== null);
   // last used offset is 16, allocate 24 bytes
   var ccs = h$newByteArray(24);
   ccs.myTag = "ccs pointer";
@@ -222,6 +245,5 @@ function h$buildCCSPtr(o) {
     ccs.arr[h$ccsPrevStackOffset] = [h$buildCCSPtr(o.prevStack), 0];
   }
   ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
-  console.log("returning ccs:", ccs);
   return ccs;
 }
