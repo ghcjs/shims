@@ -17,64 +17,83 @@ function assert(condition, message) {
 #define TRACE(args...)
 #endif
 
+
 var h$ccList  = [];
 var h$ccsList = [];
 
-var h$CC_MAIN       = h$registerCC("MAIN", "MAIN", "<built-in>", false);
-var h$CC_SYSTEM     = h$registerCC("SYSTEM", "SYSTEM", "<built-in>", false);
-var h$CC_GC         = h$registerCC("GC", "GC", "<built-in>", false);
-var h$CC_OVERHEAD   = h$registerCC("OVERHEAD_of", "PROFILING", "<built-in>", false);
-var h$CC_DONT_CARE  = h$registerCC("DONT_CARE", "MAIN", "<built-in>", false);
-var h$CC_PINNED     = h$registerCC("PINNED", "SYSTEM", "<built-in>", false);
-var h$CC_IDLE       = h$registerCC("IDLE", "IDLE", "<built-in>", false);
-var h$CAF_cc        = h$registerCC("CAF", "CAF", "<built-in>", false);
-
-var h$CCS_MAIN      = h$registerCCS(h$CC_MAIN);
-
-var h$CCS_SYSTEM    = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_SYSTEM));
-var h$CCS_GC        = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_GC));
-var h$CCS_OVERHEAD  = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_OVERHEAD));
-var h$CCS_DONT_CARE = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_DONT_CARE));
-var h$CCS_PINNED    = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_PINNED));
-var h$CCS_IDLE      = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CC_IDLE));
-var h$CAF           = h$registerCCS1(h$actualPush(h$CCS_MAIN, h$CAF_cc));
-
-var h$CCCS = h$CCS_MAIN;
-
-function h$getCurrentCostCentre() {
-  return h$CCCS;
+var h$CCUnique = 0;
+function h$CC(label, module, srcloc, isCaf) {
+  TRACE("h$CC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
+  this.label     = label;
+  this.module    = module;
+  this.srcloc    = srcloc;
+  this.isCaf     = isCaf;
+  this._key      = ++h$CCUnique;
+  this.memAlloc  = 0;
+  this.timeTicks = 0;
+  h$ccList.push(this);
 }
 
-function h$mkCC(label, module, srcloc, isCaf) {
-  TRACE("h$mkCC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
-  return { label: label, module: module, srcloc: srcloc, isCaf: isCaf,
-           memAlloc: 0, timeTicks: 0 };
+
+var h$CCSUnique = 0;
+function h$CCS(parent, cc) {
+  TRACE("h$mkCCS(", parent, cc, ")");
+  if (parent !== null && parent.consed.has(cc)) {
+    return (parent.consed.get(cc));
+  }
+  this.consed = new h$Map();
+  this.cc     = cc;
+  this._key   = ++h$CCSUnique;
+  if (parent) {
+    this.root      = parent.root;
+    this.depth     = parent.depth + 1;
+    this.prevStack = parent;
+    parent.consed.put(cc,this);
+  } else {
+    this.root      = this;
+    this.depth     = 0;
+    this.prevStack = null;
+  }
+  this.prevStack      = parent;
+  this.sccCount       = 0;
+  this.timeTicks      = 0;
+  this.memAlloc       = 0;
+  this.inheritedTicks = 0;
+  this.inheritedAlloc = 0;
+  h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
 
-function h$mkCCS(cc) {
-  TRACE("h$mkCCS(", cc, ")");
-  var ret = { cc: cc, sccCount: 0, timeTicks: 0, memAlloc: 0, inheritedTicks: 0,
-              inheritedAlloc: 0, prevStack: null, depth: 0 }
-  ret.root = ret;
-  return ret;
-}
 
-function h$registerCC(label, module, srcloc, isCaf) {
-  var cc = h$mkCC(label, module, srcloc, isCaf);
-  h$ccList.push(cc);
-  return cc;
-}
+//
+// Built-in cost-centres and stacks
+//
 
-function h$registerCCS(cc) {
-  var ccs = h$mkCCS(cc);
-  h$ccsList.push(ccs);
-  return ccs;
-}
+var h$CC_MAIN       = new h$CC("MAIN", "MAIN", "<built-in>", false);
+var h$CC_SYSTEM     = new h$CC("SYSTEM", "SYSTEM", "<built-in>", false);
+var h$CC_GC         = new h$CC("GC", "GC", "<built-in>", false);
+var h$CC_OVERHEAD   = new h$CC("OVERHEAD_of", "PROFILING", "<built-in>", false);
+var h$CC_DONT_CARE  = new h$CC("DONT_CARE", "MAIN", "<built-in>", false);
+var h$CC_PINNED     = new h$CC("PINNED", "SYSTEM", "<built-in>", false);
+var h$CC_IDLE       = new h$CC("IDLE", "IDLE", "<built-in>", false);
+var h$CAF_cc        = new h$CC("CAF", "CAF", "<built-in>", false);
 
-function h$registerCCS1(ccs) {
-  h$ccsList.push(ccs);
-  return ccs;
-}
+var h$CCS_MAIN      = new h$CCS(null, h$CC_MAIN);
+
+var h$CCS_SYSTEM    = new h$CCS(h$CCS_MAIN, h$CC_SYSTEM);
+var h$CCS_GC        = new h$CCS(h$CCS_MAIN, h$CC_GC);
+var h$CCS_OVERHEAD  = new h$CCS(h$CCS_MAIN, h$CC_OVERHEAD);
+var h$CCS_DONT_CARE = new h$CCS(h$CCS_MAIN, h$CC_DONT_CARE);
+var h$CCS_PINNED    = new h$CCS(h$CCS_MAIN, h$CC_PINNED);
+var h$CCS_IDLE      = new h$CCS(h$CCS_MAIN, h$CC_IDLE);
+var h$CAF           = new h$CCS(h$CCS_MAIN, h$CAF_cc);
+
+// Current cost-centre stack
+var h$CCCS          = h$CCS_MAIN;
+
+
+//
+// Cost-centre entries, SCC
+//
 
 #ifdef GHCJS_TRACE_PROF
 function h$ccsString(ccs) {
@@ -94,6 +113,7 @@ function h$ccsString(ccs) {
 }
 #endif
 
+// TODO: This is used for debugging purposes, inline this
 function h$enterThunkCCS(ccsthunk) {
   h$CCCS = ccsthunk;
 }
@@ -176,6 +196,11 @@ function h$enterFunEqualStacks(ccs0, ccsapp, ccsfn) {
 }
 
 function h$pushCostCentre(ccs, cc) {
+  if (ccs === null) {
+    // when is ccs null?
+    return new h$CCS(ccs, cc);
+  }
+
   if (ccs.cc === cc) {
     return ccs;
   } else {
@@ -183,7 +208,7 @@ function h$pushCostCentre(ccs, cc) {
     if (temp_ccs !== null) {
       return temp_ccs;
     }
-    return h$actualPush(ccs, cc);
+    return new h$CCS(ccs, cc);
   }
 }
 
@@ -194,22 +219,6 @@ function h$checkLoop(ccs, cc) {
     ccs = ccs.prevStack;
   }
   return null;
-}
-
-function h$actualPush(ccs, cc) {
-  var new_ccs = {};
-
-  new_ccs.cc = cc;
-  new_ccs.prevStack = ccs;
-  new_ccs.root = ccs.root;
-  new_ccs.depth = ccs.depth + 1;
-  new_ccs.sccCount = 0;
-  new_ccs.timeTicks = 0;
-  new_ccs.memAlloc = 0;
-  new_ccs.inheritedTicks = 0;
-  new_ccs.inheritedAlloc = 0;
-
-  return new_ccs;
 }
 
 //
@@ -234,7 +243,9 @@ function h$buildCCPtr(o) {
   // last used offset is 24, so we need to allocate 32 bytes
   ASSERT(o !== null);
   var cc = h$newByteArray(32);
+#ifdef GHCJS_TRACE_PROF
   cc.myTag = "cc pointer";
+#endif
   cc.arr = [];
   cc.arr[h$ccLabel_offset]  = [h$encodeUtf8(o.label),   0];
   cc.arr[h$ccModule_offset] = [h$encodeUtf8(o.module),  0];
@@ -246,11 +257,17 @@ function h$buildCCSPtr(o) {
   ASSERT(o !== null);
   // last used offset is 16, allocate 24 bytes
   var ccs = h$newByteArray(24);
+#ifdef GHCJS_TRACE_PROF
   ccs.myTag = "ccs pointer";
+#endif
   ccs.arr = [];
   if (o.prevStack !== null) {
     ccs.arr[h$ccsPrevStackOffset] = [h$buildCCSPtr(o.prevStack), 0];
   }
+  // FIXME: we may need this part:
+  // else {
+  //   ccs.arr[h$ccsPrevStackOffset] = [null, 0];
+  // }
   ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
   return ccs;
 }
