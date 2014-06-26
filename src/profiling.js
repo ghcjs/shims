@@ -225,17 +225,17 @@ function h$checkLoop(ccs, cc) {
 // Emulating pointers for cost-centres and cost-centre stacks
 //
 
-var h$ccsCC_offset       = 8;  // ccs->cc
-var h$ccsPrevStackOffset = 16; // ccs->prevStack
+var h$ccsCC_offset       = 4;  // ccs->cc
+var h$ccsPrevStackOffset = 8;  // ccs->prevStack
 
-var h$ccLabel_offset   = 8;  // cc->label
-var h$ccModule_offset  = 16; // cc->module
-var h$ccsrcloc_offset  = 24; // cc->srcloc
+var h$ccLabel_offset     = 4;  // cc->label
+var h$ccModule_offset    = 8;  // cc->module
+var h$ccsrcloc_offset    = 12; // cc->srcloc
 
 function h$buildCCPtr(o) {
-  // last used offset is 24, so we need to allocate 32 bytes
+  // last used offset is 12, so we need to allocate 20 bytes
   ASSERT(o !== null);
-  var cc = h$newByteArray(32);
+  var cc = h$newByteArray(20);
 #ifdef GHCJS_TRACE_PROF
   cc.myTag = "cc pointer";
 #endif
@@ -248,8 +248,8 @@ function h$buildCCPtr(o) {
 
 function h$buildCCSPtr(o) {
   ASSERT(o !== null);
-  // last used offset is 16, allocate 24 bytes
-  var ccs = h$newByteArray(24);
+  // last used offset is 8, allocate 16 bytes
+  var ccs = h$newByteArray(16);
 #ifdef GHCJS_TRACE_PROF
   ccs.myTag = "ccs pointer";
 #endif
