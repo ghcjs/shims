@@ -12,7 +12,7 @@ function assert(condition, message) {
 #endif
 
 #ifdef GHCJS_TRACE_PROF
-#define TRACE(args...) console.log(args)
+#define TRACE(args...) h$log(args)
 #else
 #define TRACE(args...)
 #endif
@@ -23,7 +23,7 @@ var h$ccsList = [];
 
 var h$CCUnique = 0;
 function h$CC(label, module, srcloc, isCaf) {
-  TRACE("h$CC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
+  //TRACE("h$CC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
   this.label     = label;
   this.module    = module;
   this.srcloc    = srcloc;
@@ -37,7 +37,7 @@ function h$CC(label, module, srcloc, isCaf) {
 
 var h$CCSUnique = 0;
 function h$CCS(parent, cc) {
-  TRACE("h$mkCCS(", parent, cc, ")");
+  //TRACE("h$mkCCS(", parent, cc, ")");
   if (parent !== null && parent.consed.has(cc)) {
     return (parent.consed.get(cc));
   }
