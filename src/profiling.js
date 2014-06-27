@@ -114,6 +114,7 @@ function h$ccsString(ccs) {
 #endif
 
 function h$enterThunkCCS(ccsthunk) {
+  ASSERT(ccsthunk !== null && ccsthunk !== undefined);
   h$sp += 2;
   h$stack[h$sp-1] = h$CCCS;
   h$stack[h$sp]   = h$setCcs_e;
@@ -123,8 +124,8 @@ function h$enterThunkCCS(ccsthunk) {
 function h$enterFunCCS(ccsapp, // stack at call site
                        ccsfn   // stack of function
                        ) {
-  ASSERT(ccsapp !== null, "ccsapp is null");
-  ASSERT(ccsfn  !== null, "ccsfn is null");
+  ASSERT(ccsapp !== null && ccsapp !== undefined, "ccsapp is null or undefined");
+  ASSERT(ccsfn  !== null && ccsfn  !== undefined, "ccsfn is null or undefined");
 
   // common case 1: both stacks are the same
   if (ccsapp === ccsfn) {
