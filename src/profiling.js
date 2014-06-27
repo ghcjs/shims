@@ -113,8 +113,10 @@ function h$ccsString(ccs) {
 }
 #endif
 
-// TODO: This is used for debugging purposes, inline this
 function h$enterThunkCCS(ccsthunk) {
+  h$sp += 2;
+  h$stack[h$sp-1] = h$CCCS;
+  h$stack[h$sp]   = h$setCcs_e;
   h$CCCS = ccsthunk;
 }
 
