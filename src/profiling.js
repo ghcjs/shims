@@ -114,6 +114,12 @@ function h$ccsString(ccs) {
 #endif
 
 function h$enterThunkCCS(ccsthunk) {
+  // TODO: When combined with CCS saving/restoration in genCase (code generation for
+  // case expressions) this works correctly, but I think we're having redundant CCS
+  // savings/restorations. What we can do instead is to add saving/restoration code
+  // to every thunk entries in AP functions, inlined applications and all other
+  // places in RTS where we force/evaluate thunks. I think this is how it's done in
+  // GHC. (see related code in rts/StgStdThunks.cmm and rts/Apply.cmm)
   ASSERT(ccsthunk !== null && ccsthunk !== undefined);
   h$sp += 2;
   h$stack[h$sp-1] = h$CCCS;
