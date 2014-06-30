@@ -87,9 +87,6 @@ var h$CCS_PINNED    = new h$CCS(h$CCS_MAIN, h$CC_PINNED);
 var h$CCS_IDLE      = new h$CCS(h$CCS_MAIN, h$CC_IDLE);
 var h$CAF           = new h$CCS(h$CCS_MAIN, h$CAF_cc);
 
-// Current cost-centre stack
-var h$CCCS          = h$CCS_MAIN;
-
 
 //
 // Cost-centre entries, SCC
@@ -122,9 +119,9 @@ function h$enterThunkCCS(ccsthunk) {
   // GHC. (see related code in rts/StgStdThunks.cmm and rts/Apply.cmm)
   ASSERT(ccsthunk !== null && ccsthunk !== undefined);
   h$sp += 2;
-  h$stack[h$sp-1] = h$CCCS;
+  h$stack[h$sp-1] = h$currentThread.ccs;
   h$stack[h$sp]   = h$setCcs_e;
-  h$CCCS = ccsthunk;
+  h$currentThread.ccs = ccsthunk;
 }
 
 function h$enterFunCCS(ccsapp, // stack at call site
@@ -144,13 +141,13 @@ function h$enterFunCCS(ccsapp, // stack at call site
   }
 
   // FIXME: do we need this?
-  h$CCCS = h$CC_OVERHEAD;
+  h$currentThread.ccs = h$CCS_OVERHEAD;
 
   // common case 3: the stacks are completely different (e.g. one is a
   // descendent of MAIN and the other of a CAF): we append the whole
   // of the function stack to the current CCS.
   if (ccsfn.root !== ccsapp.root) {
-    h$CCCS = h$appendCCS(ccsapp, ccsfn);
+    h$currentThread.ccs = h$appendCCS(ccsapp, ccsfn);
     return;
   }
 
@@ -161,18 +158,18 @@ function h$enterFunCCS(ccsapp, // stack at call site
     for (var i = 0; i < dif; i++) {
       tmp = tmp.prevStack;
     }
-    h$CCCS = h$enterFunEqualStacks(ccsapp, tmp, ccsfn);
+    h$currentThread.ccs = h$enterFunEqualStacks(ccsapp, tmp, ccsfn);
     return;
   }
 
   // uncommon case 5: ccsfn is deeper than CCCS
   if (ccsfn.depth > ccsapp.depth) {
-    h$CCCS = h$enterFunCurShorter(ccsapp, ccsfn, ccsfn.depth - ccsapp.depth);
+    h$currentThread.ccs = h$enterFunCurShorter(ccsapp, ccsfn, ccsfn.depth - ccsapp.depth);
     return;
   }
 
   // uncommon case 6: stacks are equal depth, but different
-  h$CCCS = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
+  h$currentThread.ccs = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
 }
 
 function h$appendCCS(ccs1, ccs2) {

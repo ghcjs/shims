@@ -82,6 +82,9 @@ function h$Thread() {
     this.isSynchronous = false;
     this.continueAsync = false;
     this.m = 0;                   // gc mark
+#ifdef GHCJS_PROF
+    this.ccs = h$CCS_SYSTEM;      // cost-centre stack
+#endif
     this._key = this.tid;         // for storing in h$Set / h$Map
 }
 
@@ -112,6 +115,9 @@ function h$fork(a, inherit) {
   TRACE_SCHEDULER("sched: forking: " + h$threadString(t));
   if(inherit && h$currentThread) {
     t.mask = h$currentThread.mask;
+#ifdef GHCJS_PROF
+    t.ccs  = h$currentThread.ccs;
+#endif
   }
   // TRACE_SCHEDULER("sched: action forked: " + a.f.n);
   t.stack[4] = h$ap_1_0;
@@ -656,6 +662,9 @@ function h$runSync(a, cont) {
   h$runInitStatic();
   var c = h$return;
   var t = new h$Thread();
+#ifdef GHCJS_PROF
+  t.ccs = h$currentThread.ccs; // TODO: not sure about this
+#endif
   t.isSynchronous = true;
   t.continueAsync = cont;
   var ct = h$currentThread;
@@ -821,6 +830,9 @@ function h$syncThreadState(tid) {
 // (program exits when this thread finishes)
 function h$main(a) {
   var t = new h$Thread();
+#ifdef GHCJS_PROF
+  t.ccs = a.cc;
+#endif
   //TRACE_SCHEDULER("sched: starting main thread");
   t.stack[0] = h$doneMain;
   t.stack[4] = h$ap_1_0;
