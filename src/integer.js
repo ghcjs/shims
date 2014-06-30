@@ -13,23 +13,15 @@ function h$logInteger() { h$log.apply(h$log,arguments); }
 #define TRACE_INTEGER(args...)
 #endif
 
-BigInteger.prototype.am = am3;
-dbits = 28;
-DV = (1<<dbits);
-BigInteger.prototype.DB = dbits;
-BigInteger.prototype.DM = ((1<<dbits)-1);
-BigInteger.prototype.DV = (1<<dbits);
-var BI_FP = 52;
-BigInteger.prototype.FV = Math.pow(2,BI_FP);
-BigInteger.prototype.F1 = BI_FP-dbits;
-BigInteger.prototype.F2 = 2*dbits-BI_FP;
+var h$bigZero = h$nbv(0);
+var h$bigOne = h$nbv(1);
+var h$bigCache = [];
+(function() {
+  for(var i=0;i<=100;i++) {
+    h$bigCache.push(h$nbv(i));
+  }
+})();
 
-h$bigZero = nbv(0);
-h$bigOne = nbv(1); // new BigInteger([1]);
-h$bigCache = [];
-for(var i=0;i<=100;i++) {
-  h$bigCache.push(nbv(i));
-}
 // convert a value to a BigInt
 function h$bigFromInt(v) {
   TRACE_INTEGER("h$bigFromInt: " + v);
@@ -38,10 +30,10 @@ function h$bigFromInt(v) {
     if(v0 <= 100) {
       return h$bigCache[v0];
     } else if(v0 < 268435456) { // 67108864) { // guaranteed to fit in one digit
-      return nbv(v0);
+      return h$nbv(v0);
     }
-    var r1 = nbv(v0 >>> 16);
-    var r2 = nbi();
+    var r1 = h$nbv(v0 >>> 16);
+    var r2 = h$nbi();
     r1.lShiftTo(16,r2);
     r1.fromInt(v0 & 0xffff);
     var r3 = r1.or(r2);
@@ -50,10 +42,10 @@ function h$bigFromInt(v) {
   } else {
     v0 = -v0;
     if(v0 < 268435456) { // 67108864) {
-      return nbv(v0).negate();
+      return h$nbv(v0).negate();
     }
-    var r1 = nbv(v0 >>> 16);
-    var r2 = nbi();
+    var r1 = h$nbv(v0 >>> 16);
+    var r2 = h$nbi();
     r1.lShiftTo(16,r2);
     r1.fromInt(v0 & 0xffff);
     var r3 = r1.or(r2);
@@ -69,11 +61,11 @@ function h$bigFromWord(v) {
     if(v0 <= 100) {
       return h$bigCache[v0];
     } else if(v0 < 268435456) { // 67108864) { // guaranteed to fit in one digit
-      return nbv(v0);
+      return h$nbv(v0);
     }
   }
-  var r1 = nbv(v0 >>> 16);
-  var r2 = nbv(0);
+  var r1 = h$nbv(v0 >>> 16);
+  var r2 = h$nbv(0);
   r1.lShiftTo(16,r2);
   r1.fromInt(v0 & 0xffff);
   return r1.or(r2);

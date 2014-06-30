@@ -513,15 +513,17 @@ var h$yieldRun;
 // disable postMessage for now, messages sometimes do not arrive, killing our runtime
 if(false) { // typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
-  var handler = function(ev) {
-    if(ev.data === "h$mainLoop") { h$mainLoop(); }
-  };
-  if(window.addEventListener) {
-    window.addEventListener("message", handler);
-  } else {
-    window.attachEvent("message", handler);
-  }
-  h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
+  (function() {
+    var handler = function(ev) {
+      if(ev.data === "h$mainLoop") { h$mainLoop(); }
+    };
+    if(window.addEventListener) {
+      window.addEventListener("message", handler);
+    } else {
+      window.attachEvent("message", handler);
+    }
+    h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
+  })();
 } else if(typeof process !== 'undefined' && process.nextTick) {
 /*  h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun process.nextTick");

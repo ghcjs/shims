@@ -344,6 +344,7 @@ var h$O_TRUNC   = 0x400;
 var h$O_EXCL    = 0x800;
 
 function h$__hscore_open(filename, filename_off, how, mode) {
+    function errorFn(txt) { return function() { throw txt; } }
     var p = h$decodeUtf8z(filename, filename_off);
     TRACE_IO('__hscore_open ' + p + ' ' + how + ' ' + mode);
     var flagStr;
@@ -372,7 +373,6 @@ function h$__hscore_open(filename, filename_off, how, mode) {
     TRACE_IO("opening file: " + p + " mode: " + flagStr + " read: " + read + " write: " + write + " mode: " + mode);
     try {
         var node_fd = h$fs.openSync(p, flagStr, mode);
-        function errorFn(txt) { return function() { throw txt; } }
         var buf = { fd: node_fd
                     , read: read ? h$readFile : errorFn("file has not been opened for reading")
                     , write: write ? h$writeFile : errorFn("file has not been opened for writing")

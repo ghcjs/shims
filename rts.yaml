@@ -1,8 +1,7 @@
 js:
   - src/node.js
   - lib/typedarray/typedarray.js
-  - lib/jsbn/jsbn.js
-  - lib/jsbn/jsbn2.js
+  - lib/jsbn/jsbn_lib.js
   - src/node-exports.js
   - lib/closure-library/closure/goog/base.js
   - lib/closure-library/closure/goog/math/long.js

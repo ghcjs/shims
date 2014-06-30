@@ -39,7 +39,7 @@ function h$stl(o, xs, t) {
 }
 
 // delayed init for top-level closures
-h$staticDelayed = [];
+var h$staticDelayed = [];
 function h$d() {
     var c = h$c(null);
     h$staticDelayed.push(c);
@@ -94,7 +94,7 @@ function h$initInfoTables ( depth      // depth in the base chain
                           , infoStatic
                           ) {
   TRACE_META("decoding info tables");
-  var i, j, o, pos = 0;
+  var n, i, j, o, pos = 0, info;
   function code(c) {
     if(c < 34) return c - 32;
     if(c < 92) return c - 33;
@@ -122,7 +122,7 @@ function h$initInfoTables ( depth      // depth in the base chain
       TRACE_META("pos: " + (pos-4) + " decoded: " + r);
       return r;
     }
-    throw "h$initInfoTables: invalid code in info table"
+    throw ("h$initInfoTables: invalid code in info table: " + c + " at " + pos)
   }
   function nextCh() {
         return next(); // fixme map readable chars
@@ -782,7 +782,7 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
          };
 }
 
-h$stableNameN = 1;
+var h$stableNameN = 1;
 function h$StableName(m) {
     this.m = m;
     this.s = null;
@@ -881,7 +881,7 @@ function h$mkFunctionPtr(f) {
   d.arr = [f];
   return d;
 }
-h$freeHaskellFunctionPtr = function () {
+var h$freeHaskellFunctionPtr = function () {
 }
 /*
 function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {

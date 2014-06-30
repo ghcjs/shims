@@ -53,7 +53,7 @@ function h$finalizeWeaks() {
 function h$clearWeaks() {
     var mark = h$gcMark;
     TRACE_WEAK("clearing weak refs, to check: " + h$scannedWeaks.length);
-    for(i=h$scannedWeaks.length-1;i>=0;i--) {
+    for(var i=h$scannedWeaks.length-1;i>=0;i--) {
         w = h$scannedWeaks[i];
         if(w.keym.m !== mark && w.val !== null) {
             TRACE_WEAK("clearing weak ref of: " + h$stableNameInt(w.keym));

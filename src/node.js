@@ -96,11 +96,6 @@ if(this['print'] !== undefined && this['console'] === undefined) {
   this['console'] = { log: this['print'] };
 }
 
-// jsbn checks this
-if(this['navigator'] === undefined) {
-  navigator = { appName: 'none' };
-}
-
 // IE 8 doesn't support Date.now(), shim it
 if (!Date.now) {
   Date.now = function now() {

@@ -31,7 +31,7 @@ function h$Transaction(o, parent) {
     this.m             = 0;  // gc mark
 }
 
-h$stmInvariantN = 0;
+var h$stmInvariantN = 0;
 function h$StmInvariant(a) {
     this.action = a;
     this._key = ++h$stmInvariantN;
