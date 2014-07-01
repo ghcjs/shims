@@ -21,9 +21,15 @@ function h$rstr(d) {
 }
 
 // these aren't added to the CAFs, so the list stays in mem indefinitely, is that a problem?
+#ifdef GHCJS_PROF
+function h$strt(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }, cc); }
+function h$strta(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }, cc); }
+function h$strtb(arr, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }, cc); }
+#else
 function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }); }
-function h$strta(str) {return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
+function h$strta(str) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
 function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }); }
+#endif
 
 // unpack strings without thunks
 function h$ustra(str) { return h$toHsStringA(str); }  // ascii string, string argument
