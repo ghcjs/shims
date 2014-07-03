@@ -118,6 +118,7 @@ function h$enterThunkCCS(ccsthunk) {
   // places in RTS where we force/evaluate thunks. I think this is how it's done in
   // GHC. (see related code in rts/StgStdThunks.cmm and rts/Apply.cmm)
   ASSERT(ccsthunk !== null && ccsthunk !== undefined, "ccsthunk is null or undefined");
+  TRACE("entering ccsthunk:", h$ccsString(ccsthunk));
   // h$sp += 2;
   // h$stack[h$sp-1] = h$currentThread.ccs;
   // h$stack[h$sp]   = h$setCcs_e;
@@ -129,6 +130,8 @@ function h$enterFunCCS(ccsapp, // stack at call site
                        ) {
   ASSERT(ccsapp !== null && ccsapp !== undefined, "ccsapp is null or undefined");
   ASSERT(ccsfn  !== null && ccsfn  !== undefined, "ccsfn is null or undefined");
+  TRACE("ccsapp:", h$ccsString(ccsapp));
+  TRACE("ccsfn:", h$ccsString(ccsfn));
 
   // common case 1: both stacks are the same
   if (ccsapp === ccsfn) {
@@ -202,6 +205,7 @@ function h$enterFunEqualStacks(ccs0, ccsapp, ccsfn) {
 }
 
 function h$pushCostCentre(ccs, cc) {
+  TRACE("psuhing cost centre", cc, "to", h$ccsString(ccs));
   if (ccs === null) {
     // when is ccs null?
     return new h$CCS(ccs, cc);
