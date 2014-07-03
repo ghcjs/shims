@@ -118,9 +118,9 @@ function h$enterThunkCCS(ccsthunk) {
   // places in RTS where we force/evaluate thunks. I think this is how it's done in
   // GHC. (see related code in rts/StgStdThunks.cmm and rts/Apply.cmm)
   ASSERT(ccsthunk !== null && ccsthunk !== undefined, "ccsthunk is null or undefined");
-  h$sp += 2;
-  h$stack[h$sp-1] = h$currentThread.ccs;
-  h$stack[h$sp]   = h$setCcs_e;
+  // h$sp += 2;
+  // h$stack[h$sp-1] = h$currentThread.ccs;
+  // h$stack[h$sp]   = h$setCcs_e;
   h$currentThread.ccs = ccsthunk;
 }
 
