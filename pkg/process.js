@@ -164,14 +164,14 @@ function h$process_runInteractiveProcess( cmd, args, workingDir, env
   if(env !== null) {
     var envObj = {};
     for(var i=0;i<env.length;i+=2) envObj[env[i]] = env[i+1];
-    TRACE_PROC("environment: " + h$collectProps(envObj));
+    TRACE_PROCESS("environment: " + h$collectProps(envObj));
     options.env = envObj;
   }
 
   var procObj;
   var child = h$child.spawn(cmd, args, options);
   child.on('exit', function(code, sig) {
-    TRACE_PROC("process finished: " + code + " " + sig);
+    TRACE_PROCESS("process finished: " + code + " " + sig);
     procObj.exit = code;
     for(var i=0;i<procObj.waiters.length;i++) {
       procObj.waiters[i](code);

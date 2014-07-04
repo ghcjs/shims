@@ -19,7 +19,7 @@ if(typeof module !== 'undefined' && module.exports) {
 }
 
 function h$directory_setErrno(e) {
-  TRACE_PROC("setErrno: " + e);
+  TRACE_DIRECTORY("setErrno: " + e);
   var es = e.toString();
   var getErr = function() {
       if(es.indexOf('ENOTDIR') !== -1)      return CONST_ENOTDIR;
