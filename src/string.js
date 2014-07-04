@@ -515,6 +515,26 @@ function h$toHsString(str) {
   return r;
 }
 
+// string must have been completely forced first
+function h$fromHsString(str) {
+    var xs = '';
+    while(str.f.a === 2) {
+        xs += String.fromCharCode(str.d1);
+        str = str.d2;
+    }
+    return xs;
+}
+
+// list of JSRef to array, list must have been completely forced first
+function h$fromHsListJSRef(xs) {
+    var arr = [];
+    while(xs.f.a === 2) {
+        arr.push(xs.d1.d1);
+        xs = xs.d2;
+    }
+    return arr;
+}
+
 // ascii only version of the above
 function h$toHsStringA(str) {
   var i = str.length - 1;
@@ -553,12 +573,22 @@ function h$toHsStringMU8(arr) {
     return r;
 }
 
+// array of JS values to Haskell list of JSRef
+function h$toHsListJSRef(arr) {
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=arr.length-1;i>=0;i--) {
+        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r);
+    }
+    return r;
+}
+
+// array of heap objects to Haskell list
 function h$toHsList(arr) {
-  var r = h$ghczmprimZCGHCziTypesziZMZN;
-  for(var i=arr.length-1;i>=0;i--) {
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
-  }
-  return r;
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=arr.length-1;i>=0;i--) {
+        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
+    }
+    return r;
 }
 
 // unpack ascii string, append to existing Haskell string
