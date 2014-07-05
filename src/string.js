@@ -519,7 +519,11 @@ function h$toHsString(str) {
 function h$fromHsString(str) {
     var xs = '';
     while(str.f.a === 2) {
-        xs += String.fromCharCode(str.d1);
+        if(typeof str.d1 === 'number') {
+            xs += String.fromCharCode(str.d1);
+        } else {
+            xs += String.fromCharCode(str.d1.d1); // unbox_e
+        }
         str = str.d2;
     }
     return xs;

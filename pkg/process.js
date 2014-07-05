@@ -1,3 +1,4 @@
+
 // #ifdef GHCJS_NODE
 // only works on node.js
 
@@ -23,7 +24,7 @@ function h$pipeFd(pipe, write) {
     buf.read = function() {
       throw "cannot read from write pipe";
     };
-    buf.close = function() { /* pipe.close(); */ };
+    buf.close = function() { pipe.end(); };
     buf.write = function(fd, buf, buf_offset, n)  {
       TRACE_PROCESS("pipe " + fd.fd + " write: " + n);
       if(!fd.writeReady) throw "pipe is not writable, please wait!"
@@ -65,8 +66,8 @@ function h$pipeFd(pipe, write) {
       throw "cannot write to read pipe";
     };
     buf.read = function(fd, buf, buf_offset, n) {
-      TRACE_PROCESS("pipe " + fd.fd + " read: " + n + " (" + fd.fd + ") " + fd.readReady);
-      if(fd.buf.chunks.getCount() === 0) {
+      TRACE_PROCESS("pipe " + fd.fd + " read: " + n + " (" + fd.fd + ") " + fd.readReady + " " + fd.buf.chunks.isEmpty());
+      if(fd.buf.chunks.length() === 0) {
         TRACE_PROCESS("pipe " + fd.fd + " adding chunk to buffer " + fd.fd);
         var ch = pipe.read();
         if(ch) {
@@ -86,6 +87,7 @@ function h$pipeFd(pipe, write) {
             }
         }
       }
+      TRACE_PROCESS("pipe " + fd.fd + " chunks available: " + fd.buf.chunks.length());
       var h = fd.buf.chunks.peek();
       var o = fd.buf.chunkOff;
       var left = h.length - o;
@@ -104,8 +106,8 @@ function h$pipeFd(pipe, write) {
         }
         fd.buf.chunkOff = 0;
         fd.buf.chunks.dequeue();
-        TRACE_PROCESS("pipe " + fd.fd + " chunk count: " + (fd.buf.chunks.getCount() === 0) + " eof: " + fd.buf.eof + " blocksReady: " + fd.buf.blocksReady);
-        if(fd.buf.chunks.getCount() === 0 && !fd.buf.blocksReady) {
+        TRACE_PROCESS("pipe " + fd.fd + " chunk count: " + (fd.buf.chunks.length() === 0) + " eof: " + fd.buf.eof + " blocksReady: " + fd.buf.blocksReady);
+        if(fd.buf.chunks.length() === 0 && !fd.buf.blocksReady) {
           if(!fd.buf.eof && !fd.buf.eofPending) {
             TRACE_PROCESS("pipe " + fd.fd + " read, end of input reached");
             fd.readReady = false;

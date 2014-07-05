@@ -1,5 +1,3 @@
-// #define GHCJS_TRACE_IO 1
-
 #include "HsBaseConfig.h"
 
 #ifdef GHCJS_TRACE_IO
@@ -471,19 +469,13 @@ function h$writeFile(fd, buf, buf_offset, n) {
         h$errno = CONST_EWOULDBLOCK;
         return -1;
     }
-    // fixme more efficient copying
-//    var u8 = buf.u8;
     var nbuf = new Buffer(buf.u8.slice(buf_offset, buf_offset + n));
-//    for(var i=0;i<n;i++) {
-//        nbuf[i] = u8[i+buf_offset];
-//    }
     fd.writeReady = false;
-//    fdbuf.inProgress = true;
-    fdbuf.filePos += n;
-    TRACE_IO("writeFile: " + fd + " pos: " + fdbuf.filePos);
+    fdbuf.inProgress = true;
     h$fs.write(f, nbuf, 0, n, fdbuf.filePos, function() {
         TRACE_IO("writeFile " + fd + " done, written: " + n);
-//        fdbuf.inProgress = false;
+        fdbuf.filePos += n;
+        fdbuf.inProgress = false;
         fd.writeReady = true;
         h$notifyWrite(fd);
     });
