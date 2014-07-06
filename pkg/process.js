@@ -1,4 +1,3 @@
-
 // #ifdef GHCJS_NODE
 // only works on node.js
 
@@ -166,6 +165,8 @@ function h$process_runInteractiveProcess( cmd, args, workingDir, env
   if(env !== null) {
     var envObj = {};
     for(var i=0;i<env.length;i+=2) envObj[env[i]] = env[i+1];
+    if(process.env.GHCJS_BOOTING) envObj.GHCJS_BOOTING=1;
+    if(process.env.GHCJS_BOOTING1) envObj.GHCJS_BOOTING1=1;
     TRACE_PROCESS("environment: " + h$collectProps(envObj));
     options.env = envObj;
   }
@@ -204,7 +205,7 @@ var h$procs = [];
 // null if no interpreter can be found
 function h$process_commandToProcess(cmd, args) {
   TRACE_PROCESS("commandToProcess: " + cmd + " " + args);
-  if(h$os.platform() !== 'windows') {
+  if(process.platform === 'win32') {
     if(args === null) { // shellcmd
       var com = h$process.env.COMSPEC;
       if(!com) {
@@ -221,7 +222,9 @@ function h$process_commandToProcess(cmd, args) {
       return [com, com + " /c " + args];
     } else {
        // fixme need to escape stuff
-       return [cmd, cmd, args.join(' ')];
+       var r = [cmd];
+       r.push(args);
+       return r;
     }
   } else {  // non-windows
     if(args === null) { // shellcmd

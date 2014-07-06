@@ -79,6 +79,7 @@ function h$directory_getPermissions(file) {
     var x = (m&1) || (m&8)  || (m&64);
     var exe    = x; // fixme?
     var search = x; // fixme?
+    if(h$process.platform == 'win32') exe = true;
     return ((r?1:0)|(w?2:0)|(exe?4:0)|(search?8:0));
   });
 }
@@ -151,14 +152,19 @@ function h$directory_canonicalizePath(path) {
 function h$directory_findExecutables(name) {
   TRACE_DIRECTORY("findExecutables: " + name);
   var result = [];
-  var parts = h$process.env.PATH.split((h$os.platform() === 'windows')?';':':');
+  var pathSep = h$process.platform === 'win32'?';':':';
+  var parts   = h$process.env.PATH.split(pathSep);
+  var exts    = []; // h$process.platform === 'win32'?h$process.env.PATHEXT.split(pathSep):[];
+  exts.push(null);
   for(var i=0;i<parts.length;i++) {
-    try {
-      var file = parts[i] + h$path.sep + name;
-      TRACE_DIRECTORY("trying: " + file);
-      var fs   = h$fs.statSync(file);
-      if((fs.mode & 73) || h$os.platform() === 'windows') result.push(file);
-    } catch(e) { }
+    for(var j=0;j<exts.length;j++) {
+      try {
+        var file = parts[i] + h$path.sep + name + (exts[j]?(exts[j]):"");
+        TRACE_DIRECTORY("trying: " + file);
+        var fs   = h$fs.statSync(file);
+        if((fs.mode & 73) || h$process.platform === 'win32') result.push(file);
+      } catch(e) { }
+    }
   }
   return result;
 }
