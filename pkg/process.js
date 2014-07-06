@@ -26,13 +26,16 @@ function h$pipeFd(pipe, write) {
     buf.close = function() { pipe.end(); };
     buf.write = function(fd, buf, buf_offset, n)  {
       TRACE_PROCESS("pipe " + fd.fd + " write: " + n);
-      if(!fd.writeReady) throw "pipe is not writable, please wait!"
+      if(!fd.writeReady) {
+        h$errno = CONST_EWOULDBLOCK;
+        return -1;
+      }
       fd.writeReady = false;
       var u8 = buf.u8;
       var nbuf = new Buffer(n);
       // can this be made more efficient?
       for(var k=0;k<n;k++) {
-        nbuf[k] = buf[buf_offset+k];
+        nbuf[k] = u8[buf_offset+k];
       }
       pipe.write(nbuf, function() {
         fd.writeReady = true;

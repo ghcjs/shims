@@ -18,27 +18,11 @@ if(typeof module !== 'undefined' && module.exports) {
     var h$process = process;
 }
 
-function h$directory_setErrno(e) {
-  TRACE_DIRECTORY("setErrno: " + e);
-  var es = e.toString();
-  var getErr = function() {
-      if(es.indexOf('ENOTDIR') !== -1)      return CONST_ENOTDIR;
-      if(es.indexOf('ENOENT') !== -1)       return CONST_ENOENT;
-      if(es.indexOf('EEXIST') !== -1)       return CONST_EEXIST;
-      if(es.indexOf('ENETUNREACH') !== -1)  return CONST_EINVAL; // fixme
-      if(es.indexOf('EPERM') !== -1)        return CONST_EPERM;
-      if(es.indexOf('Bad argument') !== -1) return CONST_ENOENT; // fixme?
-      throw ("setErrno not yet implemented: " + e);
-
-  }
-  h$errno = getErr();
-}
-
 function h$directory_handleErrno(f) {
   try {
     f();
   } catch(e) {
-    h$directory_setErrno(e);
+    h$setErrno(e);
     return -1;
   }
   return 0;
@@ -48,7 +32,7 @@ function h$directory_handleErrnoM1(f) {
   try {
     return f();
   } catch(e) {
-    h$directory_setErrno(e);
+    h$setErrno(e);
   }
   return -1;
 }
@@ -58,7 +42,7 @@ function h$directory_handleErrnoNull(f) {
   try {
     return f();
   } catch(e) {
-    h$directory_setErrno(e);
+    h$setErrno(e);
   }
   return null;
 }
