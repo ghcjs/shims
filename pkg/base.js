@@ -129,7 +129,7 @@ function h$base_open(file, file_off, how, mode, c) {
         off     = 0;
     } else if(acc === h$base_o_wronly) {
         write   = true;
-        flagStr = (how & h$base_o_trunc ? 'w' : 'a') + excl;
+        flagStr = (how & h$base_o_trunc ? 'w' : 'a') + excl + '+';
         off     = -1;
     } else { // r+w
         off   = 0; // -1; // is this ok?
