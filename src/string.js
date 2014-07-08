@@ -22,9 +22,9 @@ function h$rstr(d) {
 
 // these aren't added to the CAFs, so the list stays in mem indefinitely, is that a problem?
 #ifdef GHCJS_PROF
-function h$strt(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }, cc); }
-function h$strta(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }, cc); }
-function h$strtb(arr, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }, cc); }
+function h$strt(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsString(str, cc); }, cc); }
+function h$strta(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str, cc); }, cc); }
+function h$strtb(arr, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr, cc); }, cc); }
 #else
 function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }); }
 function h$strta(str) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
@@ -506,7 +506,11 @@ function h$clr(arr, r) {
 }
 
 // convert JavaScript String to a Haskell String
+#ifdef GHCJS_PROF
+function h$toHsString(str, cc) {
+#else
 function h$toHsString(str) {
+#endif
   var i = str.length - 1;
   var r = h$ghczmprimZCGHCziTypesziZMZN;
   while(i>=0) {
@@ -515,25 +519,41 @@ function h$toHsString(str) {
       --i;
       cp = (cp - 0xDC00) + (str.charCodeAt(i) - 0xD800) * 1024 + 0x10000;
     }
+#ifdef GHCJS_PROF
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r, cc);
+#else
     r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
+#endif
     --i;
   }
   return r;
 }
 
 // ascii only version of the above
+#ifdef GHCJS_PROF
+function h$toHsStringA(str, cc) {
+#else
 function h$toHsStringA(str) {
+#endif
   var i = str.length - 1;
   var r = h$ghczmprimZCGHCziTypesziZMZN;
   while(i>=0) {
+#ifdef GHCJS_PROF
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r, cc);
+#else
     r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
+#endif
     --i;
   }
   return r;
 }
 
 // convert array with modified UTF-8 encoded text
+#ifdef GHCJS_PROF
+function h$toHsStringMU8(arr, cc) {
+#else
 function h$toHsStringMU8(arr) {
+#endif
     var accept = false, b, n = 0, cp = 0, r = h$ghczmprimZCGHCziTypesziZMZN, i = arr.length - 1;
     while(i >= 0) {
         b = arr[i];
@@ -547,7 +567,11 @@ function h$toHsStringMU8(arr) {
             accept = true;
         }
         if(accept) {
+#ifdef GHCJS_PROF
+            r  = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r, cc);
+#else
             r  = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
+#endif
             cp = 0
             n  = 0;
         } else {

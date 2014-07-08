@@ -14,7 +14,11 @@ function h$makeEnum(tag) {
     return h$stack[h$sp];
   }
   h$setObjInfo(f, 2, "Enum", [], tag+1, 0, [1], null);
+#ifdef GHCJS_PROF
+  return h$c0(f, h$CCS_SYSTEM);
+#else
   return h$c0(f);
+#endif
 }
 
 // used for all non-Bool enums

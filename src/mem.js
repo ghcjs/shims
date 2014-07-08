@@ -48,7 +48,11 @@ function h$stl(o, xs, t) {
         for(var i=xs.length-1;i>=0;i--) {
             x = xs[i];
             if(!x && x !== false && x !== 0) throw "h$toHsList: invalid element";
+#ifdef GHCJS_PROF
+            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r, ccs);
+#else
             r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r);
+#endif
         }
     }
     o.f  = r.f;
@@ -63,7 +67,12 @@ function h$stl(o, xs, t) {
 // delayed init for top-level closures
 h$staticDelayed = [];
 function h$d() {
+#ifdef GHCJS_PROF
+    // pass a temporary CCS that won't make assertions in h$cN family alert
+    var c = h$c(null, h$CCS_SYSTEM);
+#else
     var c = h$c(null);
+#endif
     h$staticDelayed.push(c);
     return c;
 }
