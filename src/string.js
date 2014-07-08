@@ -32,10 +32,17 @@ function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU
 #endif
 
 // unpack strings without thunks
-function h$ustra(str) { return h$toHsStringA(str); }  // ascii string, string argument
-function h$ustr(str) { return h$toHsString(str); }    // utf8 string, string argument
-function h$urstra(arr) { return h$toHsList(arr); }     // ascii string, array of codepoints argument
-function h$urstr(arr) { return h$toHsStringMU8(arr); } // utf8 string, array of bytes argumnt
+#ifdef GHCJS_PROF
+function h$ustra(str, cc) { return h$toHsStringA(str, cc); }
+function h$ustr(str, cc) { return h$toHsString(str, cc); }     // utf8 string, string argument
+function h$urstra(arr, cc) { return h$toHsList(arr, cc); }     // ascii string, array of codepoints argument
+function h$urstr(arr, cc) { return h$toHsStringMU8(arr, cc); } // utf8 string, array of bytes argumnt
+#else
+function h$ustra(str) { return h$toHsStringA(str); }
+function h$ustr(str) { return h$toHsString(str); }
+function h$urstra(arr) { return h$toHsList(arr); }
+function h$urstr(arr) { return h$toHsStringMU8(arr); }
+#endif
 
 
 var h$toUpper = null;
@@ -583,10 +590,18 @@ function h$toHsStringMU8(arr) {
     return r;
 }
 
+#ifdef GHCJS_PROF
+function h$toHsList(arr, cc) {
+#else
 function h$toHsList(arr) {
+#endif
   var r = h$ghczmprimZCGHCziTypesziZMZN;
   for(var i=arr.length-1;i>=0;i--) {
+#ifdef GHCJS_PROF
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r, cc);
+#else
     r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
+#endif
   }
   return r;
 }
@@ -596,7 +611,11 @@ function h$appendToHsStringA(str, appendTo) {
   var i = str.length - 1;
   var r = appendTo;
   while(i>=0) {
+#ifdef GHCJS_PROF
+    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r, cc);
+#else
     r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
+#endif
     --i;
   }
   return r;
