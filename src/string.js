@@ -607,7 +607,11 @@ function h$toHsList(arr) {
 }
 
 // unpack ascii string, append to existing Haskell string
+#ifdef GHCJS_PROF
+function h$appendToHsStringA(str, appendTo, cc) {
+#else
 function h$appendToHsStringA(str, appendTo) {
+#endif
   var i = str.length - 1;
   var r = appendTo;
   while(i>=0) {
