@@ -1,3 +1,5 @@
+#include "HsBaseConfig.h"
+
 // #ifdef GHCJS_NODE
 // only works on node.js
 
@@ -13,125 +15,93 @@ if(typeof module !== 'undefined' && module.exports) {
 }
 
 // one-dir pipe
-function h$pipeFd(pipe, write) {
-  var buf = { pipe: pipe
-            };
-  var fd = new h$Fd(buf, false, write, false);
-  h$fds[fd.fd] = fd;
-  TRACE_PROCESS("pipe " + fd.fd + " opened, writable: " + write);
-  if(write) {
-    buf.read = function() {
-      throw "cannot read from write pipe";
-    };
-    buf.close = function() { pipe.end(); };
-    buf.write = function(fd, buf, buf_offset, n)  {
-      TRACE_PROCESS("pipe " + fd.fd + " write: " + n);
-      if(!fd.writeReady) {
-        h$errno = CONST_EWOULDBLOCK;
-        return -1;
-      }
-      fd.writeReady = false;
-      var u8 = buf.u8;
-      var nbuf = new Buffer(n);
-      // can this be made more efficient?
-      for(var k=0;k<n;k++) {
-        nbuf[k] = u8[buf_offset+k];
-      }
-      pipe.write(nbuf, function() {
-        fd.writeReady = true;
-        h$notifyWrite(fd);
-      });
-      return n;
-    };
-  } else {
-    buf.blocksReady = false;
-    buf.chunks = new h$Queue();
-    buf.chunkOff = 0;
-    buf.eof = false;
-    buf.eofPending = false;
-    buf.close = function() { /* pipe.close(); */ };
-    pipe.on('readable', function() {
-      TRACE_PROCESS("pipe " + fd.fd + " readable");
-      var ch = pipe.read();
-      if(ch) buf.chunks.enqueue(ch);
-      fd.readReady = true;
-//      buf.blocksReady = true;
-      h$notifyRead(fd);
-    });
-    pipe.on('end', function() {
-      TRACE_PROCESS("pipe " + fd.fd + " eof");
-      buf.eofPending = true;
-      fd.readReady = true;
-      h$notifyRead(fd);
-    });
-    buf.write = function() {
-      throw "cannot write to read pipe";
-    };
-    buf.read = function(fd, buf, buf_offset, n) {
-      TRACE_PROCESS("pipe " + fd.fd + " read: " + n + " (" + fd.fd + ") " + fd.readReady + " " + fd.buf.chunks.isEmpty());
-      if(fd.buf.chunks.length() === 0) {
-        TRACE_PROCESS("pipe " + fd.fd + " adding chunk to buffer " + fd.fd);
-        var ch = pipe.read();
-        if(ch) {
-          do {
-            fd.buf.chunks.enqueue(ch);
-          } while((ch = pipe.read()) !== null);
-          fd.buf.blocksReady = false;
-        } else {
-          TRACE_PROCESS("pipe " + fd.fd + " WARNING returning zero bytes, eof status: " + fd.buf.eof);
-          if(fd.buf.eofPending) fd.buf.eof = true;
-            fd.buf.readReady = false;
-            if(fd.buf.eof) {
-                return 0;
-            } else {
-                h$errno = CONST_EAGAIN;
-                return -1;
+function h$process_pipeFd(pipe, write) {
+    var fdN = h$base_fdN--, fd = {};
+    h$base_fds[fdN] = fd;
+    TRACE_PROCESS("pipe " + fdN + " opened, writable: " + write);
+    if(write) {
+        fd.err   = null;
+        fd.waiting = new h$Queue();
+        fd.close = function(fd, fdo, c) { delete h$base_fds[fd]; pipe.end(); c(0); };
+        pipe.on('error', function(err) {
+            fd.err = err;
+        });
+        fd.write = function(fd, fdo, buf, buf_offset, n, c)  {
+            TRACE_PROCESS("pipe " + fd + " write: " + n);
+            if(fdo.err) {
+                h$setErrno(fdo.err);
+                c(-1);
             }
+            var u8 = buf.u8;
+            var nbuf = new Buffer(n);
+            // can this be made more efficient?
+            for(var k=0;k<n;k++) nbuf[k] = u8[buf_offset+k];
+            var r = pipe.write(nbuf, function() {
+                TRACE_PROCESS("pipe " + fd + " flushed");
+                c(n);
+            });
+            TRACE_PROCESS("pipe write: " + fd + " result: " + r);
         }
-      }
-      TRACE_PROCESS("pipe " + fd.fd + " chunks available: " + fd.buf.chunks.length());
-      var h = fd.buf.chunks.peek();
-      var o = fd.buf.chunkOff;
-      var left = h.length - o;
-      var u8 = buf.u8;
-      TRACE_PROCESS("pipe " + fd.fd + " reading " + h.length + " " + o);
-      if(left > n) {
+    } else {
+        fd.close      = function(fd, fdo, c) { delete h$base_fds[fd]; c(0); }
+        fd.waiting    = new h$Queue();
+        fd.chunk      = { buf: null, pos: 0, processing: false };
+        fd.eof        = false;
+        fd.err        = null;
+        pipe.on('readable', function() {
+            TRACE_PROCESS("pipe " + fdN + " readable");
+            h$process_process_pipe(fd, pipe);
+        });
+        pipe.on('end', function() {
+            TRACE_PROCESS("pipe " + fdN + " eof");
+            fd.eof = true;
+            h$process_process_pipe(fd, pipe);
+        });
+        pipe.on('error', function(err) {
+            fd.err = err;
+            h$process_process_pipe(fd, pipe);
+        });
+        fd.read = function(fd, fdo, buf, buf_offset, n, c) {
+            TRACE_PROCESS("pipe " + fd + " read: " + n + " " + fdo.chunk.buf);
+            fdo.waiting.enqueue({buf: buf, off: buf_offset, n: n, c: c});
+            h$process_process_pipe(fdo, pipe);
+        }
+        // fixme
+        // fd.write = function(fd, fdo, buf, buf_offset, n, c) { c(0); }
+    }
+    TRACE_PROCESS("created pipe, fd: " + fdN);
+    return fdN;
+}
+
+function h$process_process_pipe(fd, pipe) {
+    var c = fd.chunk;
+    var q = fd.waiting;
+    TRACE_PROCESS("processing pipe, queue: " + q.length());
+    if(!q.length() || c.processing) return;
+    c.processing = true;
+    while(fd.err && q.length()) { h$setErrno(fd.err); q.dequeue().c(-1); } // global errno is risky here
+    if(!c.buf) { c.pos = 0; c.buf = pipe.read(); }
+    while(c.buf && q.length()) {
+        var x = q.dequeue();
+        var n = Math.min(c.buf.length - c.pos, x.n);
         for(var i=0;i<n;i++) {
-          u8[buf_offset+i] = h[o+i];
+            x.buf.u8[i+x.off] = c.buf[c.pos+i];
         }
-        fd.buf.chunkOff += n;
-        TRACE_PROCESS("pipe " + fd.fd + " read " + n + " bytes");
-        return n;
-      } else {
-        for(var i=0;i<left;i++) {
-          u8[buf_offset+i] = h[o+i];
-        }
-        fd.buf.chunkOff = 0;
-        fd.buf.chunks.dequeue();
-        TRACE_PROCESS("pipe " + fd.fd + " chunk count: " + (fd.buf.chunks.length() === 0) + " eof: " + fd.buf.eof + " blocksReady: " + fd.buf.blocksReady);
-        if(fd.buf.chunks.length() === 0 && !fd.buf.blocksReady) {
-          if(!fd.buf.eof && !fd.buf.eofPending) {
-            TRACE_PROCESS("pipe " + fd.fd + " read, end of input reached");
-            fd.readReady = false;
-          } else {
-            TRACE_PROCESS("pipe " + fd.fd + " read, eof reached");
-            if(fd.buf.eofPending) fd.buf.eof = true;
-          }
-        }
-        TRACE_PROCESS("pipe " + fd.fd + " read " + left + " bytes (remainder of chunk)");
-        return left;
-      }
-    };
-  }
-  TRACE_PROCESS("created pipe, fd: " + fd.fd);
-  return fd;
+        c.pos += n;
+        x.c(n);
+        if(c.pos >= c.buf.length) c.buf = null;
+        if(!c.buf && q.length()) { c.pos = 0; c.buf = pipe.read(); }
+    }
+    while(fd.eof && q.length()) q.dequeue().c(0);
+    TRACE_PROCESS("done processing pipe, remaining queue: " + q.length());
+    c.processing = false;
 }
 
 function h$process_runInteractiveProcess( cmd, args, workingDir, env
                                         , stdin_fd, stdout_fd, stderr_fd
                                         , closeHandles, createGroup, delegateCtlC) {
   TRACE_PROCESS("runInteractiveProcess");
-  TRACE_PROCESS("cmd: " + cmd + " args: " + args);
+  TRACE_PROCESS("cmd: " + cmd + " args: " + args.join(' '));
   TRACE_PROCESS("workingDir: " + workingDir + " env: " + env);
   TRACE_PROCESS("stdin: " + stdin_fd + " stdout: " + stdout_fd + " stderr: " + stderr_fd);
 
@@ -186,9 +156,9 @@ function h$process_runInteractiveProcess( cmd, args, workingDir, env
 
   // fixme this leaks
   procObj = { pid: h$nProc
-            , fds: [ stdin_fd  === -1 ? h$pipeFd(child.stdin, true).fd   : 0
-                   , stdout_fd === -1 ? h$pipeFd(child.stdout, false).fd : 1
-                   , stderr_fd === -1 ? h$pipeFd(child.stderr, false).fd : 2
+            , fds: [ stdin_fd  === -1 ? h$process_pipeFd(child.stdio[0], true)  : 0
+                   , stdout_fd === -1 ? h$process_pipeFd(child.stdio[1], false) : 1
+                   , stderr_fd === -1 ? h$process_pipeFd(child.stdio[2], false) : 2
                    ]
             , exit: null
             , waiters : []
