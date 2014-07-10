@@ -1,5 +1,3 @@
-// #define GHCJS_TRACE_IO 1
-
 #include "HsBaseConfig.h"
 
 #ifdef GHCJS_TRACE_IO
@@ -148,7 +146,7 @@ function h$close(fd) {
       TRACE_IO("killing writer thread: " + h$threadString(f.waitWrite[i]));
       // h$throwTo(f.waitWrite[i], h$IOException);
     }
-    if(f.buf.close) f.buf.close();
+    if(f.buf.close) f.buf.close(f, f.buf);
     delete h$fds[fd];
     return 0;
   } else {
@@ -344,6 +342,7 @@ var h$O_TRUNC   = 0x400;
 var h$O_EXCL    = 0x800;
 
 function h$__hscore_open(filename, filename_off, how, mode) {
+    function errorFn(txt) { return function() { throw txt; } }
     var p = h$decodeUtf8z(filename, filename_off);
     TRACE_IO('__hscore_open ' + p + ' ' + how + ' ' + mode);
     var flagStr;
@@ -372,23 +371,29 @@ function h$__hscore_open(filename, filename_off, how, mode) {
     TRACE_IO("opening file: " + p + " mode: " + flagStr + " read: " + read + " write: " + write + " mode: " + mode);
     try {
         var node_fd = h$fs.openSync(p, flagStr, mode);
-        function errorFn(txt) { return function() { throw txt; } }
         var buf = { fd: node_fd
-                    , read: read ? h$readFile : errorFn("file has not been opened for reading")
-                    , write: write ? h$writeFile : errorFn("file has not been opened for writing")
-                    , filePos: (off === -1) ? h$getFileSize(node_fd) : off
-                    , chunk: null
-                    , chunkPos: undefined
-                    , chunkLen: undefined
-                    , inProgress: false
+                  , read: read ? h$readFile : errorFn("file has not been opened for reading")
+                  , write: write ? h$writeFile : errorFn("file has not been opened for writing")
+                  , filePos: (off === -1) ? h$getFileSize(node_fd) : off
+                  , close: h$closeFile
+                  , chunk: null
+                  , chunkPos: undefined
+                  , chunkLen: undefined
+                  , writes: 0
+                  , closePending: false
                   };
         var fd = new h$Fd(buf, false, false, false);
         h$fds[fd.fd] = fd;
         return fd.fd;
     } catch(e) {
-        h$directory_setErrno(e);
+        h$setErrno(e);
         return -1;
     }
+}
+
+function h$closeFile(fd, buf) {
+    TRACE_IO("close file:" + h$collectProps(fd) + " " + h$collectProps(buf));
+    if(buf.writes === 0) h$fs.closeSync(buf.fd); else buf.closePending = true;
 }
 
 function h$readFile(fd, buf, buf_offset, n) {
@@ -396,21 +401,13 @@ function h$readFile(fd, buf, buf_offset, n) {
     var fdbuf = fd.buf;
     var f = fdbuf.fd;
     var u8 = buf.u8;
-    // fixme:
-    var nbuf = new Buffer(500000000);
-    if(!fdbuf.eof && !fdbuf.chunk) {
-        TRACE_IO("read sync");
-        fdbuf.chunkLen = h$fs.readSync(f, nbuf, 0, 500000000, 0); // fdbuf.filePos) //,  function(err, bytesRead, nbuf2) {
-        fdbuf.chunkPos = fdbuf.filePos;
-        fdbuf.chunk = nbuf;
-    }
-    // if(!fdbuf.chunk && !fdbuf.eof) {
-    //  fdbuf. 
-    // }
-    // data available
+
     if(fdbuf.eof) {
         return 0;
-    } if(fdbuf.chunk && fdbuf.chunkPos < fdbuf.chunkLen) {
+    } else if(fdbuf.writes > 0) {
+        h$errno = EWOULDBLOCK;
+        return -1;
+    } else if(fdbuf.chunk && fdbuf.chunkPos < fdbuf.chunkLen) {
         var n1 = Math.min(n, fdbuf.chunkLen - fdbuf.chunkPos);
         TRACE_IO("readFile, chunk available (chunkPos: " + fdbuf.chunkPos + " copying bytes: " + n1 + " chunk len: " + fdbuf.chunkLen);
         for(var i=0;i<n1;i++) {
@@ -419,45 +416,31 @@ function h$readFile(fd, buf, buf_offset, n) {
         fdbuf.chunkPos += n1;
         if(fdbuf.chunkPos >= fdbuf.chunkLen) { // whole chunk consumed
             TRACE_IO("readFile, whole chunk consumed: " + fdbuf.chunkPos + " " + fdbuf.chunkLen);
-            fdbuf.chunk = null;
-            fdbuf.chunkPos = undefined; // -1; // fixme
-            fdbuf.chunkLen = undefined; // -1; // fixme
-            // debug:
-            fdbuf.eof = true;
+            fdbuf.chunkPos = -1;
+            fdbuf.chunkLen = -1;
         }
         return n1;
-    // no data
-    } else {
-        throw "unpossible";
-        TRACE_IO("readFile, no data available: " + n + " reading from pos: " + fdbuf.filePos);
-        var nbuf = new Buffer(100000000); // (n);
-        if(fd.eof) {
-            TRACE_IO("readFile, eof");
-            return 0;
-        } else if(fdbuf.inProgress) {
-            TRACE_IO("readFile, operation in progress");
-            h$errno = CONST_EWOULDBLOCK;
-            return -1;
-        }
+    } else { // no data
+        var n2 = Math.max(n, 1000000);
+        TRACE_IO("readFile, no data available: " + n2 + " reading from pos: " + fdbuf.filePos);
+        if(!fdbuf.chunk || fdbuf.chunk.length < n2) fdbuf.chunk = new Buffer(n2);
         fd.readReady = false;
         fdbuf.inProgress = true;
-        h$fs.read(f, nbuf, 0, 100000000, fdbuf.filePos,  function(err, bytesRead, nbuf2) {
+        h$fs.read(f, fdbuf.chunk, 0, n2, fdbuf.filePos,  function(err, bytesRead, nbuf2) {
             TRACE_IO("readFile, new chunk read, bytes: " + bytesRead);
-            fdbuf.inProgress = false;
             if(bytesRead === 0) {
                 fdbuf.eof = true;
-                fd.readReady = true;
-                h$notifyRead(fd);
+                fdbuf.chunkPos = -1;
+                fdbuf.chunkLen = -1;
             } else {
                 TRACE_IO("old file pos: " + fdbuf.filePos + ", bytes read: " + bytesRead);
                 fdbuf.filePos += bytesRead;
-                fdbuf.chunk = nbuf2;
                 fdbuf.chunkPos = 0;
                 fdbuf.chunkLen = bytesRead;
-                TRACE_IO("new file pos: " + fdbuf.filePos);
-                fd.readReady = true;
-                h$notifyRead(fd);
             }
+            fd.readReady = true;
+            h$notifyRead(fd);
+            h$notifyWrite(fd);
         });
         h$errno = CONST_EWOULDBLOCK;
         return -1;
@@ -465,27 +448,33 @@ function h$readFile(fd, buf, buf_offset, n) {
 }
 
 function h$writeFile(fd, buf, buf_offset, n) {
+    TRACE_IO("writeFile: " + n + " off " + buf_offset + " " + (typeof buf) + " " + buf.len);
     var fdbuf = fd.buf;
-    var f = fdbuf.fd;
-    if(fdbuf.inProgress) {
+    var f     = fdbuf.fd;
+    if(fdbuf.writes > 20) {
         h$errno = CONST_EWOULDBLOCK;
         return -1;
     }
-    // fixme more efficient copying
-//    var u8 = buf.u8;
-    var nbuf = new Buffer(buf.u8.slice(buf_offset, buf_offset + n));
-//    for(var i=0;i<n;i++) {
-//        nbuf[i] = u8[i+buf_offset];
-//    }
+    var nbuf = new Buffer(n);
+    for(var i=0;i<n;i++) nbuf[i] = buf.u8[i+buf_offset];
     fd.writeReady = false;
-//    fdbuf.inProgress = true;
+    fdbuf.chunk = null;
     fdbuf.filePos += n;
-    TRACE_IO("writeFile: " + fd + " pos: " + fdbuf.filePos);
-    h$fs.write(f, nbuf, 0, n, fdbuf.filePos, function() {
+    fdbuf.writes++;
+    h$fs.write(f, nbuf, 0, n, fdbuf.filePos - n, function() {
         TRACE_IO("writeFile " + fd + " done, written: " + n);
-//        fdbuf.inProgress = false;
-        fd.writeReady = true;
-        h$notifyWrite(fd);
+        fdbuf.writes--;
+        if(fdbuf.writes === 0) {
+            if(fdbuf.closePending) {
+                h$fs.close(f, function() {
+                    h$notifyRead(fd);
+                    h$notifyWrite(fd);
+                });
+            } else {
+                h$notifyRead(fd);
+                h$notifyWrite(fd);
+            }
+        }
     });
     return n;
 }
@@ -517,11 +506,7 @@ function h$lseek(fd, offset1, offset2, whence) {
     var newOff;
     var newOffPending = -1;
     if(whence === 0) { // seek_set
-        if(fd.inProgress) {
-            newOffPending = offset;
-        } else {
-            newOff = offset;
-        }
+        newOff = offset;
 //        f.buf.offset = offset;
     } else if(whence === 1) { // seek_cur
         newOff = f.buf.filePos + offset;

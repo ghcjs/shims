@@ -515,6 +515,30 @@ function h$toHsString(str) {
   return r;
 }
 
+// string must have been completely forced first
+function h$fromHsString(str) {
+    var xs = '';
+    while(str.f.a === 2) {
+        if(typeof str.d1 === 'number') {
+            xs += String.fromCharCode(str.d1);
+        } else {
+            xs += String.fromCharCode(str.d1.d1); // unbox_e
+        }
+        str = str.d2;
+    }
+    return xs;
+}
+
+// list of JSRef to array, list must have been completely forced first
+function h$fromHsListJSRef(xs) {
+    var arr = [];
+    while(xs.f.a === 2) {
+        arr.push(xs.d1.d1);
+        xs = xs.d2;
+    }
+    return arr;
+}
+
 // ascii only version of the above
 #ifdef GHCJS_PROF
 function h$toHsStringA(str, cc) {
@@ -584,6 +608,24 @@ function h$toHsList(arr) {
   }
   return r;
 }
+
+// array of JS values to Haskell list of JSRef
+#ifdef GHCJS_PROF
+function h$toHsListJSRef(arr, cc) {
+#else
+function h$toHsListJSRef(arr) {
+#endif
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=arr.length-1;i>=0;i--) {
+#ifdef GHCJS_PROF
+        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r, cc);
+#else
+        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r);
+#endif
+    }
+    return r;
+}
+
 
 // unpack ascii string, append to existing Haskell string
 #ifdef GHCJS_PROF

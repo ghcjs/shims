@@ -218,6 +218,7 @@ h$MapIter.prototype.peekVal = function() {
 #ifndef GHCJS_QUEUE_BLOCK_SIZE
 #define GHCJS_QUEUE_BLOCK_SIZE 1000
 #endif
+
 function h$Queue() {
     var b = { b: [], n: null };
     this._blocks = 1;
@@ -228,7 +229,7 @@ function h$Queue() {
 }
 
 h$Queue.prototype.length = function() {
-    return GHCJS_QUEUE_BLOCK_SIZE * (this._blocks - 1) + this._fp - this._lp;
+    return GHCJS_QUEUE_BLOCK_SIZE * (this._blocks - 1) + this._lp - this._fp;
 }
 
 h$Queue.prototype.isEmpty = function() {
@@ -255,7 +256,7 @@ h$Queue.prototype.dequeue = function() {
         qfb[this._fp] = null;
         if(++this._fp === GHCJS_QUEUE_BLOCK_SIZE) {
             if(this._blocks === 1) {
-                this._fp = this._lp = 0;
+                this._lp = 0;
             } else {
                 this._blocks--;
                 this._first = this._first.n;
@@ -272,7 +273,7 @@ h$Queue.prototype.peek = function() {
     if(this._blocks === 0 || (this._blocks === 1 && this._fp >= this._lp)) {
         return null;
     } else {
-        return this._first[this._fp];
+        return this._first.b[this._fp];
     }
 }
 

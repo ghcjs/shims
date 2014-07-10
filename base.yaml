@@ -1,7 +1,7 @@
 js:
   - lib/closure-library/closure/goog/crypt/hash.js
   - lib/closure-library/closure/goog/crypt/md5.js
-
+  - pkg/base.js
 
 
 

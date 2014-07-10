@@ -353,10 +353,10 @@ function h$removeThreadBlock(t) {
       o.readers = rq;
       o.writers = wq;
       TRACE_SCHEDULER("MVar after: " + o.readers.length() + " " + o.writers.length());
-    } else if(o instanceof h$Fd) {
+/*    } else if(o instanceof h$Fd) {
       TRACE_SCHEDULER("blocked on fd");
       h$removeFromArray(o.waitRead,t);
-      h$removeFromArray(o.waitWrite,t);
+      h$removeFromArray(o.waitWrite,t); */
     } else if(o instanceof h$Thread) {
       TRACE_SCHEDULER("blocked on async exception");
       // set thread (first in pair) to null, exception will still be delivered
@@ -519,15 +519,17 @@ var h$yieldRun;
 // disable postMessage for now, messages sometimes do not arrive, killing our runtime
 if(false) { // typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
-  var handler = function(ev) {
-    if(ev.data === "h$mainLoop") { h$mainLoop(); }
-  };
-  if(window.addEventListener) {
-    window.addEventListener("message", handler);
-  } else {
-    window.attachEvent("message", handler);
-  }
-  h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
+  (function() {
+    var handler = function(ev) {
+      if(ev.data === "h$mainLoop") { h$mainLoop(); }
+    };
+    if(window.addEventListener) {
+      window.addEventListener("message", handler);
+    } else {
+      window.attachEvent("message", handler);
+    }
+    h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
+  })();
 } else if(typeof process !== 'undefined' && process.nextTick) {
 /*  h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun process.nextTick");
@@ -835,6 +837,7 @@ function h$main(a) {
 #endif
   //TRACE_SCHEDULER("sched: starting main thread");
   t.stack[0] = h$doneMain;
+  t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler
   t.stack[4] = h$ap_1_0;
   t.stack[5] = h$flushStdout;
   t.stack[6] = h$return;
@@ -1055,13 +1058,14 @@ function h$rtsSupportsBoundThreads() {
 
 // async foreign calls
 function h$mkForeignCallback(x) {
-  return function() {
-    if(x.mv === null) { // callback called synchronously
-      x.mv = arguments;
-    } else {
-      h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+    return function() {
+        if(x.mv === null) { // callback called synchronously
+            x.mv = arguments;
+        } else {
+            h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+            h$mainLoop();
+        }
     }
-  }
 }
 
 // event listeners through MVar

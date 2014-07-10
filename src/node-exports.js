@@ -10,8 +10,8 @@ for(p in exports) {
 }
 */
 if(typeof exports !== 'undefined') {
-  if(typeof WeakMap === 'undefined') {
-    WeakMap = exports.WeakMap;
+  if(typeof WeakMap === 'undefined' && typeof global !== 'undefined') {
+    global.WeakMap = exports.WeakMap;
   }
 //  var Map     = exports.Map;
 //  var Set     = exports.Set;
