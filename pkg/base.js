@@ -509,3 +509,11 @@ var h$base_stderr_fd = { write: h$base_writeStderr };
 
 var h$base_fdN = -1; // negative file descriptors are 'virtual'
 var h$base_fds = [h$base_stdin_fd, h$base_stdout_fd, h$base_stderr_fd];
+
+function h$shutdownHaskellAndExit(code, fast) {
+    if(typeof process !== 'undefined' && process.exit) {
+        process.exit(code);
+    } else if(typeof quit !== 'undefined') {
+        quit(code);
+    }
+}

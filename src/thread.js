@@ -825,6 +825,7 @@ function h$main(a) {
   var t = new h$Thread();
   //TRACE_SCHEDULER("sched: starting main thread");
   t.stack[0] = h$doneMain;
+  t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler
   t.stack[4] = h$ap_1_0;
   t.stack[5] = h$flushStdout;
   t.stack[6] = h$return;
