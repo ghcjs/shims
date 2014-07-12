@@ -96,32 +96,31 @@ var h$CAF           = new h$CCS(h$CCS_MAIN, h$CAF_cc);
 function h$ccsString(ccs) {
   var labels = [];
   do {
-    labels.push(ccs.cc.label);
+    labels.push(ccs.cc.module+'.'+ccs.cc.label+' '+ccs.cc.srcloc);
     ccs = ccs.prevStack;
   } while (ccs !== null);
-  str = "[";
-  for (var i = labels.length - 1; i > 0; i--) {
-    str = str + labels[i];
-    str = str + ", ";
-  }
-  str = str + labels[0];
-  str = str + "]";
-  return str;
+  return '[' + labels.reverse().join(', ') + ']';
 }
 #endif
 
+function h$pushRestoreCCS() {
+    TRACE("push restoreccs:" + h$ccsString(h$currentThread.ccs));
+    if(h$stack[h$sp] !== h$setCcs_e) {
+        h$sp += 2;
+        h$stack[h$sp-1] = h$currentThread.ccs;
+        h$stack[h$sp]   = h$setCcs_e;
+    }
+}
+
+function h$restoreCCS(ccs) {
+    TRACE("restoreccs from:", h$ccsString(h$currentThread.ccs));
+    TRACE("             to:", h$ccsString(ccs));
+    h$currentThread.ccs = ccs;
+}
+
 function h$enterThunkCCS(ccsthunk) {
-  // TODO: When combined with CCS saving/restoration in genCase (code generation for
-  // case expressions) this works correctly, but I think we're having redundant CCS
-  // savings/restorations. What we can do instead is to add saving/restoration code
-  // to every thunk entries in AP functions, inlined applications and all other
-  // places in RTS where we force/evaluate thunks. I think this is how it's done in
-  // GHC. (see related code in rts/StgStdThunks.cmm and rts/Apply.cmm)
   ASSERT(ccsthunk !== null && ccsthunk !== undefined, "ccsthunk is null or undefined");
   TRACE("entering ccsthunk:", h$ccsString(ccsthunk));
-  // h$sp += 2;
-  // h$stack[h$sp-1] = h$currentThread.ccs;
-  // h$stack[h$sp]   = h$setCcs_e;
   h$currentThread.ccs = ccsthunk;
 }
 
@@ -205,7 +204,7 @@ function h$enterFunEqualStacks(ccs0, ccsapp, ccsfn) {
 }
 
 function h$pushCostCentre(ccs, cc) {
-  TRACE("psuhing cost centre", cc, "to", h$ccsString(ccs));
+  TRACE("pushing cost centre", cc.label, "to", h$ccsString(ccs));
   if (ccs === null) {
     // when is ccs null?
     return new h$CCS(ccs, cc);

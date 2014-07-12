@@ -20,6 +20,11 @@
 #define GHCJS_IDLE_YIELD 20
 #endif
 
+// yield to js after running haskell for GHCJS_BUSY_YIELD ms
+#ifndef GHCJS_BUSY_YIELD
+#define GHCJS_BUSY_YIELD 500
+#endif
+
 #ifdef GHCJS_TRACE_SCHEDULER
 function h$logSched() { if(arguments.length == 1) {
                           if(h$currentThread != null) {
@@ -115,10 +120,10 @@ function h$fork(a, inherit) {
   TRACE_SCHEDULER("sched: forking: " + h$threadString(t));
   if(inherit && h$currentThread) {
     t.mask = h$currentThread.mask;
-#ifdef GHCJS_PROF
-    t.ccs  = h$currentThread.ccs;
-#endif
   }
+#ifdef GHCJS_PROF
+  t.ccs = h$CCS_MAIN;
+#endif
   // TRACE_SCHEDULER("sched: action forked: " + a.f.n);
   t.stack[4] = h$ap_1_0;
   t.stack[5] = a;
@@ -203,7 +208,7 @@ function h$killThread(t, ex) {
         t.stack[t.sp-1] = ex;
         t.stack[t.sp] = h$raiseAsync_frame;
       }
-      return h$stack[h$sp];
+      return h$stack ? h$stack[h$sp] : null;
     } else {
       t.excep.push([h$currentThread,ex]);
       h$blockThread(h$currentThread,t,null);
@@ -531,12 +536,13 @@ if(false) { // typeof window !== 'undefined' && window.postMessage) {
     h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
   })();
 } else if(typeof process !== 'undefined' && process.nextTick) {
-/*  h$yieldRun = function() {
+  h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun process.nextTick");
-    h$running = false;
-    process.nextTick(h$mainLoop);
-  } */
-  h$yieldRun = null; // the above (and setTimeout) are extremely slow in node
+      h$running = false;
+      setImmediate(h$mainLoop); // fixme this is a huge slowdown sometimes but is necessary for callbacks to be run
+    // process.nextTick(h$mainLoop);
+  }
+  // h$yieldRun = null; // the above (and setTimeout) are extremely slow in node
 } else if(typeof setTimeout !== 'undefined') {
   h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun setTimeout");
@@ -582,8 +588,8 @@ function h$mainLoop() {
                 while(c === null) { c = h$scheduler(c); }
             }
         }
-        // yield to js after 100ms
-        if(Date.now() - start > 100) {
+        // yield to js after GHCJS_BUSY_YIELD
+        if(Date.now() - start > GHCJS_BUSY_YIELD) {
             TRACE_SCHEDULER("yielding to js");
             if(h$yieldRun) {
                 if(c !== h$reschedule) {
