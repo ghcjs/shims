@@ -61,13 +61,14 @@ function h$base_fstat(fd, stat, stat_off, c) {
     });
 }
 
-function h$base_isatty(fd, c) { // fixme remove c
+function h$base_isatty(fd) {
     TRACE_IO("base_isatty " + fd);
     if(typeof process !== 'undefined') {
         if(fd === 0) return process.stdin.isTTY?1:0;
         if(fd === 1) return process.stdout.isTTY?1:0;
         if(fd === 2) return process.stderr.isTTY?1:0;
     }
+    if(fd === 1 || fd === 2) return 1;
     return 0;
 }
 
