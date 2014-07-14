@@ -700,9 +700,125 @@ function h$setField(o,n,v) {
     case 61:
         o.d2.d61 = v;
         return;
+    case 62:
+        o.d2.d62 = v;
+        return;
+    case 63:
+        o.d2.d63 = v;
+        return;
+    case 64:
+        o.d2.d64 = v;
+        return;
+    case 65:
+        o.d2.d65 = v;
+        return;
+    case 66:
+        o.d2.d66 = v;
+        return;
+    case 67:
+        o.d2.d67 = v;
+        return;
+    case 68:
+        o.d2.d68 = v;
+        return;
+    case 69:
+        o.d2.d69 = v;
+        return;
+    case 70:
+        o.d2.d70 = v;
+        return;
+    case 71:
+        o.d2.d71 = v;
+        return;
+    case 72:
+        o.d2.d72 = v;
+        return;
+    case 73:
+        o.d2.d73 = v;
+        return;
+    case 74:
+        o.d2.d74 = v;
+        return;
+    case 75:
+        o.d2.d75 = v;
+        return;
+    case 76:
+        o.d2.d76 = v;
+        return;
+    case 77:
+        o.d2.d77 = v;
+        return;
+    case 78:
+        o.d2.d78 = v;
+        return;
+    case 79:
+        o.d2.d79 = v;
+        return;
+    case 80:
+        o.d2.d80 = v;
+        return;
+    case 81:
+        o.d2.d81 = v;
+        return;
+    case 82:
+        o.d2.d82 = v;
+        return;
+    case 83:
+        o.d2.d83 = v;
+        return;
+    case 84:
+        o.d2.d84 = v;
+        return;
+    case 85:
+        o.d2.d85 = v;
+        return;
+    case 86:
+        o.d2.d86 = v;
+        return;
+    case 87:
+        o.d2.d87 = v;
+        return;
+    case 88:
+        o.d2.d88 = v;
+        return;
+    case 89:
+        o.d2.d89 = v;
+        return;
+    case 90:
+        o.d2.d90 = v;
+        return;
+    case 91:
+        o.d2.d91 = v;
+        return;
+    case 92:
+        o.d2.d92 = v;
+        return;
+    case 93:
+        o.d2.d93 = v;
+        return;
+    case 94:
+        o.d2.d94 = v;
+        return;
+    case 95:
+        o.d2.d95 = v;
+        return;
+    case 96:
+        o.d2.d96 = v;
+        return;
+    case 97:
+        o.d2.d97 = v;
+        return;
+    case 98:
+        o.d2.d98 = v;
+        return;
+    case 99:
+        o.d2.d99 = v;
+        return;
+    case 100:
+        o.d2.d100 = v;
+        return;
     default:
-        throw ("h$setField: setter not implemented for field: " + n)
-
+        throw ("h$setField: setter not implemented for field: " + n);
     }
 }
 
