@@ -25,6 +25,7 @@ function h$setErrno(e) {
       if(es.indexOf('EPERM') !== -1)        return CONST_EPERM;
       if(es.indexOf('EMFILE') !== -1)       return CONST_EMFILE;
       if(es.indexOf('EPIPE') !== -1)        return CONST_EPIPE;
+      if(es.indexOf('EAGAIN') !== -1)       return CONST_EAGAIN;
       if(es.indexOf('Bad argument') !== -1) return CONST_ENOENT; // fixme?
       throw ("setErrno not yet implemented: " + e);
 
@@ -42,6 +43,7 @@ var h$errorStrs =  { CONST_E2BIG:   "too big"
                    , CONST_EEXIST:  "file exists"
                    , CONST_EMFILE:  "too many open files"
                    , CONST_EPIPE:   "broken pipe"
+                   , CONST_EAGAIN:  "resource temporarily unavailable"
                    }
 
 function h$strerror(err) {

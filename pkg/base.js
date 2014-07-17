@@ -457,7 +457,9 @@ if(typeof module !== 'undefined' && module.exports) { // node.js
             if(err) {
                 h$setErrno(err);
                 if(typeof fdo.pos === 'number') fdo.pos -= n;
-                c(-1);
+                if(h$errno === CONST_EAGAIN)
+                    setTimeout(function() { h$base_writeFile(fd, fdo, buf, buf_offset, n, c); }, 20);
+                else c(-1);
             } else {
                 if(typeof fdo.pos === 'number') fdo.pos += bytesWritten - n;
                 c(bytesWritten);
