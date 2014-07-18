@@ -38,7 +38,7 @@ function h$hs_word64ToInt64(a1,a2) {
 }
 
 function h$hs_int64ToInt(a1,a2) {
-  return (a1 < 0) ? (a2 | 0x80000000) : (a2 & 0x7FFFFFFF);
+  return a2;
 }
 
 function h$hs_negateInt64(a1,a2) {

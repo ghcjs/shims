@@ -59,7 +59,7 @@ if(typeof scriptArgs !== 'undefined') {
   h$programArgs.unshift("a.js");
 } else if(typeof process !== 'undefined' && process.argv) {
   h$programArgs = process.argv.slice(1);
-} else if(typeof arguments !== 'undefined') {
+} else if(typeof snarf !== 'undefined' && typeof arguments !== 'undefined') {
   h$programArgs = arguments.slice(0);
   h$programArgs.unshift("a.js");
 } else {

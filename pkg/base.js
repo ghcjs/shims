@@ -56,7 +56,8 @@ function h$base_fstat(fd, stat, stat_off, c) {
         if(err) {
             h$handlErrnoC(err, -1, 0, c);
         } else {
-            c(h$base_fillStat(fs), 0);
+            h$base_fillStat(fs, stat, stat_off);
+            c(0);
         }
     });
 }
@@ -91,7 +92,7 @@ function h$base_lseek(fd, pos_1, pos_2, whence, c) {
             c(p1.getHighBits(), p1.getLowBits());
             break;
         case 2: /* END */
-            h$fs.stat(fd, function(err, fs) {
+            h$fs.fstat(fd, function(err, fs) {
                 if(err) {
                     h$setErrno(err);
                     c(-1,-1);
@@ -114,7 +115,8 @@ function h$base_lstat(file, file_off, stat, stat_off, c) {
         if(err) {
             h$handleErrnoC(err, -1, 0, c);
         } else {
-            c(h$base_fillStat(fs), 0);
+            h$base_fillStat(fs, stat, stat_off);
+            c(0);
         }
     });
 }
@@ -180,7 +182,8 @@ function h$base_stat(file, file_off, stat, stat_off, c) {
         if(err) {
             h$handlErrnoC(err, -1, 0, c);
         } else {
-            c(h$base_fillStat(fs), 0);
+            h$base_fillStat(fs, stat, stat_off);
+            c(0);
         }
     });
 }
@@ -291,18 +294,19 @@ function h$base_c_s_isfifo(mode) {
     return 0;
 }
 
-function h$base_fillStat(fs) {
-    b = h$newByteArray(h$base_sizeof_stat);
-    b.i3[0] = fs.mode;
+function h$base_fillStat(fs, b, off) {
+    if(off%4) throw "h$base_fillStat: not aligned";
+    var o = off>>2;
+    b.i3[o+0] = fs.mode;
     var s = goog.math.Long.fromNumber(fs.size);
-    b.i3[1] = s.getHighBits();
-    b.i3[2] = s.getLowBits();
-    b.i3[3] = 0; // fixme
-    b.i3[4] = 0; // fixme
-    b.i3[5] = fs.dev;
-    b.i3[6] = fs.ino;
-    b.i3[7] = fs.uid;
-    b.i3[8] = fs.gid;
+    b.i3[o+1] = s.getHighBits();
+    b.i3[o+2] = s.getLowBits();
+    b.i3[o+3] = 0; // fixme
+    b.i3[o+4] = 0; // fixme
+    b.i3[o+5] = fs.dev;
+    b.i3[o+6] = fs.ino;
+    b.i3[o+7] = fs.uid;
+    b.i3[o+8] = fs.gid;
 }
 // [mode,size1,size2,mtime1,mtime2,dev,ino,uid,gid] all 32 bit
 var h$base_sizeof_stat = 36;
