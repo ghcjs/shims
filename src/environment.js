@@ -8,9 +8,11 @@ function h$logEnv() { h$log.apply(h$log,arguments); }
 // set up debug logging for the current JS environment/engine
 // browser also logs to <div id="output"> if jquery is detected
 // the various debug tracing options use h$log
+#ifndef GHCJS_BROWSER
 var h$glbl;
 function h$getGlbl() { h$glbl = this; }
 h$getGlbl();
+#endif
 #ifdef GHCJS_LOG_BUFFER
 var h$logBufferSize = 6000;
 var h$logBufferShrink = 1000;
@@ -23,6 +25,7 @@ function h$log() {
   h$logBuffer.push(s);
   if(h$logBuffer.length > h$logBufferSize) h$logBuffer = h$logBuffer.slice(h$logBufferShrink);
 #else
+#ifndef GHCJS_BROWSER
   if(h$glbl) {
     if(h$glbl.console && h$glbl.console.log) {
       h$glbl.console.log.apply(h$glbl.console,arguments);
@@ -30,9 +33,13 @@ function h$log() {
       h$glbl.print.apply(this,arguments);
     }
   } else {
+#endif
     console.log.apply(console, arguments);
+#ifndef GHCJS_BROWSER
   }
 #endif
+#endif
+#ifdef GHCJS_LOG_JQUERY
   // if we have jquery, add to <div id='output'> element
   if(typeof(jQuery) !== 'undefined') {
     var x = '';
@@ -41,6 +48,7 @@ function h$log() {
     xd.text(x);
     jQuery('#output').append(xd);
   }
+#endif
 }
 
 function h$collectProps(o) {
@@ -54,17 +62,21 @@ function h$collectProps(o) {
 // load the command line arguments in h$programArgs
 // the first element is the program name
 var h$programArgs;
-if(typeof scriptArgs !== 'undefined') {
-  h$programArgs = scriptArgs.slice(0);
-  h$programArgs.unshift("a.js");
-} else if(typeof process !== 'undefined' && process.argv) {
-  h$programArgs = process.argv.slice(1);
-} else if(typeof snarf !== 'undefined' && typeof arguments !== 'undefined') {
-  h$programArgs = arguments.slice(0);
-  h$programArgs.unshift("a.js");
+#ifdef GHCJS_BROWSER
+h$programArgs = [ "a.js" ];
+#else
+if(h$isNode) {
+    h$programArgs = process.argv.slice(1);
+} else if(h$isJsShell && typeof h$getGlobal(this).scriptArgs !== 'undefined') {
+    h$programArgs = h$getGlobal(this).scriptArgs.slice(0);
+    h$programArgs.unshift("a.js");
+} else if(h$isJsShell && typeof h$getGlobal(this).arguments !== 'undefined') {
+    h$programArgs = h$getGlobal(this).arguments.slice(0);
+    h$programArgs.unshift("a.js");
 } else {
-  h$programArgs = [ "a.js" ];
+    h$programArgs = [ "a.js" ];
 }
+#endif
 
 function h$getProgArgv(argc_v,argc_off,argv_v,argv_off) {
   TRACE_ENV("getProgArgV");
@@ -94,7 +106,9 @@ function h$setProgArgv(n, ptr_d, ptr_o) {
 }
 
 function h$getpid() {
-  if(this['process']) return process.id;
+#ifndef GHCJS_BROWSER
+  if(h$isNode) return process.id;
+#endif
   return 0;
 }
 
@@ -128,15 +142,21 @@ function h$errorMsg(pat) {
   for(var i=1;i<arguments.length;i++) {
     str = str.replace(/%s/, arguments[i]);
   }
-  if(typeof process !== 'undefined' && process && process.stderr) {
+#ifndef GHCJS_BROWSER
+  if(h$isNode) {
     process.stderr.write(str);
-  } else if (typeof printErr !== 'undefined') {
+  } else if (h$isJsShell && typeof printErr !== 'undefined') {
     printErr(str);
-  } else if (typeof putstr !== 'undefined') {
+  } else if (h$isJsShell && typeof putstr !== 'undefined') {
     putstr(str);
-  } else if(typeof(console) !== 'undefined') {
-    console.log(str);
+  } else {
+#endif
+    if(typeof console !== 'undefined') {
+      console.log(str);
+    }
+#ifndef GHCJS_BROWSER
   }
+#endif
 }
 
 // this needs to be imported with foreign import ccall safe/interruptible

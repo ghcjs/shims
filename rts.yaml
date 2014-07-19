@@ -1,9 +1,8 @@
 js:
-  - src/node.js
+  - src/platform.js
+  - src/goog.js
   - lib/typedarray/typedarray.js
   - lib/jsbn/jsbn_lib.js
-  - src/node-exports.js
-  - lib/closure-library/closure/goog/base.js
   - lib/closure-library/closure/goog/math/long.js
   - src/structs.js
   - src/mem.js

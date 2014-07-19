@@ -1,4 +1,6 @@
 function h$filepath_isWindows() {
-  if(typeof process !== undefined && process.platform === 'win32') return true;
+#ifndef GHCJS_BROWSER
+    if(h$isNode && process.platform === 'win32') return true;
+#endif
   return false;
 }

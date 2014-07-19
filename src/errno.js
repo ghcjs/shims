@@ -14,6 +14,23 @@ function h$__hscore_get_errno() {
   return h$errno;
 }
 
+function h$unsupported(status, c) {
+    h$errno = 12456;
+    if(c) c(status);
+    return status;
+}
+
+function h$strerror(err) {
+    h$ret1 = 0;
+    if(err === 12456) return h$encodeUtf8("operation unsupported on this platform");
+#ifdef GHCJS_BROWSER
+    return h$encodeUtf8("unknown error");
+#else
+    return h$encodeUtf8(h$errorStrs[err] || "unknown error");
+#endif
+}
+
+#ifdef GHCJS_BROWSER
 function h$setErrno(e) {
   TRACE_ERRNO("setErrno: " + e);
   var es = e.toString();
@@ -46,12 +63,6 @@ var h$errorStrs =  { CONST_E2BIG:   "too big"
                    , CONST_EAGAIN:  "resource temporarily unavailable"
                    }
 
-function h$strerror(err) {
-    TRACE_ERRNO("strerror: " + err);
-    h$ret1 = 0;
-    return h$encodeUtf8(h$errorStrs[err] || "unknown error");
-}
-
 function h$handleErrno(r_err, f) {
   try {
     return f();
@@ -79,3 +90,4 @@ function h$handleErrnoC(err, r_err, r_success, c) {
         c(r_success);
     }
 }
+#endif

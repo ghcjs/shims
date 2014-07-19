@@ -72,6 +72,7 @@ var h$threadIdN = 0;
 var h$threads = new h$Queue();
 var h$blocked = new h$Set();
 
+/** @constructor */
 function h$Thread() {
     this.tid = ++h$threadIdN;
     this.status = h$threadRunning;
@@ -522,6 +523,7 @@ function h$scheduler(next) {
 // other JavaScript
 var h$yieldRun;
 // disable postMessage for now, messages sometimes do not arrive, killing our runtime
+#ifndef GHCJS_BROWSER
 if(false) { // typeof window !== 'undefined' && window.postMessage) {
   // is this lower delay than setTimeout?
   (function() {
@@ -535,7 +537,7 @@ if(false) { // typeof window !== 'undefined' && window.postMessage) {
     }
     h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
   })();
-} else if(typeof process !== 'undefined' && process.nextTick) {
+} else if(h$isNode) {
   h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun process.nextTick");
       h$running = false;
@@ -544,14 +546,17 @@ if(false) { // typeof window !== 'undefined' && window.postMessage) {
   }
   // h$yieldRun = null; // the above (and setTimeout) are extremely slow in node
 } else if(typeof setTimeout !== 'undefined') {
+#endif
   h$yieldRun = function() {
     TRACE_SCHEDULER("yieldrun setTimeout");
     h$running = false;
     setTimeout(h$mainLoop, 0);
   }
+#ifndef GHCJS_BROWSER
 } else {
   h$yieldRun = null; // SpiderMonkey shell has none of these
 }
+#endif
 
 function h$startMainLoop() {
   if(h$yieldRun) {
@@ -842,10 +847,12 @@ function h$main(a) {
   t.ccs = a.cc;
 #endif
   //TRACE_SCHEDULER("sched: starting main thread");
-  t.stack[0] = h$doneMain;
-  if((typeof process !== 'undefined' && process.exit) || typeof quit !== 'undefined') {
+    t.stack[0] = h$doneMain;
+#ifndef GHCJS_BROWSER
+  if(!h$isBrowser) {
     t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler;
   }
+#endif
   t.stack[4] = h$ap_1_0;
   t.stack[5] = h$flushStdout;
   t.stack[6] = h$return;
@@ -861,6 +868,7 @@ function h$main(a) {
 
 // MVar support
 var h$mvarId = 0;
+/** @constructor */
 function h$MVar() {
   TRACE_SCHEDULER("h$MVar constructor");
   this.val     = null;
@@ -1007,6 +1015,7 @@ function h$writeMVarJs2(mv,val1,val2) {
 }
 
 // IORef support
+/** @constructor */
 function h$MutVar(v) {
     this.val = v;
     this.m = 0;

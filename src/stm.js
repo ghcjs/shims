@@ -15,7 +15,7 @@ function h$logStm() { if(arguments.length == 1) {
 
 var h$stmTransactionActive = 0;
 var h$stmTransactionWaiting = 4;
-
+/** @constructor */
 function h$Transaction(o, parent) {
     TRACE_STM("h$Transaction: " + o + " -> " + parent);
     this.action        = o;
@@ -32,17 +32,19 @@ function h$Transaction(o, parent) {
 }
 
 var h$stmInvariantN = 0;
+/** @constructor */
 function h$StmInvariant(a) {
     this.action = a;
     this._key = ++h$stmInvariantN;
 }
-
+/** @constructor */
 function h$WrittenTVar(tv,v) {
     this.tvar = tv;
     this.val = v;
 }
 
 var h$TVarN = 0;
+/** @constructor */
 function h$TVar(v) {
     TRACE_STM("creating TVar, value: " + h$collectProps(v));
     this.val        = v;           // current value
@@ -52,16 +54,19 @@ function h$TVar(v) {
     this._key       = ++h$TVarN;   // for storing in h$Map/h$Set
 }
 
+/** @constructor */
 function h$TVarsWaiting(s) {
   this.tvars = s;  // h$Set of TVars we're waiting on
 }
 
+/** @constructor */
 function h$LocalInvariant(o) {
   this.action = o;
   this.dependencies = new h$Set();
 }
 
 // local view of a TVar
+/** @constructor */
 function h$LocalTVar(v) {
   TRACE_STM("creating TVar view for: " + h$collectProps(v));
   this.readVal = v.val;  // the value when read from environment

@@ -9,26 +9,32 @@ function h$logIO() { h$log.apply(h$log, arguments); }
 #define TRACE_IO(args...)
 #endif
 
-if(typeof module !== 'undefined' && module.exports) {
-  var h$fs = require('fs');
-}
-
 function h$base_access(file, file_off, mode, c) {
     TRACE_IO("base_access");
-    h$fs.stat(fd, function(err, fs) {
-        if(err) {
-            h$handleErrnoC(err, -1, 0, c);
-        } else {
-            c(mode & fs.mode); // fixme is this ok?
-        }
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.stat(fd, function(err, fs) {
+            if(err) {
+                h$handleErrnoC(err, -1, 0, c);
+            } else {
+                c(mode & fs.mode); // fixme is this ok?
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 
 function h$base_chmod(file, file_off, mode, c) {
     TRACE_IO("base_chmod");
-    h$fs.chmod(h$decodeUtf8z(file, file_off), mode, function(err) {
-        h$handleErrnoC(err, -1, 0, c);
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.chmod(h$decodeUtf8z(file, file_off), mode, function(err) {
+            h$handleErrnoC(err, -1, 0, c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 
 function h$base_close(fd, c) {
@@ -52,119 +58,146 @@ function h$base_dup2(fd, c) {
 
 function h$base_fstat(fd, stat, stat_off, c) {
     TRACE_IO("base_stat");
-    h$fs.fstat(fd, function(err, fs) {
-        if(err) {
-            h$handlErrnoC(err, -1, 0, c);
-        } else {
-            h$base_fillStat(fs, stat, stat_off);
-            c(0);
-        }
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.fstat(fd, function(err, fs) {
+            if(err) {
+                h$handlErrnoC(err, -1, 0, c);
+            } else {
+                h$base_fillStat(fs, stat, stat_off);
+                c(0);
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 
 function h$base_isatty(fd) {
     TRACE_IO("base_isatty " + fd);
-    if(typeof process !== 'undefined') {
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
         if(fd === 0) return process.stdin.isTTY?1:0;
         if(fd === 1) return process.stdout.isTTY?1:0;
         if(fd === 2) return process.stderr.isTTY?1:0;
     }
+#endif
     if(fd === 1 || fd === 2) return 1;
     return 0;
 }
 
 function h$base_lseek(fd, pos_1, pos_2, whence, c) {
     TRACE_IO("base_lseek");
-    var p = goog.math.Long.fromBits(pos_2, pos_1), p1;
-    var o = h$base_fds[fd];
-    if(!o) {
-        h$errno = CONST_BADF;
-        c(-1,-1);
-    } else {
-        switch(whence) {
-        case 0: /* SET */
-            o.pos = p.toNumber();
-            c(p.getHighBits(), p.getLowBits());
-            break;
-        case 1: /* CUR */
-            o.pos += p.toNumber();
-            p1 = goog.math.Long.fromNumber(o.pos);
-            c(p1.getHighBits(), p1.getLowBits());
-            break;
-        case 2: /* END */
-            h$fs.fstat(fd, function(err, fs) {
-                if(err) {
-                    h$setErrno(err);
-                    c(-1,-1);
-                } else {
-                    o.pos = fs.size + p.toNumber();
-                    p1 = goog.math.Long.fromNumber(o.pos);
-                    c(p1.getHighBits(), p1.getLowBits());
-                }
-            });
-            break;
-        default:
-            h$errno = CONST_EINVAL;
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var p = goog.math.Long.fromBits(pos_2, pos_1), p1;
+        var o = h$base_fds[fd];
+        if(!o) {
+            h$errno = CONST_BADF;
             c(-1,-1);
+        } else {
+            switch(whence) {
+            case 0: /* SET */
+                o.pos = p.toNumber();
+                c(p.getHighBits(), p.getLowBits());
+                break;
+            case 1: /* CUR */
+                o.pos += p.toNumber();
+                p1 = goog.math.Long.fromNumber(o.pos);
+                c(p1.getHighBits(), p1.getLowBits());
+                break;
+            case 2: /* END */
+                h$fs.fstat(fd, function(err, fs) {
+                    if(err) {
+                        h$setErrno(err);
+                        c(-1,-1);
+                    } else {
+                        o.pos = fs.size + p.toNumber();
+                        p1 = goog.math.Long.fromNumber(o.pos);
+                        c(p1.getHighBits(), p1.getLowBits());
+                    }
+                });
+                break;
+            default:
+                h$errno = CONST_EINVAL;
+                c(-1,-1);
+            }
         }
+    } else {
+#endif
+        h$unsupported();
+        c(-1, -1);
+#ifndef GHCJS_BROWSER
     }
+#endif
 }
+
 function h$base_lstat(file, file_off, stat, stat_off, c) {
     TRACE_IO("base_lstat");
-    h$fs.lstat(h$decodeUtf8z(file, file_off), function(err, fs) {
-        if(err) {
-            h$handleErrnoC(err, -1, 0, c);
-        } else {
-            h$base_fillStat(fs, stat, stat_off);
-            c(0);
-        }
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.lstat(h$decodeUtf8z(file, file_off), function(err, fs) {
+            if(err) {
+                h$handleErrnoC(err, -1, 0, c);
+            } else {
+                h$base_fillStat(fs, stat, stat_off);
+                c(0);
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_open(file, file_off, how, mode, c) {
-    var flagStr, off;
-    var fp   = h$decodeUtf8z(file, file_off);
-    TRACE_IO("base_open: " + fp);
-    var acc  = how & h$base_o_accmode;
-    var excl = (how & h$base_o_excl) ? 'x' : '';
-    if(acc === h$base_o_rdonly) {
-        read    = true;
-        flagStr = 'r' + excl;
-        off     = 0;
-    } else if(acc === h$base_o_wronly) {
-        write   = true;
-        flagStr = (how & h$base_o_trunc ? 'w' : 'a') + excl + '+';
-        off     = -1;
-    } else { // r+w
-        off   = 0; // -1; // is this ok?
-        read  = true;
-        write = true;
-        if(how & h$base_o_creat) {
-            flagStr = ((how & h$base_o_trunc) ? 'w' : 'a') + excl + '+';
-        } else {
-            flagStr = 'r+';
-        }
-    }
-    h$fs.open(fp, flagStr, mode, function(err, fd) {
-        if(err) {
-            h$handleErrnoC(err, -1, 0, c);
-        } else {
-            var f = function(p) {
-                h$base_fds[fd] = { read:  h$base_readFile
-                                 , write: h$base_writeFile
-                                 , close: h$base_closeFile
-                                 , pos:   p
-                                 };
-                c(fd);
-            }
-            if(off === -1) {
-                h$fs.stat(fp, function(err, fs) {
-                    if(err) h$handleErrnoC(err, -1, 0, c); else f(fs.size);
-                });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var flagStr, off;
+        var fp   = h$decodeUtf8z(file, file_off);
+        TRACE_IO("base_open: " + fp);
+        var acc  = how & h$base_o_accmode;
+        var excl = (how & h$base_o_excl) ? 'x' : '';
+        if(acc === h$base_o_rdonly) {
+            read    = true;
+            flagStr = 'r' + excl;
+            off     = 0;
+        } else if(acc === h$base_o_wronly) {
+            write   = true;
+            flagStr = (how & h$base_o_trunc ? 'w' : 'a') + excl + '+';
+            off     = -1;
+        } else { // r+w
+            off   = 0; // -1; // is this ok?
+            read  = true;
+            write = true;
+            if(how & h$base_o_creat) {
+                flagStr = ((how & h$base_o_trunc) ? 'w' : 'a') + excl + '+';
             } else {
-                f(0);
+                flagStr = 'r+';
             }
         }
-    });
+        h$fs.open(fp, flagStr, mode, function(err, fd) {
+            if(err) {
+                h$handleErrnoC(err, -1, 0, c);
+            } else {
+                var f = function(p) {
+                    h$base_fds[fd] = { read:  h$base_readFile
+                                       , write: h$base_writeFile
+                                       , close: h$base_closeFile
+                                       , pos:   p
+                                     };
+                    c(fd);
+                }
+                if(off === -1) {
+                    h$fs.stat(fp, function(err, fs) {
+                        if(err) h$handleErrnoC(err, -1, 0, c); else f(fs.size);
+                    });
+                } else {
+                    f(0);
+                }
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_read(fd, buf, buf_off, n, c) {
     TRACE_IO("base_read: " + fd);
@@ -178,19 +211,28 @@ function h$base_read(fd, buf, buf_off, n, c) {
 }
 function h$base_stat(file, file_off, stat, stat_off, c) {
     TRACE_IO("base_stat");
-    h$fs.stat(h$decodeUtf8z(file, file_off), function(err, fs) {
-        if(err) {
-            h$handlErrnoC(err, -1, 0, c);
-        } else {
-            h$base_fillStat(fs, stat, stat_off);
-            c(0);
-        }
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.stat(h$decodeUtf8z(file, file_off), function(err, fs) {
+            if(err) {
+                h$handlErrnoC(err, -1, 0, c);
+            } else {
+                h$base_fillStat(fs, stat, stat_off);
+                c(0);
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_umask(mode) {
     TRACE_IO("base_umask: " + mode);
-    return process.umask(mode);
+#ifndef GHCJS_BROWSER
+    if(h$isNode) return process.umask(mode);
+#endif
+    return 0;
 }
+
 function h$base_write(fd, buf, buf_off, n, c) {
     TRACE_IO("base_write: " + fd);
     var fdo = h$base_fds[fd];
@@ -201,27 +243,46 @@ function h$base_write(fd, buf, buf_off, n, c) {
         c(-1);
     }
 }
+
 function h$base_ftruncate(fd, pos_1, pos_2, c) {
     TRACE_IO("base_ftruncate");
-    h$fs.ftruncate(fd, goog.math.Long.fromBits(pos_2, pos_1).toNumber(), function(err) {
-        h$handleErrnoC(err, -1, 0, c);
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.ftruncate(fd, goog.math.Long.fromBits(pos_2, pos_1).toNumber(), function(err) {
+            h$handleErrnoC(err, -1, 0, c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_unlink(file, file_off, c) {
     TRACE_IO("base_unlink");
-    h$fs.unlink(h$decodeUtf8z(file, file_off), function(err) {
-        h$handleErrnoC(err, -1, 0, c);
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.unlink(h$decodeUtf8z(file, file_off), function(err) {
+            h$handleErrnoC(err, -1, 0, c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_getpid() {
     TRACE_IO("base_getpid");
-    return process.pid;
+#ifndef GHCJS_BROWSER
+    if(h$isNode) return process.pid;
+#endif
+    return 0;
 }
 function h$base_link(file1, file1_off, file2, file2_off, c) {
     TRACE_IO("base_link");
-    h$fs.link(h$decodeUtf8z(file1, file1_off), h$decodeUtf8z(file2, file2_off), function(err) {
-        h$handleErrnoC(err, -1, 0, c);
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.link(h$decodeUtf8z(file1, file1_off), h$decodeUtf8z(file2, file2_off), function(err) {
+            h$handleErrnoC(err, -1, 0, c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_mkfifo(file, file_off, mode, c) {
     throw "h$base_mkfifo";
@@ -246,37 +307,42 @@ function h$base_tcsetattr(attr, val, termios, termios_off) {
 }
 function h$base_utime(file, file_off, timbuf, timbuf_off, c) {
     TRACE_IO("base_utime");
-    h$fs.fstat(h$decodeUtf8z(file, file_off), function(err, fs) {
-        if(err) {
-            h$handleErrnoC(err, 0, -1, c); // fixme
-        } else {
-            var atime = goog.math.Long.fromNumber(fs.atime.getTime());
-            var mtime = goog.math.Long.fromNumber(fs.mtime.getTime());
-            var ctime = goog.math.Long.fromNumber(fs.ctime.getTime());
-            timbuf.i3[0] = atime.getHighBits();
-            timbuf.i3[1] = atime.getLowBits();
-            timbuf.i3[2] = mtime.getHighBits();
-            timbuf.i3[3] = mtime.getLowBits();
-            timbuf.i3[4] = ctime.getHighBits();
-            timbuf.i3[5] = ctime.getLowBits();
-            c(0);
-        }
-    });
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.fstat(h$decodeUtf8z(file, file_off), function(err, fs) {
+            if(err) {
+                h$handleErrnoC(err, 0, -1, c); // fixme
+            } else {
+                var atime = goog.math.Long.fromNumber(fs.atime.getTime());
+                var mtime = goog.math.Long.fromNumber(fs.mtime.getTime());
+                var ctime = goog.math.Long.fromNumber(fs.ctime.getTime());
+                timbuf.i3[0] = atime.getHighBits();
+                timbuf.i3[1] = atime.getLowBits();
+                timbuf.i3[2] = mtime.getHighBits();
+                timbuf.i3[3] = mtime.getLowBits();
+                timbuf.i3[4] = ctime.getHighBits();
+                timbuf.i3[5] = ctime.getLowBits();
+                c(0);
+            }
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 function h$base_waitpid(pid, stat, stat_off, options, c) {
     throw "h$base_waitpid";
 }
-var h$base_o_rdonly   = 0x00000;
-var h$base_o_wronly   = 0x00001;
-var h$base_o_rdwr     = 0x00002;
-var h$base_o_accmode  = 0x00003;    
-var h$base_o_append   = 0x00008;
-var h$base_o_creat    = 0x00200;
-var h$base_o_trunc    = 0x00400;
-var h$base_o_excl     = 0x00800;
-var h$base_o_noctty   = 0x20000;
-var h$base_o_nonblock = 0x00004;
-var h$base_o_binary   = 0x00000;
+/** @const */ var h$base_o_rdonly   = 0x00000;
+/** @const */ var h$base_o_wronly   = 0x00001;
+/** @const */ var h$base_o_rdwr     = 0x00002;
+/** @const */ var h$base_o_accmode  = 0x00003;
+/** @const */ var h$base_o_append   = 0x00008;
+/** @const */ var h$base_o_creat    = 0x00200;
+/** @const */ var h$base_o_trunc    = 0x00400;
+/** @const */ var h$base_o_excl     = 0x00800;
+/** @const */ var h$base_o_noctty   = 0x20000;
+/** @const */ var h$base_o_nonblock = 0x00004;
+/** @const */ var h$base_o_binary   = 0x00000;
 
 function h$base_c_s_isreg(mode) {
     return 1;
@@ -294,6 +360,7 @@ function h$base_c_s_isfifo(mode) {
     return 0;
 }
 
+#ifndef GHCJS_BROWSER
 function h$base_fillStat(fs, b, off) {
     if(off%4) throw "h$base_fillStat: not aligned";
     var o = off>>2;
@@ -308,8 +375,10 @@ function h$base_fillStat(fs, b, off) {
     b.i3[o+7] = fs.uid;
     b.i3[o+8] = fs.gid;
 }
+#endif
+
 // [mode,size1,size2,mtime1,mtime2,dev,ino,uid,gid] all 32 bit
-var h$base_sizeof_stat = 36;
+/** @const */ var h$base_sizeof_stat = 36;
 
 function h$base_st_mtime(stat, stat_off) {
     h$ret1 = stat.i3[(stat_off>>2)+4];
@@ -333,21 +402,21 @@ function h$base_st_ino(stat, stat_off) {
     return stat.i3[(stat_off>>2)+6];
 }
 
-var h$base_echo            = 1;
-var h$base_tcsanow         = 2;
-var h$base_icanon          = 4;
-var h$base_vmin            = 8;
-var h$base_vtime           = 16;
-var h$base_sigttou         = 0;
-var h$base_sig_block       = 0;
-var h$base_sig_setmask     = 0;
-var h$base_f_getfl         = 0;
-var h$base_f_setfl         = 0;
-var h$base_f_setfd         = 0;
-var h$base_fd_cloexec      = 0;
-var h$base_sizeof_termios  = 4;
-var h$base_sizeof_sigset_t = 4;
-var h$base_lflag           = 0;
+/** @const */ var h$base_echo            = 1;
+/** @const */ var h$base_tcsanow         = 2;
+/** @const */ var h$base_icanon          = 4;
+/** @const */ var h$base_vmin            = 8;
+/** @const */ var h$base_vtime           = 16;
+/** @const */ var h$base_sigttou         = 0;
+/** @const */ var h$base_sig_block       = 0;
+/** @const */ var h$base_sig_setmask     = 0;
+/** @const */ var h$base_f_getfl         = 0;
+/** @const */ var h$base_f_setfl         = 0;
+/** @const */ var h$base_f_setfd         = 0;
+/** @const */ var h$base_fd_cloexec      = 0;
+/** @const */ var h$base_sizeof_termios  = 4;
+/** @const */ var h$base_sizeof_sigset_t = 4;
+/** @const */ var h$base_lflag           = 0;
 
 function h$base_poke_lflag(termios, termios_off, flag) {
     return 0;
@@ -358,15 +427,15 @@ function h$base_ptr_c_cc(termios, termios_off) {
     return h$newByteArray(8);
 }
 
-var h$base_default_buffer_size = 32768;
+/** @const */ var h$base_default_buffer_size = 32768;
 
 function h$base_c_s_issock(mode) {
     return 0; // fixme
 }
 
-var h$base_SEEK_SET = 0;
-var h$base_SEEK_CUR = 1;
-var h$base_SEEK_END = 2;
+/** @const */ var h$base_SEEK_SET = 0;
+/** @const */ var h$base_SEEK_CUR = 1;
+/** @const */ var h$base_SEEK_END = 2;
 
 function h$base_set_saved_termios(a, b, c) {
     h$ret1 = 0
@@ -393,35 +462,37 @@ function h$unlockFile(fd) {
 // engine-dependent setup
 var h$base_readStdin, h$base_writeStderr, h$base_writeStdout;
 var h$base_readFile,  h$base_writeFile,   h$base_closeFile;
-if(typeof module !== 'undefined' && module.exports) { // node.js
-    var h$base_stdin_waiting = new h$Queue();
-    var h$base_stdin_chunk   = { buf: null
-                               , pos: 0
-                               , processing: false
-                               };
-    var h$base_stdin_eof     = false;
-
-    var h$base_process_stdin = function() {
-        var c = h$base_stdin_chunk;
-        var q = h$base_stdin_waiting;
-        if(!q.length() || c.processing) return;
-        c.processing = true;
-        if(!c.buf) { c.pos = 0; c.buf = process.stdin.read(); }
-        while(c.buf && q.length()) {
-            var x = q.dequeue();
-            var n = Math.min(c.buf.length - c.pos, x.n);
-            for(var i=0;i<n;i++) {
-                x.buf.u8[i+x.off] = c.buf[c.pos+i];
-            }
-            c.pos += n;
-            x.c(n);
-            if(c.pos >= c.buf.length) c.buf = null;
-            if(!c.buf && q.length()) { c.pos = 0; c.buf = process.stdin.read(); }
+#ifndef GHCJS_BROWSER
+var h$base_stdin_waiting = new h$Queue();
+var h$base_stdin_chunk   = { buf: null
+                           , pos: 0
+                           , processing: false
+                           };
+var h$base_stdin_eof     = false;
+var h$base_process_stdin = function() {
+    var c = h$base_stdin_chunk;
+    var q = h$base_stdin_waiting;
+    if(!q.length() || c.processing) return;
+    c.processing = true;
+    if(!c.buf) { c.pos = 0; c.buf = process.stdin.read(); }
+    while(c.buf && q.length()) {
+        var x = q.dequeue();
+        var blar = Math.min(3, q.length());
+        h$log(blar);
+        var n = Math.min(c.buf.length - c.pos, x.n);
+        for(var i=0;i<n;i++) {
+            x.buf.u8[i+x.off] = c.buf[c.pos+i];
         }
-        while(h$base_stdin_eof && q.length()) q.dequeue().c(0);
-        c.processing = false;
+        c.pos += n;
+        x.c(n);
+        if(c.pos >= c.buf.length) c.buf = null;
+        if(!c.buf && q.length()) { c.pos = 0; c.buf = process.stdin.read(); }
     }
+    while(h$base_stdin_eof && q.length()) q.dequeue().c(0);
+    c.processing = false;
+}
 
+if(h$isNode) {
     h$base_closeFile = function(fd, fdo, c) {
         h$fs.close(fd, function(err) {
             delete h$base_fds[fd];
@@ -484,7 +555,7 @@ if(typeof module !== 'undefined' && module.exports) { // node.js
     process.stdin.on('readable', h$base_process_stdin);
     process.stdin.on('end', function() { h$base_stdin_eof = true; h$base_process_stdin(); });
 
-} else if (typeof putstr !== 'undefined' && typeof printErr !== 'undefined') { // SpiderMonkey
+} else if (h$isJsShell) {
     h$base_readStdin = function(fd, fdo, buf, buf_offset, n, c) {
         c(0);
     }
@@ -497,6 +568,7 @@ if(typeof module !== 'undefined' && module.exports) { // node.js
         c(n);
     }
 } else { // browser / fallback
+#endif
     h$base_readStdin = function(fd, fdo, buf, buf_offset, n, c) {
         c(0);
     }
@@ -508,7 +580,9 @@ if(typeof module !== 'undefined' && module.exports) { // node.js
         console.log(h$decodeUtf8(buf, n, buf_offset));
         c(n);
     }
+#ifndef GHCJS_BROWSER
 }
+#endif
 
 var h$base_stdin_fd  = { read:  h$base_readStdin };
 var h$base_stdout_fd = { write: h$base_writeStdout };
@@ -518,9 +592,11 @@ var h$base_fdN = -1; // negative file descriptors are 'virtual'
 var h$base_fds = [h$base_stdin_fd, h$base_stdout_fd, h$base_stderr_fd];
 
 function h$shutdownHaskellAndExit(code, fast) {
-    if(typeof process !== 'undefined' && process.exit) {
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
         process.exit(code);
-    } else if(typeof quit !== 'undefined') {
+    } else if(h$isJsShell) {
         quit(code);
     }
+#endif
 }

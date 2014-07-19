@@ -10,10 +10,7 @@ function h$logProcess() { h$log.apply(h$log,arguments); }
 #define TRACE_PROCESS(args...)
 #endif
 
-if(typeof module !== 'undefined' && module.exports) {
-    var h$child = require('child_process');
-}
-
+#ifndef GHCJS_BROWSER
 // one-dir pipe
 function h$process_pipeFd(pipe, write) {
     var fdN = h$base_fdN--, fd = {};
@@ -96,144 +93,169 @@ function h$process_process_pipe(fd, pipe) {
     TRACE_PROCESS("done processing pipe, remaining queue: " + q.length());
     c.processing = false;
 }
-
+#endif /* GHCJS_BROWSER */
 function h$process_runInteractiveProcess( cmd, args, workingDir, env
                                         , stdin_fd, stdout_fd, stderr_fd
                                         , closeHandles, createGroup, delegateCtlC) {
-  TRACE_PROCESS("runInteractiveProcess");
-  TRACE_PROCESS("cmd: " + cmd + " args: " + args.join(' '));
-  TRACE_PROCESS("workingDir: " + workingDir + " env: " + env);
-  TRACE_PROCESS("stdin: " + stdin_fd + " stdout: " + stdout_fd + " stderr: " + stderr_fd);
+    TRACE_PROCESS("runInteractiveProcess");
+    TRACE_PROCESS("cmd: " + cmd + " args: " + args.join(' '));
+    TRACE_PROCESS("workingDir: " + workingDir + " env: " + env);
+    TRACE_PROCESS("stdin: " + stdin_fd + " stdout: " + stdout_fd + " stderr: " + stderr_fd);
 
-  var stdin_p, stdout_p, stderr_p;
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var stdin_p, stdout_p, stderr_p;
 
-  if(stdin_fd === -1) {
-    stdin_p = 'pipe';
-  } else if(stdin_fd === 0) {
-    stdin_p = process.stdin;
-  } else {
-    throw "runInteractiveProcess: custom stdin unsupported";
-  }
+        if(stdin_fd === -1) {
+            stdin_p = 'pipe';
+        } else if(stdin_fd === 0) {
+            stdin_p = process.stdin;
+        } else {
+            throw "runInteractiveProcess: custom stdin unsupported";
+        }
 
-  if(stdout_fd === -1) {
-    stdout_p = 'pipe';
-  } else if(stdout_fd === 1) {
-    stdout_p = process.stdout;
-  } else {
-    throw "runInteractiveProcess: custom stdout unsupported";
-  }
+        if(stdout_fd === -1) {
+            stdout_p = 'pipe';
+        } else if(stdout_fd === 1) {
+            stdout_p = process.stdout;
+        } else {
+            throw "runInteractiveProcess: custom stdout unsupported";
+        }
 
-  if(stderr_fd === -1) {
-    stderr_p = 'pipe'
-  } else if(stderr_fd === 2) {
-    stderr_p = process.stderr;
-  } else {
-    throw "runInteractiveProcess: custom stderr unsupported";
-  }
+        if(stderr_fd === -1) {
+            stderr_p = 'pipe'
+        } else if(stderr_fd === 2) {
+            stderr_p = process.stderr;
+        } else {
+            throw "runInteractiveProcess: custom stderr unsupported";
+        }
 
-  var options = { detached: createGroup
-                , stdio: [stdin_p, stdout_p, stderr_p]
-                };
-  if(workingDir !== null) options.cwd = workingDir;
-  if(env !== null) {
-    var envObj = {};
-    for(var i=0;i<env.length;i+=2) envObj[env[i]] = env[i+1];
-    if(process.env.GHCJS_BOOTING) envObj.GHCJS_BOOTING=1;
-    if(process.env.GHCJS_BOOTING1) envObj.GHCJS_BOOTING1=1;
-    TRACE_PROCESS("environment: " + h$collectProps(envObj));
-    options.env = envObj;
-  }
+        var options = { detached: createGroup
+                        , stdio: [stdin_p, stdout_p, stderr_p]
+                      };
+        if(workingDir !== null) options.cwd = workingDir;
+        if(env !== null) {
+            var envObj = {};
+            for(var i=0;i<env.length;i+=2) envObj[env[i]] = env[i+1];
+            if(process.env.GHCJS_BOOTING) envObj.GHCJS_BOOTING=1;
+            if(process.env.GHCJS_BOOTING1) envObj.GHCJS_BOOTING1=1;
+            TRACE_PROCESS("environment: " + h$collectProps(envObj));
+            options.env = envObj;
+        }
 
-  var procObj;
-  var child = h$child.spawn(cmd, args, options);
-  child.on('exit', function(code, sig) {
-    TRACE_PROCESS("process finished: " + code + " " + sig);
-    procObj.exit = code;
-    for(var i=0;i<procObj.waiters.length;i++) {
-      procObj.waiters[i](code);
-    }
-  });
+        var procObj;
+        var child = h$child.spawn(cmd, args, options);
+        child.on('exit', function(code, sig) {
+            TRACE_PROCESS("process finished: " + code + " " + sig);
+            procObj.exit = code;
+            for(var i=0;i<procObj.waiters.length;i++) {
+                procObj.waiters[i](code);
+            }
+        });
 
-  // fixme this leaks
-  procObj = { pid: h$nProc
-            , fds: [ stdin_fd  === -1 ? h$process_pipeFd(child.stdio[0], true)  : 0
-                   , stdout_fd === -1 ? h$process_pipeFd(child.stdio[1], false) : 1
-                   , stderr_fd === -1 ? h$process_pipeFd(child.stdio[2], false) : 2
-                   ]
-            , exit: null
-            , waiters : []
-            , child: child
-            };
+        // fixme this leaks
+        procObj = { pid: h$nProc
+                    , fds: [ stdin_fd  === -1 ? h$process_pipeFd(child.stdio[0], true)  : 0
+                             , stdout_fd === -1 ? h$process_pipeFd(child.stdio[1], false) : 1
+                             , stderr_fd === -1 ? h$process_pipeFd(child.stdio[2], false) : 2
+                           ]
+                    , exit: null
+                    , waiters : []
+                    , child: child
+                  };
+        h$procs[h$nProc++] = procObj;
 
-  h$procs[h$nProc++] = procObj;
-
-  return procObj;
+        return procObj;
+    } else
+#endif
+        // fixme we need an IOError not a JSException
+        throw "$process_runInteractiveProcess: unsupported";
 }
 
+#ifndef GHCJS_BROWSER
 var h$nProc = 1;
 var h$procs = [];
-
+#endif
 
 // return the thing to run as an array, first element the process, rest the args
 // null if no interpreter can be found
 function h$process_commandToProcess(cmd, args) {
-  TRACE_PROCESS("commandToProcess: " + cmd + " " + args);
-  if(process.platform === 'win32') {
-    if(args === null) { // shellcmd
-      var com = h$process.env.COMSPEC;
-      if(!com) {
-        com = h$directory_findExecutables("cmd.exe");
-        if(com.length) {
-          com = cmd[0];
-        } else {
-          com = h$directory_findExecutables("command.com");
-          if(!com.length) return null;
-          com = com[0];
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        TRACE_PROCESS("commandToProcess: " + cmd + " " + args);
+        if(process.platform === 'win32') {
+            if(args === null) { // shellcmd
+                var com = h$process.env.COMSPEC;
+                if(!com) {
+                    com = h$directory_findExecutables("cmd.exe");
+                    if(com.length) {
+                        com = cmd[0];
+                    } else {
+                        com = h$directory_findExecutables("command.com");
+                        if(!com.length) return null;
+                        com = com[0];
+                    }
+                }
+                // fixme need to escape stuff
+                return [com, com + " /c " + args];
+            } else {
+                // fixme need to escape stuff
+                var r = [cmd];
+                r.push(args);
+                return r;
+            }
+        } else {  // non-windows
+            if(args === null) { // shellcmd
+                return ["/bin/sh", "-c", cmd];
+            } else {
+                var r = [cmd];
+                r.push(args);
+                return r;
+            }
         }
-      }
-      // fixme need to escape stuff
-      return [com, com + " /c " + args];
-    } else {
-       // fixme need to escape stuff
-       var r = [cmd];
-       r.push(args);
-       return r;
-    }
-  } else {  // non-windows
-    if(args === null) { // shellcmd
-      return ["/bin/sh", "-c", cmd];
-    } else {
-       var r = [cmd];
-       r.push(args);
-       return r;
-    }
-  }
+    } else
+#endif
+        // fixme we need an IOError not a JSException
+        throw "process_commandToProcess: unsupported";
 }
 
 function h$process_terminateProcess(pid) {
-  TRACE_PROCESS("terminateProcess: " + pid);
-  var p = h$procs[pid];
-  p.child.kill();
-  return 0; // fixme error status?
+    TRACE_PROCESS("terminateProcess: " + pid);
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var p = h$procs[pid];
+        p.child.kill();
+    }
+#endif
+    return 0; // fixme error status?
 }
 
 function h$process_getProcessExitCode(pid, code_d, code_o) {
-  TRACE_PROCESS("getProcessExitCode: " + pid);
-  var p = h$procs[pid];
-  if(p.exit === null) return 0;
-  code_d.i3[code_o] = p.exit;
-  return 1;
+    TRACE_PROCESS("getProcessExitCode: " + pid);
+#ifdef GHCJS_BROWSER
+    return 0;
+#else
+    var p = h$procs[pid];
+    if(p.exit === null) return 0;
+    code_d.i3[code_o] = p.exit;
+    return 1;
+#endif
 }
 
 function h$process_waitForProcess(pid, code_d, code_o, c) {
-  TRACE_PROCESS("waitForProcess: " + pid);
-  var p = h$procs[pid];
-  if(p.exit !== null) {
-    h$process_getProcessExitCode(pid, code_d, code_o);
-    c(0);
-  } else {
-    p.waiters.push(c);
-  }
+    TRACE_PROCESS("waitForProcess: " + pid);
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var p = h$procs[pid];
+        if(p.exit !== null) {
+            h$process_getProcessExitCode(pid, code_d, code_o);
+            c(0);
+        } else {
+            p.waiters.push(c);
+        }
+    } else
+#endif
+        h$unsupported(-1, c);
 }
 
-// #endif // GHCJS_NODE
+

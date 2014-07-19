@@ -1,16 +1,10 @@
-// top-level debug initialization needs this. declare it in case we aren't in the same file as out.js
-function h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e() { return h$stack[h$sp]; };
-
-/* node.js support for GHCJS */
-if(typeof require !== 'undefined') {
-  var h$nodeFs = require('fs');
-}
-
-// node.js global objects don't work as Closure Library expects
+/*
+  set up the google closure library. this is a rather hacky setup
+  to make it work with our shims without requiring compilation
+  or pulling in the google closure library module loader
+ */
 var goog = {};
-goog.global = this;
-goog.global.goog = goog;
-goog.global.CLOSURE_NO_DEPS = true;
+goog.global = h$getGlobal(this);
 goog.provide = function() { };
 goog.require = function() { };
 goog.isDef = function(val) { return val !== undefined; };
@@ -89,16 +83,4 @@ goog.base = function(me, opt_methodName, var_args) {
 goog.math = {};
 goog.crypt = {};
 
-// SpiderMonkey support
 
-// we don't have console, but we do have print
-if(this['print'] !== undefined && this['console'] === undefined) {
-  this['console'] = { log: this['print'] };
-}
-
-// IE 8 doesn't support Date.now(), shim it
-if (!Date.now) {
-  Date.now = function now() {
-    return +(new Date);
-  };
-}

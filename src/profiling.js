@@ -22,6 +22,7 @@ var h$ccList  = [];
 var h$ccsList = [];
 
 var h$CCUnique = 0;
+/** @constructor */
 function h$CC(label, module, srcloc, isCaf) {
   //TRACE("h$CC(", label, ", ", module, ", ", srcloc, ", ", isCaf, ")");
   this.label     = label;
@@ -36,6 +37,7 @@ function h$CC(label, module, srcloc, isCaf) {
 
 
 var h$CCSUnique = 0;
+/** @constructor */
 function h$CCS(parent, cc) {
   //TRACE("h$mkCCS(", parent, cc, ")");
   if (parent !== null && parent.consed.has(cc)) {

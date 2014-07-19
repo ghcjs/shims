@@ -930,6 +930,7 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
 }
 
 var h$stableNameN = 1;
+/** @constructor */
 function h$StableName(m) {
     this.m = m;
     this.s = null;

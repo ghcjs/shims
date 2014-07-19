@@ -63,6 +63,7 @@ function h$clearWeaks() {
 }
 
 var h$weakFinalizerN = 0;
+/** @constructor */
 function h$Weak(key, val, finalizer) {
     if(typeof key !== 'object') {
         // can't attach a StableName to objects with unboxed storage

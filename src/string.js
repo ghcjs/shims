@@ -80,25 +80,36 @@ function h$u_iswspace(a) {
 var h$lower = null;
 function h$u_iswlower(a) {
     if(h$lower == null) { h$lower = h$decodeRLE(h$lowerRanges); }
-    return h$lower[a]|0;
+    if(a < 0x30000) return h$lower[a]|0;
+    if(a < 0xE0000) return 0;
+    return h$lower[a-0xB0000]|0;
 }
 
 var h$upper = null;
 function h$u_iswupper(a) {
     if(h$upper == null) { h$upper = h$decodeRLE(h$upperRanges); }
-    return h$upper[a]|0;
+    if(a < 0x30000) return h$upper[a]|0;
+    if(a < 0xE0000) return 0;
+    return h$upper[a-0xB0000]|0;
 }
 
 
-var h$cntrl = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159];
+var h$cntrlChars = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159];
+var h$cntrl = null;
 function h$u_iswcntrl(a) {
-  return (h$cntrl.indexOf(a) !== -1) ? 1 : 0;
+    if(h$cntrl === null) {
+        h$cntrl = [];
+        for(var i=0;i<=159;i++) h$cntrl[i] = (h$cntrlChars.indexOf(i) !== -1) ? 1 : 0;
+    }
+    return a <= 159 ? h$cntrl[i] : 0;
 }
 
 var h$print = null;
 function h$u_iswprint(a) {
     if(h$print == null) { h$print = h$decodeRLE(h$printRanges); }
-    return h$print[a]|0;
+    if(a < 0x30000) return h$print[a]|0;
+    if(a < 0xE0000) return 0;
+    return h$print[a-0xB0000]|0;
 }
 
 // decode a packed string (Compactor encoding method) to an array of numbers
@@ -141,7 +152,7 @@ function h$decodeRLE(str) {
                 r[j++] = x;
                 x = 1-x;
             }
-            if(x) while(k--) r[j++] = x; else j+=k;
+            while(k--) r[j++] = x;
             x = 1-x;
         }
     }
@@ -175,7 +186,7 @@ function h$decodeMapping(str, f) {
                 v = a[i++];
             }
             v = f(v);
-            if(v) while(k--) r[j++] = v; else j+=k;
+            while(k--) r[j++] = v;
         }
     }
     return r;
@@ -186,7 +197,8 @@ function h$u_gencat(a) {
     if(h$unicodeCat == null) h$unicodeCat = h$decodeMapping(h$catMapping, function(x) { return x; });
     // private use
     if(a >= 0xE000 && a <= 0xF8FF || a >= 0xF0000 & a <= 0xFFFFD || a >= 0x100000 && a <= 0x10FFFD) return 28;
-    var c = h$unicodeCat[a]|0;
+    var c = a < 0x30000 ? (h$unicodeCat[a]|0) :
+        (a < 0xE0000 ? 0 : (h$unicodeCat[a-0xB0000]|0));
     return c?c-1:29;
 }
 

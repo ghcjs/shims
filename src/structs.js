@@ -13,6 +13,7 @@
    behaviour for deleting elements is unpredictable and unsafe
 */
 
+/** @constructor */
 function h$Set(s) {
     this._vals = [];
     this._keys = [];
@@ -68,6 +69,7 @@ h$Set.prototype.values = function() {
     return this._vals;
 }
 
+/** @constructor */
 function h$SetIter(s) {
     this._n = 0;
     this._s = s;
@@ -109,6 +111,7 @@ h$SetIter.prototype.remove = function() {
   values may be anything (but note that the values array might have additional nulls)
 */
 
+/** @constructor */
 function h$Map() {
     this._pairsKeys   = [];
     this._pairsValues = [];
@@ -189,6 +192,7 @@ h$Map.prototype.values = function() {
     return this._pairsValues;
 }
 
+/** @constructor */
 function h$MapIter(m) {
     this._n = 0;
     this._m = m;
@@ -219,6 +223,7 @@ h$MapIter.prototype.peekVal = function() {
 #define GHCJS_QUEUE_BLOCK_SIZE 1000
 #endif
 
+/** @constructor */
 function h$Queue() {
     var b = { b: [], n: null };
     this._blocks = 1;
@@ -300,6 +305,7 @@ h$Queue.prototype.iter = function() {
    - values can be removed, need to have the ._key property
 */
 
+/** @constructor */
 function h$HeapSet() {
     this._keys  = [];
     this._prios = [];
