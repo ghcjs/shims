@@ -29,6 +29,7 @@ if(typeof process !== undefined && typeof require !== 'undefined' && typeof modu
     var h$path        = path;
     var h$os          = os;
     var h$child       = child_process;
+    var h$process     = process;
 } else if(typeof snarf !== undefined && typeof evalInFrame !== 'undefined' && typeof enableStackWalkingAssertion !== 'undefined') {
     h$isJsShell = true;
     this.console = { log: this.print };

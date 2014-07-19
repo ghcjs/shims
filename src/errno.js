@@ -30,7 +30,7 @@ function h$strerror(err) {
 #endif
 }
 
-#ifdef GHCJS_BROWSER
+#ifndef GHCJS_BROWSER
 function h$setErrno(e) {
   TRACE_ERRNO("setErrno: " + e);
   var es = e.toString();
