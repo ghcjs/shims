@@ -113,13 +113,33 @@ function h$getpid() {
 }
 
 function h$__hscore_environ() {
-  h$ret1 = 0;
-  return null;
+    TRACE_ENV("hscore_environ");
+    h$ret1 = 0;
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var env = [], i;
+        for(i in process.env) env.push(i + '=' + process.env[i]);
+        if(env.length === 0) return null;
+        var p = h$newByteArray(4*env.length+1);
+        p.arr = [];
+        for(i=0;i<env.length;i++) p.arr[4*i] = [h$encodeUtf8(env[i]), 0];
+        p.arr[4*env.length] = [null, 0];
+        return p;
+    }
+#endif
+    return null;
 }
 
-function h$getenv() {
+function h$getenv(name, name_off) {
     TRACE_ENV("getenv");
     h$ret1 = 0;
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var n = h$decodeUtf8z(name, name_off);
+        if(typeof process.env[n] !== 'undefined')
+            return h$encodeUtf8(process.env[n]);
+    }
+#endif
     return null;
 }
 

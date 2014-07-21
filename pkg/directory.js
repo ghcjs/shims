@@ -1,7 +1,3 @@
-//#define GHCJS_NODE 1
-//#ifdef GHCJS_NODE
-// only works on node.js
-
 #include "HsBaseConfig.h"
 
 #ifdef GHCJS_TRACE_DIRECTORY
@@ -31,7 +27,7 @@ function h$directory_getPermissions(file, c) {
                 var x = (m&1) || (m&8)  || (m&64);
                 var exe    = x; // fixme?
                 var search = x; // fixme?
-                if(h$process.platform == 'win32') exe = true;
+                if(process.platform == 'win32') exe = true;
                 c((r?1:0)|(w?2:0)|(exe?4:0)|(search?8:0));
             }
         });
@@ -160,9 +156,9 @@ function h$directory_findExecutables(name, c) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         var result = [];
-        var pathSep = h$process.platform === 'win32'?';':':';
-        var parts   = h$process.env.PATH.split(pathSep);
-        var exts    = []; // h$process.platform === 'win32'?h$process.env.PATHEXT.split(pathSep):[];
+        var pathSep = process.platform === 'win32'?';':':';
+        var parts   = process.env['PATH'].split(pathSep);
+        var exts    = []; // process.platform === 'win32'?process.env['PATHEXT'].split(pathSep):[];
         exts.push(null);
         files = [];
         result = [];
@@ -177,7 +173,7 @@ function h$directory_findExecutables(name, c) {
             } else {
                 TRACE_DIRECTORY("trying: " + files[n]);
                 h$fs.stat(files[n], function(err, fs) {
-                    if(!err && ((fs.mode & 73) || h$process.platform === 'win32')) result.push(files[n]);
+                    if(!err && ((fs.mode & 73) || process.platform === 'win32')) result.push(files[n]);
                     tryFile(n+1);
                 });
             }
@@ -205,7 +201,7 @@ function h$directory_getCurrentDirectory() {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         return h$handleErrno(null, function() {
-            return h$process.cwd();
+            return process.cwd();
         });
     } else
 #endif
@@ -217,7 +213,7 @@ function h$directory_setCurrentDirectory(dir) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         return h$handleErrnoR(-1, 0, function() {
-            return h$process.chdir(dir);
+            return process.chdir(dir);
         });
     } else
 #endif
@@ -228,9 +224,9 @@ function h$directory_getHomeDirectory(dir) {
     TRACE_DIRECTORY("getHomeDirectory: " + dir);
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
-        return h$process.env.HOME ||
-            h$process.env.HOMEPATH ||
-            h$process.env.USERPROFILE;
+        return process.env['HOME'] ||
+            process.env['HOMEPATH'] ||
+            process.env['USERPROFILE'];
     } else
 #endif
         return "/"
@@ -240,10 +236,10 @@ function h$directory_getAppUserDataDirectory(appName) {
     TRACE_DIRECTORY("getAppUserDataDirectory: " + appName);
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
-        if(process.env.APPDATA)
-            return h$process.env.APPDATA + h$path.sep + appName;
-        if(process.env.HOME)
-            return h$process.env.HOME + h$path.sep + "." + appName;
+        if(process.env['APPDATA'])
+            return process.env['APPDATA'] + h$path.sep + appName;
+        if(process.env['HOME'])
+            return process.env['HOME'] + h$path.sep + "." + appName;
         TRACE_DIRECTORY("getAppUserDataDirectory fallback");
         return "/";
     } else

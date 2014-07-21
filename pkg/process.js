@@ -137,8 +137,8 @@ function h$process_runInteractiveProcess( cmd, args, workingDir, env
         if(env !== null) {
             var envObj = {};
             for(var i=0;i<env.length;i+=2) envObj[env[i]] = env[i+1];
-            if(process.env.GHCJS_BOOTING) envObj.GHCJS_BOOTING=1;
-            if(process.env.GHCJS_BOOTING1) envObj.GHCJS_BOOTING1=1;
+            if(process.env['GHCJS_BOOTING']) envObj['GHCJS_BOOTING']=1;
+            if(process.env['GHCJS_BOOTING1']) envObj['GHCJS_BOOTING1']=1;
             TRACE_PROCESS("environment: " + h$collectProps(envObj));
             options.env = envObj;
         }
@@ -185,7 +185,7 @@ function h$process_commandToProcess(cmd, args) {
         TRACE_PROCESS("commandToProcess: " + cmd + " " + args);
         if(process.platform === 'win32') {
             if(args === null) { // shellcmd
-                var com = h$process.env.COMSPEC;
+                var com = process.env['COMSPEC'];
                 if(!com) {
                     com = h$directory_findExecutables("cmd.exe");
                     if(com.length) {
