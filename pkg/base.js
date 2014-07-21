@@ -151,30 +151,27 @@ function h$base_lstat(file, file_off, stat, stat_off, c) {
 function h$base_open(file, file_off, how, mode, c) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
-        var flagStr, off;
+        var flags, off;
         var fp   = h$decodeUtf8z(file, file_off);
-        TRACE_IO("base_open: " + fp);
         var acc  = how & h$base_o_accmode;
-        var excl = (how & h$base_o_excl) ? 'x' : '';
+        // passing a number lets node.js use it directly as the flags (undocumented)
         if(acc === h$base_o_rdonly) {
-            read    = true;
-            flagStr = 'r' + excl;
-            off     = 0;
+            read  = true;
+            flags = h$processConstants['O_RDONLY'];
         } else if(acc === h$base_o_wronly) {
-            write   = true;
-            flagStr = (how & h$base_o_trunc ? 'w' : 'a') + excl + '+';
-            off     = -1;
+            write = true;
+            flags = h$processConstants['O_WRONLY'];
         } else { // r+w
-            off   = 0; // -1; // is this ok?
             read  = true;
             write = true;
-            if(how & h$base_o_creat) {
-                flagStr = ((how & h$base_o_trunc) ? 'w' : 'a') + excl + '+';
-            } else {
-                flagStr = 'r+';
-            }
+            flags = h$processConstants['O_RDWR'];
         }
-        h$fs.open(fp, flagStr, mode, function(err, fd) {
+        off = (how & h$base_o_append) ? -1 : 0;
+        flags = flags | ((how & h$base_o_trunc)  ? h$processConstants['O_TRUNC']  : 0)
+                      | ((how & h$base_o_creat)  ? h$processConstants['O_CREAT']  : 0)
+                      | ((how & h$base_o_excl)   ? h$processConstants['O_EXCL']   : 0)
+                      | ((how & h$base_o_append) ? h$processConstants['O_APPEND'] : 0);
+        h$fs.open(fp, flags, mode, function(err, fd) {
             if(err) {
                 h$handleErrnoC(err, -1, 0, c);
             } else {
