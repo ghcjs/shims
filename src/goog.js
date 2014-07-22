@@ -79,6 +79,9 @@ goog.base = function(me, opt_methodName, var_args) {
   }
 };
 
+goog.isString = function(v) {
+    return typeof v === 'string';
+}
 
 goog.math = {};
 goog.crypt = {};

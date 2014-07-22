@@ -101,7 +101,7 @@ function h$u_iswcntrl(a) {
         h$cntrl = [];
         for(var i=0;i<=159;i++) h$cntrl[i] = (h$cntrlChars.indexOf(i) !== -1) ? 1 : 0;
     }
-    return a <= 159 ? h$cntrl[i] : 0;
+    return a <= 159 ? h$cntrl[a] : 0;
 }
 
 var h$print = null;
