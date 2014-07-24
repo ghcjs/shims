@@ -1,46 +1,54 @@
-language: haskell
+env:
+    - GHCVER=7.8.3
 
 before_install:
-    - export START=`pwd`
+    - export GHCJS_BOOTING=1
+    - export GHCJS_BOOTING_STAGE1=1
+    - export SHIMS_REPO=`pwd`
+    - sudo add-apt-repository -y ppa:hvr/ghc
+    - sudo add-apt-repository -y ppa:chris-lea/node.js
     - sudo apt-get update -qq
-    - sudo apt-get --no-install-recommends install darcs libgmp3-dev libgmp3c2 freeglut3 freeglut3-dev
     - sudo apt-get build-dep ghc
-    - sudo apt-get clean
-    - cd
-    - wget --prefer-family=IPv4 http://hdiff.luite.com/ghcjs/ghcjs-test.tar.xz
-    - tar -xJf $HOME/ghcjs-test.tar.xz --strip-components=1
-    - rm ghcjs-test.tar.xz
-    - export PATH=$HOME/ghc/bin:$HOME/.cabal/bin:$HOME/jsshell:$HOME/node/bin:$PATH
-    - cd $HOME/.cabal/bin
-    - hash -r
-    - cd $START
+    - sudo apt-get install nodejs cabal-install-1.18 ghc-$GHCVER
+    - export PATH=$HOME/.cabal/bin:/opt/ghc/$GHCVER/bin:$PATH
 
 install:
-    - pwd
-    - export REPOSITORY_DIR=`pwd`
-    - cd
-    - git clone https://github.com/ghcjs/ghcjs
+    - cabal-1.18 update
+    - cabal-1.18 install alex happy
+    - mkdir _ghcjs_deps
+    - cd _ghcjs_deps
+    - git clone https://github.com/ghcjs/cabal.git
+    - cd cabal
+    - git checkout ghcjs
+    - cabal-1.18 install ./Cabal ./cabal-install
+    - cabal --version
+    - cd ..
+    - git clone https://github.com/ghcjs/ghcjs-prim.git
+    - cd ghcjs-prim
+    - git checkout $TRAVIS_BRANCH
+    - cd ..
+    - git clone https://github.com/ghcjs/haddock-internal.git
+    - cd haddock-internal
+    - git checkout $TRAVIS_BRANCH
+    - cd ..
+    - cabal install ./ghcjs-prim ./haddock-internal
+    - git clone https://github.com/ghcjs/ghcjs.git
     - cd ghcjs
-    - cabal install --enable-executable-dynamic --enable-tests
-    - ghcjs-boot --reboot
-    - cabal install --ghcjs stm random syb transformers text parallel QuickCheck old-time vector
-    - cd $HOME/.ghcjs/x86*
-    - ln -s $REPOSITORY_DIR shims
+    - git checkout $TRAVIS_BRANCH
+    - cd ..
+    - cabal install ./ghcjs --enable-tests --enable-benchmarks
+    - cd ..
+    - ghcjs --version
+    - ghcjs-boot --version
+    - ghcjs-boot --dev --build-stage1-unbooted --with-node nodejs -j2 --no-prof --no-haddock --shims-dev-repo $SHIMS_REPO --shims-dev-branch $TRAVIS_COMMIT
+    - cabal install -j2 --ghcjs random QuickCheck
     - ghcjs-pkg list
-    - cd
-    - cd ghcjs
 
 script:
-    - ./dist/build/test/test -j 2 -t ghc -t conc -t integer -t ffi
-
-env:
-    - GHCJS_TEST_ONLYOPT=1
-    - GHCJS_TEST_ONLYUNOPT=1
+    - ./dist/build/test/test -j 2 -t ghc -t conc -t integer -t ffi -t pkg --with-node nodejs
 
 notifications:
   irc:
     channels: "irc.freenode.net#ghcjs"
     skip_join: true
   email: true
-
-
