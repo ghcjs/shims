@@ -584,14 +584,25 @@ function h$mainLoop() {
         c = h$scheduler(c);
         var scheduled = Date.now();
         if(c === null) { // no running threads
-            h$running = false;
-            if(typeof setTimeout !== 'undefined') {
+#ifndef GHCJS_BROWSER
+            if(h$isNode) {
+                h$running = false;
                 h$next = null;
-                setTimeout(h$mainLoop, GHCJS_IDLE_YIELD);
+                setImmediate(h$mainLoop);
                 return;
             } else {
-                while(c === null) { c = h$scheduler(c); }
+#endif
+                if(typeof setTimeout !== 'undefined') {
+                    h$running = false;
+                    h$next = null;
+                    setTimeout(h$mainLoop, GHCJS_IDLE_YIELD);
+                    return;
+                } else {
+                    while(c === null) { c = h$scheduler(c); }
+                }
+#ifndef GHCJS_BROWSER
             }
+#endif
         }
         // yield to js after GHCJS_BUSY_YIELD
         if(Date.now() - start > GHCJS_BUSY_YIELD) {
