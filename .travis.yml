@@ -41,7 +41,7 @@ install:
     - ghcjs --version
     - ghcjs-boot --version
     - ghcjs-boot --dev --build-stage1-unbooted --with-node nodejs -j2 --no-prof --no-haddock --shims-dev-repo $SHIMS_REPO --shims-dev-branch $TRAVIS_COMMIT
-    - cabal install -j2 --ghcjs random QuickCheck
+    - cabal install -j2 --ghcjs random QuickCheck syb stm
     - ghcjs-pkg list
     - cd _ghcjs_deps/ghcjs
 
