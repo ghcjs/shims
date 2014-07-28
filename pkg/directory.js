@@ -212,7 +212,7 @@ function h$directory_setCurrentDirectory(dir) {
     TRACE_DIRECTORY("setCurrentDirectory: " + dir);
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
-        return h$handleErrnoR(-1, 0, function() {
+        return h$handleErrnoS(-1, 0, function() {
             return process.chdir(dir);
         });
     } else

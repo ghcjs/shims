@@ -474,8 +474,6 @@ var h$base_process_stdin = function() {
     if(!c.buf) { c.pos = 0; c.buf = process.stdin.read(); }
     while(c.buf && q.length()) {
         var x = q.dequeue();
-        var blar = Math.min(3, q.length());
-        h$log(blar);
         var n = Math.min(c.buf.length - c.pos, x.n);
         for(var i=0;i<n;i++) {
             x.buf.u8[i+x.off] = c.buf[c.pos+i];
