@@ -15,11 +15,6 @@
 #define GHCJS_SCHED_CHECK 1000
 #endif
 
-// timeout (ms) when there are no running threads
-#ifndef GHCJS_IDLE_YIELD
-#define GHCJS_IDLE_YIELD 20
-#endif
-
 // yield to js after running haskell for GHCJS_BUSY_YIELD ms
 #ifndef GHCJS_BUSY_YIELD
 #define GHCJS_BUSY_YIELD 500
@@ -289,26 +284,21 @@ function h$pendingAsync() {
 // this thread, restore frame is in thread if alreadySuspended
 
 function h$postAsync(alreadySuspended,next) {
-  var t = h$currentThread;
-  if(h$pendingAsync()) {
-    TRACE_SCHEDULER("posting async to " + h$threadString(t) + " mask status: " + t.mask);
+    var t = h$currentThread;
     var v = t.excep.shift();
+    TRACE_SCHEDULER("posting async to " + h$threadString(t) + " mask status: " + t.mask + " remaining exceptions: " + t.excep.length);
     var tposter = v[0]; // posting thread, blocked
     var ex      = v[1]; // the exception
     if(v !== null && tposter !== null) {
-      h$wakeupThread(tposter);
+        h$wakeupThread(tposter);
     }
     if(!alreadySuspended) {
-      h$suspendCurrentThread(next);
+        h$suspendCurrentThread(next);
     }
     h$sp += 2;
     h$stack[h$sp-1]    = ex;
     h$stack[h$sp]      = h$raiseAsync_frame;
     t.sp = h$sp;
-    return true;
-  } else {
-    return false;
-  }
 }
 
 // wakeup thread, thread has already been removed
@@ -323,6 +313,7 @@ function h$wakeupThread(t) {
     t.interruptible = false;
     t.retryInterrupted = null;
     h$threads.enqueue(t);
+    h$startMainLoop();
 }
 
 // force wakeup, remove this thread from any
@@ -468,10 +459,6 @@ function h$scheduler(next) {
                 h$stack = h$currentThread.stack;
                 h$sp    = h$currentThread.sp
             }
-//      if(h$postAsync(next === h$reschedule, next)) {
-//        TRACE_SCHEDULER("sched: continuing: " + h$threadString(h$currentThread) + " (async posted)"); // fixme we can remove these, we handle async excep earlier
-//        return h$stack[h$sp];  // async exception posted, jump to the new stack top
-//      } else {
             TRACE_SCHEDULER("sched: continuing: " + h$threadString(h$currentThread));
             return (next===h$reschedule || next === null)?h$stack[h$sp]:next; // just continue
         } else {
@@ -499,7 +486,7 @@ function h$scheduler(next) {
                 TRACE_SCHEDULER("sched: no suspend needed, reschedule called from: " + h$threadString(h$currentThread));
                 h$currentThread.sp = h$sp;
             }
-            h$postAsync(true, next);
+            if(h$pendingAsync()) h$postAsync(true, next);
         } else {
             TRACE_SCHEDULER("sched: no suspend needed, no running thread");
         }
@@ -519,58 +506,60 @@ function h$scheduler(next) {
     }
 }
 
-// untility function: yield h$run to browser to do layout or
-// other JavaScript
-var h$yieldRun;
-// disable postMessage for now, messages sometimes do not arrive, killing our runtime
+function h$scheduleMainLoop() {
+    if(h$mainLoopImmediate) return;
+    h$clearScheduleMainLoop();
+    if(h$delayed.size() === 0) {
 #ifndef GHCJS_BROWSER
-if(false) { // typeof window !== 'undefined' && window.postMessage) {
-  // is this lower delay than setTimeout?
-  (function() {
-    var handler = function(ev) {
-      if(ev.data === "h$mainLoop") { h$mainLoop(); }
-    };
-    if(window.addEventListener) {
-      window.addEventListener("message", handler);
-    } else {
-      window.attachEvent("message", handler);
+        if(typeof setTimeout !== 'undefined')
+#endif
+            h$mainLoopTimeout = setTimeout(h$mainLoop, h$gcInterval);
+        return;
     }
-    h$yieldRun = function() { h$running = false; window.postMessage("h$mainLoop", "*"); }
-  })();
-} else if(h$isNode) {
-  h$yieldRun = function() {
-    TRACE_SCHEDULER("yieldrun process.nextTick");
-      h$running = false;
-      setImmediate(h$mainLoop); // fixme this is a huge slowdown sometimes but is necessary for callbacks to be run
-    // process.nextTick(h$mainLoop);
-  }
-  // h$yieldRun = null; // the above (and setTimeout) are extremely slow in node
-} else if(typeof setTimeout !== 'undefined') {
-#endif
-  h$yieldRun = function() {
-    TRACE_SCHEDULER("yieldrun setTimeout");
-    h$running = false;
-    setTimeout(h$mainLoop, 0);
-  }
+    var now = Date.now();
+    var delay = Math.min(Math.max(h$delayed.peekPrio()-now, 0), h$gcInterval);
 #ifndef GHCJS_BROWSER
-} else {
-  h$yieldRun = null; // SpiderMonkey shell has none of these
-}
+    if(typeof setTimeout !== 'undefined')
 #endif
+        h$mainLoopTimeout = setTimeout(h$mainLoop, delay);
+}
+
+function h$clearScheduleMainLoop() {
+    if(h$mainLoopTimeout) {
+        clearTimeout(h$mainLoopTimeout);
+        h$mainLoopTimeout = null;
+    }
+    if(h$mainLoopImmediate) {
+        clearImmediate(h$mainLoopImmediate);
+        h$mainLoopImmediate = null;
+    }
+}
 
 function h$startMainLoop() {
-  if(h$yieldRun) {
-    h$yieldRun();
-  } else {
-    h$mainLoop();
-  }
+    TRACE_SCHEDULER("start main loop: " + h$running);
+    if(h$running) return;
+#ifndef GHCJS_BROWSER
+    if(typeof setTimeout !== 'undefined') {
+#endif
+        if(!h$mainLoopImmediate) {
+            h$clearScheduleMainLoop();
+            h$mainLoopImmediate = setImmediate(h$mainLoop);
+        }
+#ifndef GHCJS_BROWSER
+    } else {
+        while(true) h$mainLoop();
+    }
+#endif
 }
 
+var h$mainLoopImmediate = null; // immediate id if main loop has been scheduled immediately
+var h$mainLoopTimeout = null;   // timeout id if main loop has been scheduled with a timeout
 var h$running = false;
 var h$next = null;
 function h$mainLoop() {
     if(h$running) return;
     h$running = true;
+    h$clearScheduleMainLoop();
     h$runInitStatic();
     h$currentThread = h$next;
     if(h$next !== null) {
@@ -584,37 +573,20 @@ function h$mainLoop() {
         c = h$scheduler(c);
         var scheduled = Date.now();
         if(c === null) { // no running threads
-#ifndef GHCJS_BROWSER
-            if(h$isNode) {
-                h$running = false;
-                h$next = null;
-                setImmediate(h$mainLoop);
-                return;
-            } else {
-#endif
-                if(typeof setTimeout !== 'undefined') {
-                    h$running = false;
-                    h$next = null;
-                    setTimeout(h$mainLoop, GHCJS_IDLE_YIELD);
-                    return;
-                } else {
-                    while(c === null) { c = h$scheduler(c); }
-                }
-#ifndef GHCJS_BROWSER
-            }
-#endif
+            h$next = null;
+            h$running = false;
+            h$scheduleMainLoop();
+            return;
         }
         // yield to js after GHCJS_BUSY_YIELD
         if(Date.now() - start > GHCJS_BUSY_YIELD) {
             TRACE_SCHEDULER("yielding to js");
-            if(h$yieldRun) {
-                if(c !== h$reschedule) {
-                    h$suspendCurrentThread(c);
-                }
-                h$next = h$currentThread;
-                h$currentThread = null;
-                return h$yieldRun();
-            }
+            if(c !== h$reschedule) h$suspendCurrentThread(c);
+            h$next = h$currentThread;
+            h$currentThread = null;
+            h$running = false;
+            h$mainLoopImmediate = setImmediate(h$mainLoop);
+            return;
         }
         // preemptively schedule threads after 10*GHCJS_SCHED_CHECK calls
         // but not before the end of the scheduling quantum
