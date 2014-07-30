@@ -232,23 +232,29 @@ function h$markThread(t) {
     h$resetThread(t);
 }
 
+#define ADDW(x) work[w++] = x;
+#define ADDW2(x,y) { work[w++] = x; work[w++] = y; }
+#define ADDW3(x,y,z) { work[w++] = x; work[w++] = y; work[w++] = z; }
+#define ADDW4(x,y,z,v) { work[w++] = x; work[w++] = y; work[w++] = z; work[w++] = v; }
+
 // big object, not handled by 0..7 cases
 // keep out of h$follow to prevent deopt
-function h$followObjGen(c, work) {
+function h$followObjGen(c, work, w) {
    work.push(c.d1);
    var d = c.d2;
    for(var x in d) {
 //              if(d.hasOwnProperty(x)) {
-     work.push(d[x]);
+     ADDW(d[x]);
 //              }
    }
+    return w;
 }
 
 // follow all references in the object obj and mark them with the current mark
 // if sp is a number, obj is assumed to be an array for which indices [0..sp] need
 // to be followed (used for thread stacks)
 function h$follow(obj, sp) {
-    var i, ii, iter, c, work;
+    var i, ii, iter, c, work, w;
 #ifdef GHCJS_TRACE_GC
     var start = Date.now();
 #endif
@@ -256,12 +262,14 @@ function h$follow(obj, sp) {
     var work, mark = h$gcMark;
     if(typeof sp === 'number') {
         work = obj.slice(0, sp+1);
+        w = sp + 1;
     } else {
         work = [obj];
+        w = 1;
     }
-    while(work.length > 0) {
-        TRACE_GC("work length: " + work.length);
-        c = work.pop();
+    while(w > 0) {
+        TRACE_GC("work length: " + work.length + " w: " + w);
+        c = work[--w];
         TRACE_GC("[" + work.length + "] mark step: " + typeof c);
 #ifdef GHCJS_TRACE_GC
         if(typeof c === 'object') {
@@ -286,30 +294,30 @@ function h$follow(obj, sp) {
                 var d = c.d2;
                 switch(cf.size) {
                 case 0: break;
-                case 1: work.push(c.d1); break;
-                case 2: work.push(c.d1, d); break;
-                case 3: var d3=c.d2; work.push(c.d1, d3.d1, d3.d2); break;
-                case 4: var d4=c.d2; work.push(c.d1, d4.d1, d4.d2, d4.d3); break;
-                case 5: var d5=c.d2; work.push(c.d1, d5.d1, d5.d2, d5.d3, d5.d4); break;
-                case 6: var d6=c.d2; work.push(c.d1, d6.d1, d6.d2, d6.d3, d6.d4, d6.d5); break;
-                case 7: var d7=c.d2; work.push(c.d1, d7.d1, d7.d2, d7.d3, d7.d4, d7.d5, d7.d6); break;
-                case 8: var d8=c.d2; work.push(c.d1, d8.d1, d8.d2, d8.d3, d8.d4, d8.d5, d8.d6, d8.d7); break;
-                case 9: var d9=c.d2; work.push(c.d1, d9.d1, d9.d2, d9.d3, d9.d4, d9.d5, d9.d6, d9.d7, d9.d8); break;
-                case 10: var d10=c.d2; work.push(c.d1, d10.d1, d10.d2, d10.d3, d10.d4, d10.d5, d10.d6, d10.d7, d10.d8, d10.d9); break;
-                case 11: var d11=c.d2; work.push(c.d1, d11.d1, d11.d2, d11.d3, d11.d4, d11.d5, d11.d6, d11.d7, d11.d8, d11.d9, d11.d10); break;
-                case 12: var d12=c.d2; work.push(c.d1, d12.d1, d12.d2, d12.d3, d12.d4, d12.d5, d12.d6, d12.d7, d12.d8, d12.d9, d12.d10, d12.d11); break;
-                default: h$followObjGen(c,work);
+                case 1: ADDW(c.d1); break;
+                case 2: ADDW2(c.d1, d); break;
+                case 3: var d3=c.d2; ADDW3(c.d1, d3.d1, d3.d2); break;
+                case 4: var d4=c.d2; ADDW4(c.d1, d4.d1, d4.d2, d4.d3); break;
+                case 5: var d5=c.d2; ADDW4(c.d1, d5.d1, d5.d2, d5.d3); ADDW(d5.d4); break;
+                case 6: var d6=c.d2; ADDW4(c.d1, d6.d1, d6.d2, d6.d3); ADDW2(d6.d4, d6.d5); break;
+                case 7: var d7=c.d2; ADDW4(c.d1, d7.d1, d7.d2, d7.d3); ADDW3(d7.d4, d7.d5, d7.d6); break;
+                case 8: var d8=c.d2; ADDW4(c.d1, d8.d1, d8.d2, d8.d3); ADDW4(d8.d4, d8.d5, d8.d6, d8.d7); break;
+                case 9: var d9=c.d2; ADDW4(c.d1, d9.d1, d9.d2, d9.d3); ADDW4(d9.d4, d9.d5, d9.d6, d9.d7); ADDW(d9.d8); break;
+                case 10: var d10=c.d2; ADDW4(c.d1, d10.d1, d10.d2, d10.d3); ADDW4(d10.d4, d10.d5, d10.d6, d10.d7); ADDW2(d10.d8, d10.d9); break;
+                case 11: var d11=c.d2; ADDW4(c.d1, d11.d1, d11.d2, d11.d3); ADDW4(d11.d4, d11.d5, d11.d6, d11.d7); ADDW3(d11.d8, d11.d9, d11.d10); break;
+                case 12: var d12=c.d2; ADDW4(c.d1, d12.d1, d12.d2, d12.d3); ADDW4(d12.d4, d12.d5, d12.d6, d12.d7); ADDW4(d12.d8, d12.d9, d12.d10, d12.d11); break;
+                default: w = h$followObjGen(c,work,w);
                 }
                 // static references
                 var s = cf.s;
                 if(s !== null) {
                     TRACE_GC("adding static marks");
-                    for(var i=0;i<s.length;i++) work.push(s[i]);
+                    for(var i=0;i<s.length;i++) ADDW(s[i]);
                 }
             } else if(c instanceof h$Weak) {
                 TRACE_GC("marking weak reference");
                 if(c.keym.m === mark) {
-                    if(c.val !== null && !IS_MARKED(c.val)) work.push(c.val);
+                    if(c.val !== null && !IS_MARKED(c.val)) ADDW(c.val);
                 } else {
                     // fixme we should keep separate arrays for
                     // value mark pending / cleanup pending?
@@ -326,36 +334,38 @@ function h$follow(obj, sp) {
                    MVars have been cleaned up
                  */
                 iter = c.writers.iter();
-                while((ii = iter()) !== null) work.push(ii[1]);
-                if(c.val !== null && !IS_MARKED(c.val)) work.push(c.val);
+                while((ii = iter()) !== null) ADDW(ii[1]);
+                if(c.val !== null && !IS_MARKED(c.val)) ADDW(c.val);
             } else if(c instanceof h$MutVar) {
                 TRACE_GC("marking MutVar");
                 MARK_OBJ(c);
-                work.push(c.val);
+                ADDW(c.val);
             } else if(c instanceof h$TVar) {
                 TRACE_GC("marking TVar");
                 MARK_OBJ(c);
-                work.push(c.val);
+                ADDW(c.val);
             } else if(c instanceof h$Thread) {
                 TRACE_GC("marking Thread");
                 MARK_OBJ(c);
-                if(c.stack) work.push.apply(work, c.stack.slice(0, c.sp));
+                if(c.stack) {
+                    for(i=c.sp;i>=0;i--) ADDW(c.stack[i]);
+                }
             } else if(c instanceof h$Transaction) {
                 /* - the accessed TVar values don't need to be marked
                    - parents are also on the stack, so they should've been marked already
                 */
                 TRACE_GC("marking STM transaction");
                 MARK_OBJ(c);
-                work.push.apply(work, c.invariants);
-                work.push(c.action);
+                for(i=c.invariants.length-1;i>=0;i--) ADDW(c.invariants[i]);
+                ADDW(c.action);
                 iter = c.tvars.iter();
-                while((ii = iter.next()) !== null) work.push(ii);
+                while((ii = iter.next()) !== null) ADDW(ii);
             } else if(c instanceof Array && c.__ghcjsArray) {
                 MARK_OBJ(c);
                 TRACE_GC("marking array");
                 for(i=0;i<c.length;i++) {
                     var x = c[i];
-                    if(typeof x === 'object' && x !== null && !IS_MARKED(x)) work.push(x);
+                    if(typeof x === 'object' && x !== null && !IS_MARKED(x)) ADDW(x);
                 }
 //      } else if(c instanceof EventTarget) { // HTMLElement) { // DOM retention
 //        TRACE_GC("marking DOM element");
