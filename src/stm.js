@@ -181,9 +181,9 @@ function h$stmSuspendRetry() {
     var tv, i = h$currentThread.transaction.accessed.iter();
     var tvs = new h$Set();
     while((tv = i.next()) !== null) {
-        TRACE_STM("h$stmSuspendRetry, accessed: " + h$collectProps(tv.tvar));
-        tv.tvar.blocked.add(h$currentThread);
-        tvs.add(tv.tvar);
+        TRACE_STM("h$stmSuspendRetry, accessed: " + h$collectProps(tv));
+        tv.blocked.add(h$currentThread);
+        tvs.add(tv);
     }
     waiting = new h$TVarsWaiting(tvs);
     h$blockThread(h$currentThread, waiting);
