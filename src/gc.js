@@ -1,16 +1,36 @@
 /*
-  do garbage collection where the JavaScript GC doesn't suffice or needs some help:
+  Do garbage collection where the JavaScript GC doesn't suffice or needs some help:
+
   - run finalizers for weak references
   - find unreferenced CAFs and reset them (unless h$retainCAFs is set)
   - shorten stacks that are mostly empty
   - reset unused parts of stacks to null
   - reset registers to null
   - reset return variables to null
-  - throw exceptions to threads that are blocked on an unreachable MVar
+  - throw exceptions to threads that are blocked on an unreachable MVar/STM transaction
+  - drop unnecessary references for selector thunks
 
-  the gc uses the .m field to store its mark in all the objects it marks. for heap objects,
+  The gc uses the .m field to store its mark in all the objects it marks. for heap objects,
   the .m field is also used for other things, like stable names, the gc only changes
   the two least significant bits for these.
+
+  The gc starts with all threads as roots in addition to callbacks passed to JavaScript
+  that that are retained. If you have custom JavaScript data structures that contain
+  Haskell heap object references, you can use extensible retention to find these
+  references and add thm to the work queue. h$registerExtensibleRetensionRoot(f) calls
+  f(currentMark) at the start of every gc, h$registerExtensibleRetention(f) calls f(o, currentMark)
+  for every unknown object found on the Haskell heap.
+
+  Extensible retention is a low-level mechanism and should typically only be used by
+  bindings that guarantee that the shape of the JS objects exactly matches what
+  the scanner expects. Care should be taken to make sure that the objects never
+  escape the reach of the scanner.
+
+  Having correct reachability information is important, even if you choose to turn off
+  features like weak references and deallocating CAFs in production, since it helps
+  debugging by providing the profiler with accurate data and by properly raising
+  exceptions when threads become blocked indefinitely, usually indicating a bug or
+  memory leak.
 
   assumptions:
   - all threads suspended, no active registers
@@ -23,7 +43,6 @@
 
 /*
   fixme, todo:
-  - tag unreachable MVar# so that JavaScript can stop posting events
   - mark posted exceptions to thread
 */
 
@@ -51,6 +70,53 @@ var h$retainCAFs = false;
 #endif
 var h$CAFs = [];
 var h$CAFsReset = [];
+
+// 
+var h$extensibleRetentionRoots     = [];
+var h$extensibleRetentionCallbacks = [];
+
+
+/*
+   after registering an extensible extension root f,
+   f() is called at the start of each gc invocation and is
+   expected to return an array with Haskell heap objects
+   to be treated as extra roots.
+ */
+function h$registerExtensibleRetentionRoot(f) {
+    h$extensibleRetentionRoots.push(f);
+}
+
+function h$unregisterExtensibleRetentionRoot(f) {
+    h$extensibleRetentionRoots = h$extensibleRetentionRoots.filter(function(g) { return f !== g; });
+}
+
+/*
+  after registering an extensible retention callback f,
+  f(o, currentMark) is called for every unknown object encountered on the
+  Haskell heap. f should return an array with found objects. If no objects
+  are found, f should return a boolean indicating whether the gc should skip
+  processing the objects with other extensible retention callbacks.
+
+  The gc may encounter the same object multiple times during the same scan,
+  so a callback should attempt to quickly return if the object has been scanned
+  already.
+
+   return value:
+     - array          scan objects contained in array, do not call other extension callbacks
+     - true           do not call other extension callbacks with this object
+     - false          call other extension callbacks with this object
+
+  Use -DGHCJS_TRACE_GC_UNKNOWN to find the JavaScript objects reachable
+  (through JSRef) on the Haskell heap for which none of the registered
+  extensible retention callbacks has returned true or an array.
+ */
+function h$registerExtensibleRetention(f) {
+    h$extensibleRetentionCallbacks.push(f);
+}
+
+function h$unregisterExtensibleRetention(f) {
+    h$extensibleRetentionCallbacks = h$extensibleRetentionCallbacks.filter(function(g) { return f !== g; });
+}
 
 // check whether the object is marked by the latest gc
 function h$isMarked(obj) {
@@ -112,7 +178,12 @@ function h$gc(t) {
     h$resetResultVars();
     h$gcMark = 5-h$gcMark;
     var i;
-    TRACE_GC("runnable: " + h$threads.length() + " blocked: " + h$blocked.size() + " t: " + t);
+    TRACE_GC("scanning extensible retention roots")
+    for(i=h$extensibleRetentionRoots.length-1;i>=0;i--) {
+        var a = h$extensibleRetentionRoots[i]();
+        h$follow(a, a.length-1);
+    }
+    TRACE_GC("scanning threads, runnable: " + h$threads.length() + " blocked: " + h$blocked.size() + " t: " + t);
     if(t !== null) h$markThread(t);
     var nt, runnable = h$threads.iter();
     while((nt = runnable()) !== null) h$markThread(nt);
@@ -122,6 +193,7 @@ function h$gc(t) {
             h$markThread(nt);
         }
     }
+    TRACE_GC("scanning permanent retention roots");
     iter = h$extraRoots.iter();
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
@@ -360,22 +432,35 @@ function h$follow(obj, sp) {
                 ADDW(c.action);
                 iter = c.tvars.iter();
                 while((ii = iter.next()) !== null) ADDW(ii);
-            } else if(c instanceof Array && c.__ghcjsArray) {
+            } else if(c instanceof Array && c.__ghcjsArray) { // only for Haskell arrays with lifted values
                 MARK_OBJ(c);
                 TRACE_GC("marking array");
                 for(i=0;i<c.length;i++) {
                     var x = c[i];
                     if(typeof x === 'object' && x !== null && !IS_MARKED(x)) ADDW(x);
                 }
-//      } else if(c instanceof EventTarget) { // HTMLElement) { // DOM retention
-//        TRACE_GC("marking DOM element");
-        // fixme
-            } else {
+            } else if(typeof c === 'object') {
+                TRACE_GC("extensible retention marking");
 #ifdef GHCJS_TRACE_GC_UNKNOWN
-                // everything else is unknown, no followable values
-                TRACE_GC("unknown object: " + h$collectProps(c));
+                var extensibleMatched = false;
 #endif
-            }
+                for(i=h$extensibleRetentionCallbacks.length-1;i>=0;i--) {
+                    var x = h$extensibleRetentionCallbacks[i](c, mark);
+                    if(x === false) continue;
+#ifdef GHCJS_TRACE_GC_UNKNOWN
+                    extensibleMatched = true;
+#endif
+                    if(x !== true) {
+                        for(j=x.length-1;j>=0;j--) ADDW(x[j]);
+                    }
+                    break;
+                }
+#ifdef GHCJS_TRACE_GC_UNKNOWN
+                if(!extensibleMatched) {
+                    TRACE_GC("unknown object: " + h$collectProps(c));
+                }
+#endif
+            } // otherwise: not an object, no followable values
         }
     }
     TRACE_GC("h$follow: " + (Date.now()-start) + "ms");
