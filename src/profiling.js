@@ -344,20 +344,20 @@ function mkCCSDOM(ccs) {
     var rowDivId = mkDivId(ccs);
 
     var leftDiv  = document.createElement("div");
-    leftDiv.setAttribute("class", "column-left");
+    leftDiv.setAttribute("class", "ghcjs-prof-column-left");
     leftDiv.appendChild(document.createTextNode(ccsLabel));
 
     var midDiv   = document.createElement("div");
-    midDiv.setAttribute("class", "column-center");
+    midDiv.setAttribute("class", "ghcjs-prof-column-center");
     midDiv.appendChild(document.createTextNode("0"));
 
     var rightDiv = document.createElement("div");
-    rightDiv.setAttribute("class", "column-right");
+    rightDiv.setAttribute("class", "ghcjs-prof-column-right");
     var bar = document.createElement("paper-progress");
     bar.setAttribute("value", "0");
     bar.setAttribute("min", "0");
     bar.setAttribute("max", "1000");
-    bar.setAttribute("class", "progress");
+    bar.setAttribute("class", "ghcjs-prof-progress");
     rightDiv.appendChild(bar);
 
     ccs.domElems = {
@@ -389,7 +389,7 @@ function mkCCSDOM(ccs) {
 }
 
 function addCCSDOM() {
-  var ul = document.getElementById("container-ul");
+  var ul = document.getElementById("ghcjs-prof-container-ul");
   for (var i = 0; i < h$ccsList.length; i++)
     ul.appendChild(mkCCSDOM(h$ccsList[i]));
 }
