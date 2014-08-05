@@ -60,10 +60,12 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 #define MARK_OBJ(obj)                       \
   if(typeof obj.m === 'number') {           \
     obj.m = (obj.m&-4)|mark;                \
-    obj.cc.retained++;                      \
+    if (obj.constructor !== h$Thread)       \
+      obj.cc.retained++;                    \
   } else {                                  \
     obj.m.m = (obj.m.m & -4)|mark;          \
-    obj.cc.retained++;                      \
+    if (obj.constructor !== h$Thread)       \
+      obj.cc.retained++;                    \
   }
 #else
 #define MARK_OBJ(obj)                       \
