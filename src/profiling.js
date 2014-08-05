@@ -1,4 +1,4 @@
-// Used definitions: GHCJS_TRACE_PROF and GHCJS_ASSERT_PROF
+// Used definitions: GHCJS_TRACE_PROF, GHCJS_ASSERT_PROF and GHCJS_PROF_GUI
 
 #ifdef GHCJS_ASSERT_PROF
 function assert(condition, message) {
@@ -60,6 +60,8 @@ function h$CCS(parent, cc) {
   this.sccCount       = 0;
   this.timeTicks      = 0;
   this.memAlloc       = 0;
+  this.retained       = 0; // retained object count, counted in last GC cycle
+  this.inheritedRetain= 0; // inherited retained counts
   this.inheritedTicks = 0;
   this.inheritedAlloc = 0;
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
@@ -275,3 +277,170 @@ function h$buildCCSPtr(o) {
   ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
   return ccs;
 }
+
+//
+// Updating and printing retained obj count of stacks, to be used in GC scan
+//
+
+// reset retained object counts
+function h$resetRetained() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    ccs.retained = 0;
+    ccs.inheritedRetain = 0;
+  }
+}
+
+function h$updRetained(obj) {
+  // h$gc visits all kinds of objects, not just heap objects
+  // so we're checking if the object has cc field
+  // assuming we added cc field to every heap object, this should work correctly
+  if (obj.cc !== undefined) {
+    ASSERT(obj.cc.retained !== null && obj.cc.retained !== undefined);
+    obj.cc.retained++;
+  }
+}
+
+function h$ccsString(ccs) {
+  var labels = [];
+  do {
+    labels.push(ccs.cc.module+'.'+ccs.cc.label+' '+ccs.cc.srcloc+' '+ccs.retained+' '+ccs.inheritedRetain);
+    ccs = ccs.prevStack;
+  } while (ccs !== null);
+  return '[' + labels.reverse().join(', ') + ']';
+}
+
+function h$inheritRetained(ccs) {
+  var consedCCS = ccs.consed.values();
+  for (var i = 0; i < consedCCS.length; i++) {
+    h$inheritRetained(consedCCS[i]);
+    ccs.inheritedRetain += consedCCS[i].inheritedRetain;
+  }
+  ccs.inheritedRetain += ccs.retained;
+}
+
+function h$printRetainedInfo() {
+  h$inheritRetained(h$CCS_MAIN);
+
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    if (ccs.inheritedRetain !== 0) {
+      console.log(h$ccsString(ccs));
+    }
+  }
+  console.log("END");
+}
+
+#ifdef GHCJS_PROF_GUI
+// Profiling GUI
+
+// Return id of the div that shows info of given CCS
+function mkDivId(ccs) {
+  return (ccs.cc.module + '-' + ccs.cc.label).split('.').join('-');
+}
+
+function mkCCSDOM(ccs) {
+    var ccsLabel = ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+    var rowDivId = mkDivId(ccs);
+
+    var leftDiv  = document.createElement("div");
+    leftDiv.setAttribute("class", "column-left");
+    leftDiv.appendChild(document.createTextNode(ccsLabel));
+
+    var midDiv   = document.createElement("div");
+    midDiv.setAttribute("class", "column-center");
+    midDiv.appendChild(document.createTextNode("0"));
+
+    var rightDiv = document.createElement("div");
+    rightDiv.setAttribute("class", "column-right");
+    var bar = document.createElement("paper-progress");
+    bar.setAttribute("value", "0");
+    bar.setAttribute("min", "0");
+    bar.setAttribute("max", "1000");
+    bar.setAttribute("class", "progress");
+    rightDiv.appendChild(bar);
+
+    ccs.domElems = {
+      leftDiv: leftDiv,
+      midDiv: midDiv,
+      rightDiv: rightDiv,
+      bar: bar
+    };
+
+    var rowDiv = document.createElement("div");
+    rowDiv.setAttribute("layout", "");
+    rowDiv.setAttribute("horizontal", "");
+
+    rowDiv.appendChild(leftDiv);
+    rowDiv.appendChild(midDiv);
+    rowDiv.appendChild(rightDiv);
+
+    var ul = document.createElement("ul");
+
+    var div = document.createElement("div");
+    div.setAttribute("layout", "");
+    div.setAttribute("vertical", "");
+    div.setAttribute("id", rowDivId);
+
+    div.appendChild(rowDiv);
+    div.appendChild(ul);
+
+    return div;
+}
+
+function addCCSDOM() {
+  var ul = document.getElementById("container-ul");
+  for (var i = 0; i < h$ccsList.length; i++)
+    ul.appendChild(mkCCSDOM(h$ccsList[i]));
+}
+
+function updateDOMs() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      h$inheritRetained(ccs);
+      ccs.domElems.midDiv.innerHTML = ccs.inheritedRetain;
+      ccs.domElems.bar.setAttribute("value", ccs.inheritedRetain);
+    }
+  }
+
+  var stack = [];
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+
+      // push initial values to the stack
+      for (var j = 0; j < ccs.consed.values().length; j++)
+        stack.push(ccs.consed.values()[j]);
+
+      var val = stack.pop();
+
+      while (val !== undefined) {
+        // push children stack frames to the stack
+        for (var j = 0; j < val.consed.values().length; j++)
+          stack.push(val.consed.values()[j]);
+
+        var divId = mkDivId(val);
+        var div   = document.getElementById(divId);
+
+        if (div === null) {
+          var div = mkCCSDOM(val);
+          var parentDivId = mkDivId(val.prevStack);
+          var parentDiv = document.getElementById(parentDivId);
+          var ul = parentDiv.children[parentDiv.children.length - 1];
+          ul.appendChild(mkCCSDOM(val));
+        } else {
+          val.domElems.midDiv.innerHTML = val.inheritedRetain;
+          val.domElems.bar.setAttribute("value", val.inheritedRetain);
+        }
+
+        // reload current value
+        val = stack.pop();
+      }
+    }
+  }
+}
+
+// addCCSDOM();
+
+#endif
