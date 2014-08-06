@@ -538,10 +538,18 @@ function h$updateDOMs() {
     }
   }
 
-  h$sortDOMs(document.getElementById("ghcjs-prof-container-ul"));
+  var maxRetained = h$sortDOMs(document.getElementById("ghcjs-prof-container-ul"));
+  // scale the bars
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    ccs.domElems.rightDiv.children[0].setAttribute("max", maxRetained);
+  }
 }
 
 function h$sortDOMs(parent) {
+  // maximum number of retained objs, to be used in scaling the bars
+  var maxRetained = 0;
+
   var items = [];
   var children = parent.children;
   while (parent.firstChild)
@@ -557,8 +565,14 @@ function h$sortDOMs(parent) {
     return (parseInt(midDivB.innerHTML) - parseInt(midDivA.innerHTML));
   });
 
-  for (var i = 0; i < items.length; i++)
+  for (var i = 0; i < items.length; i++) {
+    var retained = parseInt(items[i].children[0].children[1].innerHTML);
+    if (retained > maxRetained)
+      maxRetained = retained;
     parent.appendChild(items[i]);
+  }
+
+  return maxRetained;
 }
 
 function h$toggleProfGUI() {
