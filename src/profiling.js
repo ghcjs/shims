@@ -334,58 +334,156 @@ function h$printRetainedInfo() {
 #ifdef GHCJS_PROF_GUI
 // Profiling GUI
 
+function h$includePolymer() {
+  var platformScript = document.createElement("script");
+  platformScript.setAttribute("src", "polymer-components/platform/platform.js");
+
+  var progressLink = document.createElement("link");
+  progressLink.setAttribute("rel", "import");
+  progressLink.setAttribute("href", "polymer-components/paper-progress/paper-progress.html");
+
+  var overlayLink = document.createElement("link");
+  overlayLink.setAttribute("rel", "import");
+  overlayLink.setAttribute("href", "polymer-components/core-overlay/core-overlay.html");
+
+  var head = document.getElementsByTagName("head")[0];
+  head.appendChild(platformScript);
+  head.appendChild(progressLink);
+  head.appendChild(overlayLink);
+}
+
+function h$addCSS() {
+  var style = document.createElement("style");
+
+  var css =
+    "\
+      #ghcjs-prof-container {\
+        width: 1600px;\
+        height: 80%;\
+        overflow: scroll;\
+        height: 300px;\
+      }\
+\
+      .ghcjs-prof-column-left { width: 20%; }\
+      .ghcjs-prof-column-center { width: 5%; }\
+      .ghcjs-prof-column-right { width: 70%; }\
+\
+      .ghcjs-prof-progress {\
+        padding: 10px;\
+        display: block;\
+        width: 100%;\
+      }\
+\
+      .ghcjs-prof-progress.pink::shadow #activeProgress {\
+        background-color: #e91e63;\
+      }\
+\
+      .ghcjs-prof-progress.pink::shadow #secondaryProgress {\
+        background-color: #f8bbd0;\
+      }\
+\
+      #ghcjs-prof-overlay {\
+        box-sizing: border-box;\
+        -moz-box-sizing: border-box;\
+        font-family: Arial, Helvetica, sans-serif;\
+        font-size: 13px;\
+        -webkit-user-select: none;\
+        -moz-user-select: none;\
+        overflow: hidden;\
+        background: white;\
+        padding: 30px 42px;\
+        outline: 1px solid rgba(0,0,0,0.2);\
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);\
+      }\
+    ";
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = css;
+  } else {
+    style.appendChild(document.createTextNode(css));
+  }
+  document.getElementsByTagName("head")[0].appendChild(style);
+}
+
+function h$addOverlayDOM() {
+  var overlay = document.createElement("core-overlay");
+  overlay.setAttribute("id", "ghcjs-prof-overlay");
+
+  var h2 = document.createElement("h2");
+  h2.appendChild(document.createTextNode("Retained object counts per CSS"));
+  overlay.appendChild(h2);
+
+  var div = document.createElement("div");
+  div.setAttribute("flex", "");
+  div.setAttribute("id", "ghcjs-prof-container");
+
+  var ul = document.createElement("ul");
+  ul.setAttribute("flex", "");
+  ul.setAttribute("id", "ghcjs-prof-container-ul");
+
+  div.appendChild(ul);
+  overlay.appendChild(div);
+
+  var button = document.createElement("button");
+  button.setAttribute("core-overlay-toggle", "");
+  button.appendChild(document.createTextNode("Close"));
+  overlay.appendChild(button);
+
+  document.getElementsByTagName("body")[0].appendChild(overlay);
+}
+
 // Return id of the div that shows info of given CCS
 function h$mkDivId(ccs) {
   return (ccs.cc.module + '-' + ccs.cc.label).split('.').join('-');
 }
 
 function h$mkCCSDOM(ccs) {
-    var ccsLabel = ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
-    var rowDivId = h$mkDivId(ccs);
+  var ccsLabel = ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+  var rowDivId = h$mkDivId(ccs);
 
-    var leftDiv  = document.createElement("div");
-    leftDiv.setAttribute("class", "ghcjs-prof-column-left");
-    leftDiv.appendChild(document.createTextNode(ccsLabel));
+  var leftDiv  = document.createElement("div");
+  leftDiv.setAttribute("class", "ghcjs-prof-column-left");
+  leftDiv.appendChild(document.createTextNode(ccsLabel));
 
-    var midDiv   = document.createElement("div");
-    midDiv.setAttribute("class", "ghcjs-prof-column-center");
-    midDiv.appendChild(document.createTextNode("0"));
+  var midDiv   = document.createElement("div");
+  midDiv.setAttribute("class", "ghcjs-prof-column-center");
+  midDiv.appendChild(document.createTextNode("0"));
 
-    var rightDiv = document.createElement("div");
-    rightDiv.setAttribute("class", "ghcjs-prof-column-right");
-    var bar = document.createElement("paper-progress");
-    bar.setAttribute("value", "0");
-    bar.setAttribute("min", "0");
-    bar.setAttribute("max", "1000");
-    bar.setAttribute("class", "ghcjs-prof-progress");
-    rightDiv.appendChild(bar);
+  var rightDiv = document.createElement("div");
+  rightDiv.setAttribute("class", "ghcjs-prof-column-right");
+  var bar = document.createElement("paper-progress");
+  bar.setAttribute("value", "0");
+  bar.setAttribute("min", "0");
+  bar.setAttribute("max", "1000");
+  bar.setAttribute("class", "ghcjs-prof-progress");
+  rightDiv.appendChild(bar);
 
-    ccs.domElems = {
-      leftDiv: leftDiv,
-      midDiv: midDiv,
-      rightDiv: rightDiv,
-      bar: bar
-    };
+  ccs.domElems = {
+    leftDiv: leftDiv,
+    midDiv: midDiv,
+    rightDiv: rightDiv,
+    bar: bar
+  };
 
-    var rowDiv = document.createElement("div");
-    rowDiv.setAttribute("layout", "");
-    rowDiv.setAttribute("horizontal", "");
+  var rowDiv = document.createElement("div");
+  rowDiv.setAttribute("layout", "");
+  rowDiv.setAttribute("horizontal", "");
 
-    rowDiv.appendChild(leftDiv);
-    rowDiv.appendChild(midDiv);
-    rowDiv.appendChild(rightDiv);
+  rowDiv.appendChild(leftDiv);
+  rowDiv.appendChild(midDiv);
+  rowDiv.appendChild(rightDiv);
 
-    var ul = document.createElement("ul");
+  var ul = document.createElement("ul");
 
-    var div = document.createElement("div");
-    div.setAttribute("layout", "");
-    div.setAttribute("vertical", "");
-    div.setAttribute("id", rowDivId);
+  var div = document.createElement("div");
+  div.setAttribute("layout", "");
+  div.setAttribute("vertical", "");
+  div.setAttribute("id", rowDivId);
 
-    div.appendChild(rowDiv);
-    div.appendChild(ul);
+  div.appendChild(rowDiv);
+  div.appendChild(ul);
 
-    return div;
+  return div;
 }
 
 function h$addCCSDOM() {
@@ -444,5 +542,10 @@ function h$updateDOMs() {
 function h$toggleProfGUI() {
   document.getElementById("ghcjs-prof-overlay").toggle();
 }
+
+document.addEventListener("DOMContentLoaded", h$includePolymer);
+document.addEventListener("DOMContentLoaded", h$addCSS);
+document.addEventListener("DOMContentLoaded", h$addOverlayDOM);
+document.addEventListener("DOMContentLoaded", h$addCCSDOM);
 
 #endif
