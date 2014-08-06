@@ -537,6 +537,28 @@ function h$updateDOMs() {
       }
     }
   }
+
+  h$sortDOMs(document.getElementById("ghcjs-prof-container-ul"));
+}
+
+function h$sortDOMs(parent) {
+  var items = [];
+  var children = parent.children;
+  while (parent.firstChild)
+      items.push(parent.removeChild(parent.firstChild));
+
+  // sort child nodes first
+  for (var i = 0; i < items.length; i++)
+    h$sortDOMs(items[i].children[1]);
+
+  items.sort(function (a, b) {
+    var midDivA = a.children[0].children[1];
+    var midDivB = b.children[0].children[1];
+    return (parseInt(midDivB.innerHTML) - parseInt(midDivA.innerHTML));
+  });
+
+  for (var i = 0; i < items.length; i++)
+    parent.appendChild(items[i]);
 }
 
 function h$toggleProfGUI() {
