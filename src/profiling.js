@@ -335,13 +335,13 @@ function h$printRetainedInfo() {
 // Profiling GUI
 
 // Return id of the div that shows info of given CCS
-function mkDivId(ccs) {
+function h$mkDivId(ccs) {
   return (ccs.cc.module + '-' + ccs.cc.label).split('.').join('-');
 }
 
-function mkCCSDOM(ccs) {
+function h$mkCCSDOM(ccs) {
     var ccsLabel = ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
-    var rowDivId = mkDivId(ccs);
+    var rowDivId = h$mkDivId(ccs);
 
     var leftDiv  = document.createElement("div");
     leftDiv.setAttribute("class", "ghcjs-prof-column-left");
@@ -388,13 +388,13 @@ function mkCCSDOM(ccs) {
     return div;
 }
 
-function addCCSDOM() {
+function h$addCCSDOM() {
   var ul = document.getElementById("ghcjs-prof-container-ul");
   for (var i = 0; i < h$ccsList.length; i++)
-    ul.appendChild(mkCCSDOM(h$ccsList[i]));
+    ul.appendChild(h$mkCCSDOM(h$ccsList[i]));
 }
 
-function updateDOMs() {
+function h$updateDOMs() {
   for (var i = 0; i < h$ccsList.length; i++) {
     var ccs = h$ccsList[i];
     if (ccs.prevStack === null || ccs.prevStack === undefined) {
@@ -420,15 +420,15 @@ function updateDOMs() {
         for (var j = 0; j < val.consed.values().length; j++)
           stack.push(val.consed.values()[j]);
 
-        var divId = mkDivId(val);
+        var divId = h$mkDivId(val);
         var div   = document.getElementById(divId);
 
         if (div === null) {
-          var div = mkCCSDOM(val);
-          var parentDivId = mkDivId(val.prevStack);
+          var div = h$mkCCSDOM(val);
+          var parentDivId = h$mkDivId(val.prevStack);
           var parentDiv = document.getElementById(parentDivId);
           var ul = parentDiv.children[parentDiv.children.length - 1];
-          ul.appendChild(mkCCSDOM(val));
+          ul.appendChild(h$mkCCSDOM(val));
         } else {
           val.domElems.midDiv.innerHTML = val.inheritedRetain;
           val.domElems.bar.setAttribute("value", val.inheritedRetain);
