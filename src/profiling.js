@@ -358,7 +358,6 @@ function h$addCSS() {
   var css =
     "\
       #ghcjs-prof-container {\
-        width: 1600px;\
         height: 80%;\
         overflow: scroll;\
         height: 300px;\
@@ -394,6 +393,7 @@ function h$addCSS() {
         padding: 30px 42px;\
         outline: 1px solid rgba(0,0,0,0.2);\
         box-shadow: 0 4px 16px rgba(0,0,0,0.2);\
+        width: 80%;\
       }\
     ";
 
