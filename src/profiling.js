@@ -441,6 +441,8 @@ function h$updateDOMs() {
   }
 }
 
-// addCCSDOM();
+function h$toggleProfGUI() {
+  document.getElementById("ghcjs-prof-overlay").toggle();
+}
 
 #endif
