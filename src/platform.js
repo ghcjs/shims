@@ -18,7 +18,7 @@ var h$isNode    = false; // runtime is node.js
 var h$isJsShell = false; // runtime is SpiderMonkey jsshell
 var h$isBrowser = false; // running in browser or everything else
 // load all required node.js modules
-if(typeof process !== undefined && typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports) {
+if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
     h$isNode = true;
     // we have to use these names for the closure compiler externs to work
     var fs            = require('fs');
