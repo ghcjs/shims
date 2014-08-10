@@ -64,6 +64,11 @@ function h$CCS(parent, cc) {
   this.inheritedRetain= 0; // inherited retained counts
   this.inheritedTicks = 0;
   this.inheritedAlloc = 0;
+
+  // for plotting retained obj counts with flot
+  this.plotData       = [0];
+  this.plotDrawn      = true;
+
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
 
@@ -301,15 +306,6 @@ function h$updRetained(obj) {
   }
 }
 
-function h$ccsString(ccs) {
-  var labels = [];
-  do {
-    labels.push(ccs.cc.module+'.'+ccs.cc.label+' '+ccs.cc.srcloc+' '+ccs.retained+' '+ccs.inheritedRetain);
-    ccs = ccs.prevStack;
-  } while (ccs !== null);
-  return '[' + labels.reverse().join(', ') + ']';
-}
-
 function h$inheritRetained(ccs) {
   var consedCCS = ccs.consed.values();
   for (var i = 0; i < consedCCS.length; i++) {
@@ -350,6 +346,13 @@ function h$includePolymer() {
   head.appendChild(platformScript);
   head.appendChild(progressLink);
   head.appendChild(overlayLink);
+}
+
+function h$includeChartjs(callback) {
+  var chartjs = document.createElement("script");
+  chartjs.setAttribute("src", "Chart.js");
+  document.getElementsByTagName("head")[0].appendChild(chartjs);
+  chartjs.addEventListener("load", callback, false);
 }
 
 function h$addCSS() {
@@ -437,8 +440,13 @@ function h$mkDivId(ccs) {
   return (ccs.cc.module + '-' + ccs.cc.label).split('.').join('-');
 }
 
+// String representation of a CCS
+function h$mkCCSLabel(ccs) {
+  return ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+}
+
 function h$mkCCSDOM(ccs) {
-  var ccsLabel = ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+  var ccsLabel = h$mkCCSLabel(ccs);
   var rowDivId = h$mkDivId(ccs);
 
   var leftDiv  = document.createElement("div");
@@ -579,9 +587,123 @@ function h$toggleProfGUI() {
   document.getElementById("ghcjs-prof-overlay").toggle();
 }
 
-document.addEventListener("DOMContentLoaded", h$includePolymer);
-document.addEventListener("DOMContentLoaded", h$addCSS);
-document.addEventListener("DOMContentLoaded", h$addOverlayDOM);
-document.addEventListener("DOMContentLoaded", h$addCCSDOM);
+var h$chart;
+function h$createChart() {
+  console.log("creating the chart");
+  var chartCanvas = document.createElement("canvas");
+  chartCanvas.setAttribute("width", 800);
+  chartCanvas.setAttribute("height", 500);
+  chartCanvas.setAttribute("id", "ghcjs-prof-chart");
+  document.getElementById("ghcjs-prof-overlay").appendChild(chartCanvas);
+
+  var ctx = chartCanvas.getContext("2d");
+  var initialData = {
+    labels: [],
+    datasets: []
+  };
+
+  var options = {
+    // Boolean - Whether to animate the chart
+    animation: false,
+    // Boolean - Whether grid lines are shown across the chart
+    scaleShowGridLines : true,
+    // String - Colour of the grid lines
+    scaleGridLineColor : "rgba(0,0,0,.05)",
+    // Number - Width of the grid lines
+    scaleGridLineWidth : 1,
+    // Boolean - Whether the line is curved between points
+    bezierCurve : false,
+    // Boolean - Whether to show a dot for each point
+    pointDot : false,
+    // Number - amount extra to add to the radius to cater for hit detection outside the drawn point
+    pointHitDetectionRadius : 20,
+    // Boolean - Whether to show a stroke for datasets
+    datasetStroke : false,
+    // Number - Pixel width of dataset stroke
+    datasetStrokeWidth : 2,
+    // Boolean - Whether to fill the dataset with a colour
+    datasetFill : false,
+    // String - A legend template
+    legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].lineColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+  };
+
+  h$chart = new Chart(ctx).Line(initialData, options);
+
+  // load initial data
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      ccs.plotDrawn = true;
+      var dataset = {
+        label: h$mkCCSLabel(ccs),
+        data: [0]
+      };
+      h$chart.addDataset(dataset);
+    }
+  }
+}
+
+function h$updateChart() {
+  // how many points for a line to show in the chart
+  var points = 10;
+
+  var newData = [];
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      // assume inherited retained counts are calculated
+      ccs.plotData.push(ccs.inheritedRetain);
+      newData.push(ccs.inheritedRetain);
+    }
+  }
+
+  if (h$chart !== undefined) {
+    // FIXME: For some reason, in first iteration h$chart is undefined
+    h$chart.addData(newData);
+    while (h$chart.datasets[0].points.length > points) {
+      h$chart.removeData();
+    }
+    // hide lines with 0 allocations for last `points` cycles
+    for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+      var ccs = h$ccsList[ccsIdx];
+      if (ccs.prevStack === null || ccs.prevStack === undefined) {
+        var draw  = false;
+
+        // number of points to draw
+        var ps    = Math.min(ccs.plotData.length, points);
+        // first point to draw
+        var first = ccs.plotData.length - ps;
+        // last point to draw
+        var last  = first + ps - 1;
+
+        for (var i = first; i <= last; i++) {
+          if (ccs.plotData[i] !== 0) {
+            draw = true;
+            break;
+          }
+        }
+
+        if (draw && !ccs.plotDrawn) {
+          ccs.plotDrawn = true;
+          h$chart.showDataset(h$mkCCSLabel(ccs));
+          console.log("showing dataset");
+        } else if (!draw && ccs.plotDrawn) {
+          ccs.plotDrawn = false;
+          h$chart.hideDataset(h$mkCCSLabel(ccs));
+          console.log("hiding dataset");
+        }
+      }
+    }
+    h$chart.update();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  h$includePolymer();
+  h$includeChartjs(h$createChart);
+  h$addCSS();
+  h$addOverlayDOM();
+  h$addCCSDOM();
+});
 
 #endif
