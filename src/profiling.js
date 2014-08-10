@@ -587,6 +587,15 @@ function h$toggleProfGUI() {
   document.getElementById("ghcjs-prof-overlay").toggle();
 }
 
+function h$getRandomColor() {
+  var letters = '0123456789ABCDEF'.split('');
+  var color = '#';
+  for (var i = 0; i < 6; i++ ) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 var h$chart;
 function h$createChart() {
   console.log("creating the chart");
@@ -624,7 +633,10 @@ function h$createChart() {
     // Boolean - Whether to fill the dataset with a colour
     datasetFill : false,
     // String - A legend template
-    legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].lineColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+    legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].lineColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>",
+    // String - Tooltip template
+    multiTooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>",
+    tooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>"
   };
 
   h$chart = new Chart(ctx).Line(initialData, options);
@@ -634,9 +646,18 @@ function h$createChart() {
     var ccs = h$ccsList[ccsIdx];
     if (ccs.prevStack === null || ccs.prevStack === undefined) {
       ccs.plotDrawn = true;
+      var datasetColor = h$getRandomColor();
       var dataset = {
         label: h$mkCCSLabel(ccs),
-        data: [0]
+        data: [0],
+
+        fillColor: datasetColor,
+        strokeColor: datasetColor,
+        pointColor: datasetColor,
+        pointStrokeColor: "#fff",
+        pointHighlightFill: "#fff",
+        pointHighlightStroke: datasetColor
+
       };
       h$chart.addDataset(dataset);
     }
@@ -686,11 +707,9 @@ function h$updateChart() {
         if (draw && !ccs.plotDrawn) {
           ccs.plotDrawn = true;
           h$chart.showDataset(h$mkCCSLabel(ccs));
-          console.log("showing dataset");
         } else if (!draw && ccs.plotDrawn) {
           ccs.plotDrawn = false;
           h$chart.hideDataset(h$mkCCSLabel(ccs));
-          console.log("hiding dataset");
         }
       }
     }
