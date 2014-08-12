@@ -513,6 +513,8 @@ function h$mkCCSSettingDOM(ccs) {
   settingCheckboxLabel.appendChild(document.createTextNode(h$mkCCSLabel(ccs)));
   settingCheckbox.onchange = function () {
     ccs.hidden = !this.checked;
+    h$showOrHideCCS(ccs);
+    h$chart.update();
   }
   settingLi.appendChild(settingCheckboxLabel);
   return settingLi;
@@ -750,15 +752,17 @@ function h$updateChart() {
           }
         }
       }
-
-      // show/hide the dataset
-      if (!ccs.hidden && ccs.active) {
-        h$chart.showDataset(h$mkCCSLabel(ccs));
-      } else {
-        h$chart.hideDataset(h$mkCCSLabel(ccs));
-      }
+      h$showOrHideCCS(ccs);
     }
     h$chart.update();
+  }
+}
+
+function h$showOrHideCCS(ccs) {
+  if (!ccs.hidden && ccs.active) {
+    h$chart.showDataset(h$mkCCSLabel(ccs));
+  } else {
+    h$chart.hideDataset(h$mkCCSLabel(ccs));
   }
 }
 
