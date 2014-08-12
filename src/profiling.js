@@ -778,6 +778,9 @@ function h$updateChart() {
         };
         // add dataset to the chart
         h$chart.addDataset(newDataset);
+
+        // add checkbox for the CCS
+        document.getElementById("ghcjs-prof-settings-ul").appendChild(h$mkCCSSettingDOM(ccs));
       }
       newData[toplevelCCS + idx] = ccs.inheritedRetain;
     }
