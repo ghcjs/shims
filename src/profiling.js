@@ -65,9 +65,17 @@ function h$CCS(parent, cc) {
   this.inheritedTicks = 0;
   this.inheritedAlloc = 0;
 
+#ifdef GHCJS_PROF_GUI
   // for plotting retained obj counts with flot
   this.plotData       = [0];
-  this.plotDrawn      = true;
+  // has non-zero allocation counts in last few cycles.
+  // (e.g. it's worth showing)
+  this.active         = true;
+  // checkbox status
+  this.hidden         = false;
+  // if hidden is true, then it's never shown
+  // if hidden is false, then it's shown only when it's active
+#endif
 
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
@@ -504,14 +512,7 @@ function h$mkCCSSettingDOM(ccs) {
   settingCheckboxLabel.appendChild(settingCheckbox);
   settingCheckboxLabel.appendChild(document.createTextNode(h$mkCCSLabel(ccs)));
   settingCheckbox.onchange = function () {
-    var label = h$mkCCSLabel(ccs);
-    if (this.checked) {
-      h$chart.showDataset(label);
-      console.log("enable ccs:", label);
-    } else {
-      console.log("disable ccs:", label);
-      h$chart.hideDataset(label);
-    }
+    ccs.hidden = !this.checked;
   }
   settingLi.appendChild(settingCheckboxLabel);
   return settingLi;
@@ -733,7 +734,7 @@ function h$updateChart() {
     for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
       var ccs = h$ccsList[ccsIdx];
       if (ccs.prevStack === null || ccs.prevStack === undefined) {
-        var draw  = false;
+        ccs.active  = false;
 
         // number of points to draw
         var ps    = Math.min(ccs.plotData.length, points);
@@ -744,18 +745,17 @@ function h$updateChart() {
 
         for (var i = first; i <= last; i++) {
           if (ccs.plotData[i] !== 0) {
-            draw = true;
+            ccs.active = true;
             break;
           }
         }
+      }
 
-        if (draw && !ccs.plotDrawn) {
-          ccs.plotDrawn = true;
-          h$chart.showDataset(h$mkCCSLabel(ccs));
-        } else if (!draw && ccs.plotDrawn) {
-          ccs.plotDrawn = false;
-          h$chart.hideDataset(h$mkCCSLabel(ccs));
-        }
+      // show/hide the dataset
+      if (!ccs.hidden && ccs.active) {
+        h$chart.showDataset(h$mkCCSLabel(ccs));
+      } else {
+        h$chart.hideDataset(h$mkCCSLabel(ccs));
       }
     }
     h$chart.update();
