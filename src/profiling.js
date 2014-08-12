@@ -494,6 +494,29 @@ function h$mkCCSDOM(ccs) {
   return div;
 }
 
+function h$mkCCSSettingDOM(ccs) {
+  var settingLi = document.createElement("li");
+  var settingCheckbox = document.createElement("input");
+  var settingCheckboxLabel = document.createElement("label");
+  settingCheckbox.setAttribute("type", "checkbox");
+  settingCheckbox.setAttribute("id", h$mkDivId(ccs) + "-enabled");
+  settingCheckbox.setAttribute("checked", "");
+  settingCheckboxLabel.appendChild(settingCheckbox);
+  settingCheckboxLabel.appendChild(document.createTextNode(h$mkCCSLabel(ccs)));
+  settingCheckbox.onchange = function () {
+    var label = h$mkCCSLabel(ccs);
+    if (this.checked) {
+      h$chart.showDataset(label);
+      console.log("enable ccs:", label);
+    } else {
+      console.log("disable ccs:", label);
+      h$chart.hideDataset(label);
+    }
+  }
+  settingLi.appendChild(settingCheckboxLabel);
+  return settingLi;
+}
+
 function h$addCCSDOM() {
   var ul = document.getElementById("ghcjs-prof-container-ul");
   for (var i = 0; i < h$ccsList.length; i++)
@@ -599,11 +622,33 @@ function h$getRandomColor() {
 var h$chart;
 function h$createChart() {
   console.log("creating the chart");
+
+  var chartDiv = document.createElement("div");
+  chartDiv.setAttribute("horizontal", "");
+  chartDiv.setAttribute("layout", "");
+
+  // wrap the canvas with a layer of "div"
+  var chartDiv1 = document.createElement("div");
   var chartCanvas = document.createElement("canvas");
   chartCanvas.setAttribute("width", 800);
   chartCanvas.setAttribute("height", 500);
   chartCanvas.setAttribute("id", "ghcjs-prof-chart");
-  document.getElementById("ghcjs-prof-overlay").appendChild(chartCanvas);
+  chartDiv1.appendChild(chartCanvas);
+  chartDiv.appendChild(chartDiv1);
+
+  var settingsDiv = document.createElement("div");
+  var settingsUl = document.createElement("ul");
+  settingsUl.setAttribute("id", "ghcjs-prof-settings-ul");
+  // add initial CCS settings
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined)
+      settingsUl.appendChild(h$mkCCSSettingDOM(ccs));
+  }
+  settingsDiv.appendChild(settingsUl);
+  chartDiv.appendChild(settingsDiv);
+
+  document.getElementById("ghcjs-prof-container").appendChild(chartDiv);
 
   var ctx = chartCanvas.getContext("2d");
   var initialData = {
