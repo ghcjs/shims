@@ -338,6 +338,20 @@ function h$printRetainedInfo() {
 #ifdef GHCJS_PROF_GUI
 // Profiling GUI
 
+// There's this problem with adding new data to Chart.js:
+// Let's say in the beginning I have this top-level CCSs:
+//   - CCS1
+//   - CCS2
+// Later a CC is pushed to CCS1 and we had:
+//   - CCS1
+//   - - CCS1.CC
+//   - CCS2
+//  Now I have to add `CCS1.CC` dataset to the chart and then to update
+//  I need to know what index to put `CCS1.CC`s data in update array.
+//  h$lineIdxs keeps track of this.
+//  Note that we don't need to save top-level CCSs indexes.
+h$lineIdxs = new h$Map();
+
 function h$includePolymer() {
   var platformScript = document.createElement("script");
   platformScript.setAttribute("src", "polymer-components/platform/platform.js");
@@ -624,8 +638,6 @@ function h$getRandomColor() {
 
 var h$chart;
 function h$createChart() {
-  console.log("creating the chart");
-
   var chartDiv = document.createElement("div");
   chartDiv.setAttribute("horizontal", "");
   chartDiv.setAttribute("layout", "");
@@ -698,14 +710,12 @@ function h$createChart() {
       var dataset = {
         label: h$mkCCSLabel(ccs),
         data: [0],
-
         fillColor: datasetColor,
         strokeColor: datasetColor,
         pointColor: datasetColor,
         pointStrokeColor: "#fff",
         pointHighlightFill: "#fff",
         pointHighlightStroke: datasetColor
-
       };
       h$chart.addDataset(dataset);
     }
@@ -714,17 +724,67 @@ function h$createChart() {
 
 function h$updateChart() {
   // how many points for a line to show in the chart
-  var points = 10;
+  var points        = 10;
+  // number of top-level CCSs
+  var toplevelCCS   = 0;
+  // new data to push to the chart
+  var newData       = [];
 
-  var newData = [];
+  // because of the order callbacks are called, in first iteration
+  // h$chart is sometimes undefined. in that case we're just waiting until
+  // h$chart is created.
+  if (h$chart === undefined)
+    return;
+
+  // add data for top-level CCSs and count top-level CCSs
   for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
     var ccs = h$ccsList[ccsIdx];
     if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      ++toplevelCCS; // TODO: no need to count this in every cycle
       // assume inherited retained counts are calculated
       ccs.plotData.push(ccs.inheritedRetain);
       newData.push(ccs.inheritedRetain);
     }
   }
+
+  // add data for children CCSs
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (!(ccs.prevStack === null || ccs.prevStack === undefined)) {
+      var idx;
+      if (h$lineIdxs.has(ccs)) {
+        // we already saw this CCS before
+        idx = h$lineIdxs.get(ccs);
+      } else {
+        // we're seeing this CCS for the first time
+        // generate CCS idx and add it to h$lineIdxs
+        idx = h$lineIdxs.size();
+        h$lineIdxs.put(ccs, idx);
+        // we need to fill new CCS data with zeroes
+        var data = [];
+        for (var i = 0; i < h$chart.datasets[0].points.length; i++)
+          data.push(0);
+        // generate dataset
+        var datasetColor = h$getRandomColor();
+        var newDataset = {
+          label: h$mkCCSLabel(ccs),
+          data: data,
+          fillColor: datasetColor,
+          strokeColor: datasetColor,
+          pointColor: datasetColor,
+          pointStrokeColor: "#fff",
+          pointHighlightFill: "#fff",
+          pointHighlightStroke: datasetColor
+        };
+        // add dataset to the chart
+        h$chart.addDataset(newDataset);
+      }
+      newData[toplevelCCS + idx] = ccs.inheritedRetain;
+    }
+  }
+
+  ASSERT(h$chart.datasets.length === h$ccsList.length);
+  ASSERT(newData.length === h$ccsList.length);
 
   if (h$chart !== undefined) {
     // FIXME: For some reason, in first iteration h$chart is undefined
