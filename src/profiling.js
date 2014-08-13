@@ -364,10 +364,30 @@ function h$includePolymer() {
   overlayLink.setAttribute("rel", "import");
   overlayLink.setAttribute("href", "polymer-components/core-overlay/core-overlay.html");
 
+  var rippleLink = document.createElement("link");
+  rippleLink.setAttribute("rel", "import");
+  rippleLink.setAttribute("href", "polymer-components/paper-ripple/paper-ripple.html");
+
+  var selectionLink = document.createElement("link");
+  selectionLink.setAttribute("rel", "import");
+  selectionLink.setAttribute("href", "polymer-components/core-selection/core-selection.html");
+
+  var selectorLink = document.createElement("link");
+  selectorLink.setAttribute("rel", "import");
+  selectorLink.setAttribute("href", "polymer-components/core-selector/core-selector.html");
+
+  var tabsLink = document.createElement("link");
+  tabsLink.setAttribute("rel", "import");
+  tabsLink.setAttribute("href", "polymer-components/paper-tabs/paper-tabs.html");
+
   var head = document.getElementsByTagName("head")[0];
   head.appendChild(platformScript);
   head.appendChild(progressLink);
   head.appendChild(overlayLink);
+  head.appendChild(rippleLink);
+  head.appendChild(selectionLink);
+  head.appendChild(selectorLink);
+  head.appendChild(tabsLink);
 }
 
 function h$includeChartjs(callback) {
