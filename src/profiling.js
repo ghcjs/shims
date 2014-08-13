@@ -723,18 +723,18 @@ function h$createChart() {
 }
 
 function h$updateChart() {
+  // because of the order callbacks are called, in first iteration
+  // h$chart is sometimes undefined. in that case we're just waiting until
+  // h$chart is created.
+  if (h$chart === undefined)
+    return;
+
   // how many points for a line to show in the chart
   var points        = 10;
   // number of top-level CCSs
   var toplevelCCS   = 0;
   // new data to push to the chart
   var newData       = [];
-
-  // because of the order callbacks are called, in first iteration
-  // h$chart is sometimes undefined. in that case we're just waiting until
-  // h$chart is created.
-  if (h$chart === undefined)
-    return;
 
   // add data for top-level CCSs and count top-level CCSs
   for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
@@ -747,43 +747,67 @@ function h$updateChart() {
     }
   }
 
-  // add data for children CCSs
+  // second iteration, process children stacks.
+
+  // use a stack to make sure parent CCS is processed before children
+  // TODO: maybe replace this with recursion?
+  var stack = [];
+
   for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
     var ccs = h$ccsList[ccsIdx];
-    if (!(ccs.prevStack === null || ccs.prevStack === undefined)) {
-      var idx;
-      if (h$lineIdxs.has(ccs)) {
-        // we already saw this CCS before
-        idx = h$lineIdxs.get(ccs);
-      } else {
-        // we're seeing this CCS for the first time
-        // generate CCS idx and add it to h$lineIdxs
-        idx = h$lineIdxs.size();
-        h$lineIdxs.put(ccs, idx);
-        // we need to fill new CCS data with zeroes
-        var data = [];
-        for (var i = 0; i < h$chart.datasets[0].points.length; i++)
-          data.push(0);
-        // generate dataset
-        var datasetColor = h$getRandomColor();
-        var newDataset = {
-          label: h$mkCCSLabel(ccs),
-          data: data,
-          fillColor: datasetColor,
-          strokeColor: datasetColor,
-          pointColor: datasetColor,
-          pointStrokeColor: "#fff",
-          pointHighlightFill: "#fff",
-          pointHighlightStroke: datasetColor
-        };
-        // add dataset to the chart
-        h$chart.addDataset(newDataset);
-
-        // add checkbox for the CCS
-        document.getElementById("ghcjs-prof-settings-ul").appendChild(h$mkCCSSettingDOM(ccs));
-      }
-      newData[toplevelCCS + idx] = ccs.inheritedRetain;
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      // top-level CCS, push it's children to the stack manually
+      var consed = ccs.consed.values();
+      for (var j = 0; j < consed.length; j++)
+        stack.push(consed[j]);
     }
+  }
+
+  var val = stack.pop();
+  while (val !== undefined) {
+
+    // push children stack frames to the stack
+    var consed = val.consed.values();
+    for (var j = 0; j < consed.length; j++)
+      stack.push(consed[j]);
+
+    // index of cost-centre in the data array
+    var idx;
+
+    if (h$lineIdxs.has(val)) {
+      // we already saw this CCS before
+      idx = h$lineIdxs.get(val);
+    } else {
+      // we're seeing this CCS for the first time
+      // generate CCS idx and add it to h$lineIdxs
+      idx = h$lineIdxs.size();
+      h$lineIdxs.put(val, idx);
+      // we need to fill new CCS data with zeroes
+      var data = [];
+      for (var i = 0; i < h$chart.datasets[0].points.length; i++)
+        data.push(0);
+      // generate dataset
+      var datasetColor = h$getRandomColor();
+      var newDataset = {
+        label: h$mkCCSLabel(val),
+        data: data,
+        fillColor: datasetColor,
+        strokeColor: datasetColor,
+        pointColor: datasetColor,
+        pointStrokeColor: "#fff",
+        pointHighlightFill: "#fff",
+        pointHighlightStroke: datasetColor
+      };
+      // add dataset to the chart
+      h$chart.addDataset(newDataset);
+
+      // add checkbox for the CCS
+      document.getElementById("ghcjs-prof-settings-ul").appendChild(h$mkCCSSettingDOM(val));
+    }
+    newData[toplevelCCS + idx] = val.inheritedRetain;
+
+    // reload current value
+    val = stack.pop();
   }
 
   ASSERT(h$chart.datasets.length === h$ccsList.length);
