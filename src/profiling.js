@@ -383,8 +383,27 @@ function h$addCSS() {
   var css =
     "\
       #ghcjs-prof-container {\
-        height: 600px;\
+        height: 80%;\
         overflow: scroll;\
+        height: 300px;\
+      }\
+\
+      .ghcjs-prof-column-left { width: 20%; }\
+      .ghcjs-prof-column-center { width: 5%; }\
+      .ghcjs-prof-column-right { width: 70%; }\
+\
+      .ghcjs-prof-progress {\
+        padding: 10px;\
+        display: block;\
+        width: 100%;\
+      }\
+\
+      .ghcjs-prof-progress.pink::shadow #activeProgress {\
+        background-color: #e91e63;\
+      }\
+\
+      .ghcjs-prof-progress.pink::shadow #secondaryProgress {\
+        background-color: #f8bbd0;\
       }\
 \
       #ghcjs-prof-overlay {\
@@ -423,6 +442,11 @@ function h$addOverlayDOM() {
   div.setAttribute("flex", "");
   div.setAttribute("id", "ghcjs-prof-container");
 
+  var ul = document.createElement("ul");
+  ul.setAttribute("flex", "");
+  ul.setAttribute("id", "ghcjs-prof-container-ul");
+
+  div.appendChild(ul);
   overlay.appendChild(div);
 
   var button = document.createElement("button");
@@ -441,6 +465,55 @@ function h$mkDivId(ccs) {
 // String representation of a CCS
 function h$mkCCSLabel(ccs) {
   return ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+}
+
+function h$mkCCSDOM(ccs) {
+  var ccsLabel = h$mkCCSLabel(ccs);
+  var rowDivId = h$mkDivId(ccs);
+
+  var leftDiv  = document.createElement("div");
+  leftDiv.setAttribute("class", "ghcjs-prof-column-left");
+  leftDiv.appendChild(document.createTextNode(ccsLabel));
+
+  var midDiv   = document.createElement("div");
+  midDiv.setAttribute("class", "ghcjs-prof-column-center");
+  midDiv.appendChild(document.createTextNode("0"));
+
+  var rightDiv = document.createElement("div");
+  rightDiv.setAttribute("class", "ghcjs-prof-column-right");
+  var bar = document.createElement("paper-progress");
+  bar.setAttribute("value", "0");
+  bar.setAttribute("min", "0");
+  bar.setAttribute("max", "1000");
+  bar.setAttribute("class", "ghcjs-prof-progress");
+  rightDiv.appendChild(bar);
+
+  ccs.domElems = {
+    leftDiv: leftDiv,
+    midDiv: midDiv,
+    rightDiv: rightDiv,
+    bar: bar
+  };
+
+  var rowDiv = document.createElement("div");
+  rowDiv.setAttribute("layout", "");
+  rowDiv.setAttribute("horizontal", "");
+
+  rowDiv.appendChild(leftDiv);
+  rowDiv.appendChild(midDiv);
+  rowDiv.appendChild(rightDiv);
+
+  var ul = document.createElement("ul");
+
+  var div = document.createElement("div");
+  div.setAttribute("layout", "");
+  div.setAttribute("vertical", "");
+  div.setAttribute("id", rowDivId);
+
+  div.appendChild(rowDiv);
+  div.appendChild(ul);
+
+  return div;
 }
 
 function h$mkCCSSettingDOM(ccs) {
@@ -478,6 +551,95 @@ function h$mkCCSSettingDOM(ccs) {
   }
 
   return settingLi;
+}
+
+function h$addCCSDOM() {
+  var ul = document.getElementById("ghcjs-prof-container-ul");
+  for (var i = 0; i < h$ccsList.length; i++)
+    ul.appendChild(h$mkCCSDOM(h$ccsList[i]));
+}
+
+function h$updateDOMs() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      h$inheritRetained(ccs);
+      ccs.domElems.midDiv.innerHTML = ccs.inheritedRetain;
+      ccs.domElems.bar.setAttribute("value", ccs.inheritedRetain);
+    }
+  }
+
+  var stack = [];
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+
+      // push initial values to the stack
+      for (var j = 0; j < ccs.consed.values().length; j++)
+        stack.push(ccs.consed.values()[j]);
+
+      var val = stack.pop();
+
+      while (val !== undefined) {
+        // push children stack frames to the stack
+        for (var j = 0; j < val.consed.values().length; j++)
+          stack.push(val.consed.values()[j]);
+
+        var divId = h$mkDivId(val);
+        var div   = document.getElementById(divId);
+
+        if (div === null) {
+          var div = h$mkCCSDOM(val);
+          var parentDivId = h$mkDivId(val.prevStack);
+          var parentDiv = document.getElementById(parentDivId);
+          var ul = parentDiv.children[parentDiv.children.length - 1];
+          ul.appendChild(h$mkCCSDOM(val));
+        } else {
+          val.domElems.midDiv.innerHTML = val.inheritedRetain;
+          val.domElems.bar.setAttribute("value", val.inheritedRetain);
+        }
+
+        // reload current value
+        val = stack.pop();
+      }
+    }
+  }
+
+  var maxRetained = h$sortDOMs(document.getElementById("ghcjs-prof-container-ul"));
+  // scale the bars
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    ccs.domElems.rightDiv.children[0].setAttribute("max", maxRetained);
+  }
+}
+
+function h$sortDOMs(parent) {
+  // maximum number of retained objs, to be used in scaling the bars
+  var maxRetained = 0;
+
+  var items = [];
+  var children = parent.children;
+  while (parent.firstChild)
+      items.push(parent.removeChild(parent.firstChild));
+
+  // sort child nodes first
+  for (var i = 0; i < items.length; i++)
+    h$sortDOMs(items[i].children[1]);
+
+  items.sort(function (a, b) {
+    var midDivA = a.children[0].children[1];
+    var midDivB = b.children[0].children[1];
+    return (parseInt(midDivB.innerHTML) - parseInt(midDivA.innerHTML));
+  });
+
+  for (var i = 0; i < items.length; i++) {
+    var retained = parseInt(items[i].children[0].children[1].innerHTML);
+    if (retained > maxRetained)
+      maxRetained = retained;
+    parent.appendChild(items[i]);
+  }
+
+  return maxRetained;
 }
 
 function h$toggleProfGUI() {
@@ -593,12 +755,10 @@ function h$updateChart() {
   // new data to push to the chart
   var newData       = [];
 
-  // add data for top-level CCSs, count top-level CCSs and calculate
-  // inherited retained obj counts
+  // add data for top-level CCSs and count top-level CCSs
   for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
     var ccs = h$ccsList[ccsIdx];
     if (ccs.prevStack === null || ccs.prevStack === undefined) {
-      h$inheritRetained(ccs);
       ++toplevelCCS; // TODO: no need to count this in every cycle
       // assume inherited retained counts are calculated
       ccs.plotData.push(ccs.inheritedRetain);
@@ -715,6 +875,7 @@ document.addEventListener("DOMContentLoaded", function () {
   h$includeChartjs(h$createChart);
   h$addCSS();
   h$addOverlayDOM();
+  h$addCCSDOM();
 });
 
 #endif
