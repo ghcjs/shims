@@ -517,20 +517,39 @@ function h$mkCCSDOM(ccs) {
 }
 
 function h$mkCCSSettingDOM(ccs) {
+  // <li>
+  //   <div>
+  //     <label><checkbox />ccs label</label>
+  //     <ul> ul for children </ul>
+  //   </div>
+  // </li>
+
   var settingLi = document.createElement("li");
+
   var settingCheckbox = document.createElement("input");
-  var settingCheckboxLabel = document.createElement("label");
   settingCheckbox.setAttribute("type", "checkbox");
   settingCheckbox.setAttribute("id", h$mkDivId(ccs) + "-enabled");
   settingCheckbox.setAttribute("checked", "");
+
+  var settingCheckboxLabel = document.createElement("label");
   settingCheckboxLabel.appendChild(settingCheckbox);
   settingCheckboxLabel.appendChild(document.createTextNode(h$mkCCSLabel(ccs)));
+
+  var childrenUl = document.createElement("ul");
+  childrenUl.setAttribute("id", h$mkDivId(ccs) + "-children");
+
+  var wrapperDiv = document.createElement("div");
+  wrapperDiv.appendChild(settingCheckboxLabel);
+  wrapperDiv.appendChild(childrenUl);
+
+  settingLi.appendChild(wrapperDiv);
+
   settingCheckbox.onchange = function () {
     ccs.hidden = !this.checked;
     h$showOrHideCCS(ccs);
     h$chart.update();
   }
-  settingLi.appendChild(settingCheckboxLabel);
+
   return settingLi;
 }
 
@@ -802,7 +821,8 @@ function h$updateChart() {
       h$chart.addDataset(newDataset);
 
       // add checkbox for the CCS
-      document.getElementById("ghcjs-prof-settings-ul").appendChild(h$mkCCSSettingDOM(val));
+      document.getElementById(h$mkDivId(ccs.prevStack) + "-children")
+        .appendChild(h$mkCCSSettingDOM(val));
     }
     newData[toplevelCCS + idx] = val.inheritedRetain;
 
@@ -813,36 +833,33 @@ function h$updateChart() {
   ASSERT(h$chart.datasets.length === h$ccsList.length);
   ASSERT(newData.length === h$ccsList.length);
 
-  if (h$chart !== undefined) {
-    // FIXME: For some reason, in first iteration h$chart is undefined
-    h$chart.addData(newData);
-    while (h$chart.datasets[0].points.length > points) {
-      h$chart.removeData();
-    }
-    // hide lines with 0 allocations for last `points` cycles
-    for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
-      var ccs = h$ccsList[ccsIdx];
-      if (ccs.prevStack === null || ccs.prevStack === undefined) {
-        ccs.active  = false;
+  h$chart.addData(newData);
+  while (h$chart.datasets[0].points.length > points) {
+    h$chart.removeData();
+  }
+  // hide lines with 0 allocations for last `points` cycles
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    if (ccs.prevStack === null || ccs.prevStack === undefined) {
+      ccs.active  = false;
 
-        // number of points to draw
-        var ps    = Math.min(ccs.plotData.length, points);
-        // first point to draw
-        var first = ccs.plotData.length - ps;
-        // last point to draw
-        var last  = first + ps - 1;
+      // number of points to draw
+      var ps    = Math.min(ccs.plotData.length, points);
+      // first point to draw
+      var first = ccs.plotData.length - ps;
+      // last point to draw
+      var last  = first + ps - 1;
 
-        for (var i = first; i <= last; i++) {
-          if (ccs.plotData[i] !== 0) {
-            ccs.active = true;
-            break;
-          }
+      for (var i = first; i <= last; i++) {
+        if (ccs.plotData[i] !== 0) {
+          ccs.active = true;
+          break;
         }
       }
-      h$showOrHideCCS(ccs);
     }
-    h$chart.update();
+    h$showOrHideCCS(ccs);
   }
+  h$chart.update();
 }
 
 function h$showOrHideCCS(ccs) {
