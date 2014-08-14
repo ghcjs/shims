@@ -353,40 +353,45 @@ function h$printRetainedInfo() {
 h$lineIdxs = new h$Map();
 
 function h$includePolymer() {
+  var head = document.querySelector("head");
+
   var platformScript = document.createElement("script");
   platformScript.setAttribute("src", "polymer-components/platform/platform.js");
-
-  var progressLink = document.createElement("link");
-  progressLink.setAttribute("rel", "import");
-  progressLink.setAttribute("href", "polymer-components/paper-progress/paper-progress.html");
+  head.appendChild(platformScript);
 
   var overlayLink = document.createElement("link");
   overlayLink.setAttribute("rel", "import");
   overlayLink.setAttribute("href", "polymer-components/core-overlay/core-overlay.html");
-
-  var rippleLink = document.createElement("link");
-  rippleLink.setAttribute("rel", "import");
-  rippleLink.setAttribute("href", "polymer-components/paper-ripple/paper-ripple.html");
+  head.appendChild(overlayLink);
 
   var selectionLink = document.createElement("link");
   selectionLink.setAttribute("rel", "import");
   selectionLink.setAttribute("href", "polymer-components/core-selection/core-selection.html");
+  head.appendChild(selectionLink);
 
   var selectorLink = document.createElement("link");
   selectorLink.setAttribute("rel", "import");
   selectorLink.setAttribute("href", "polymer-components/core-selector/core-selector.html");
+  head.appendChild(selectorLink);
+
+  var pagesLink = document.createElement("link");
+  pagesLink.setAttribute("rel", "import");
+  pagesLink.setAttribute("href", "polymer-components/core-pages/core-pages.html");
+  head.appendChild(pagesLink);
+
+  var progressLink = document.createElement("link");
+  progressLink.setAttribute("rel", "import");
+  progressLink.setAttribute("href", "polymer-components/paper-progress/paper-progress.html");
+  head.appendChild(progressLink);
+
+  var rippleLink = document.createElement("link");
+  rippleLink.setAttribute("rel", "import");
+  rippleLink.setAttribute("href", "polymer-components/paper-ripple/paper-ripple.html");
+  head.appendChild(rippleLink);
 
   var tabsLink = document.createElement("link");
   tabsLink.setAttribute("rel", "import");
   tabsLink.setAttribute("href", "polymer-components/paper-tabs/paper-tabs.html");
-
-  var head = document.getElementsByTagName("head")[0];
-  head.appendChild(platformScript);
-  head.appendChild(progressLink);
-  head.appendChild(overlayLink);
-  head.appendChild(rippleLink);
-  head.appendChild(selectionLink);
-  head.appendChild(selectorLink);
   head.appendChild(tabsLink);
 }
 
@@ -403,7 +408,6 @@ function h$addCSS() {
   var css =
     "\
       #ghcjs-prof-container {\
-        height: 80%;\
         overflow: scroll;\
         height: 300px;\
       }\
@@ -534,6 +538,54 @@ function h$mkCCSDOM(ccs) {
   div.appendChild(ul);
 
   return div;
+}
+
+function h$mkSettingTabs(parent) {
+  // <paper-tabs id="ghcjs-prof-checkbox-tabs" selected="CCS" noink nobar>
+  //   <paper-tab name="CCS">CCS</paper-tab>
+  //   <paper-tab name="module">Module</paper-tab>
+  // </paper-tabs>
+  // <tab show="CCS" id="ghcjs-prof-ccs-tab"></tab>
+  // <tab show="module" id="ghcjs-prof-module-tab"></tab>
+
+  var tabs = document.createElement("paper-tabs");
+  tabs.setAttribute("id", "ghcjs-prof-checkbox-tabs");
+  tabs.setAttribute("selected", "0");
+  tabs.setAttribute("noink", "");
+  tabs.setAttribute("nobar", "");
+
+  var ccsTab = document.createElement("paper-tab");
+  ccsTab.appendChild(document.createTextNode("CCS"));
+  tabs.appendChild(ccsTab);
+
+  var moduleTab = document.createElement("paper-tab");
+  moduleTab.appendChild(document.createTextNode("Module"));
+  tabs.appendChild(moduleTab);
+
+  var ccsTabContent = document.createElement("div");
+  ccsTabContent.setAttribute("id", "ghcjs-prof-ccs-tab");
+
+  var moduleTabContent = document.createElement("div");
+  moduleTabContent.setAttribute("id", "ghcjs-prof-module-tab");
+
+  // for testing purposes
+  ccsTabContent.appendChild(document.createTextNode("ccs tab"));
+  moduleTabContent.appendChild(document.createTextNode("module tab"));
+
+  var pages = document.createElement("core-pages");
+  pages.setAttribute("selected", "0");
+  pages.appendChild(ccsTabContent);
+  pages.appendChild(moduleTabContent);
+
+  // add elements to the given parent
+  parent.appendChild(tabs);
+  parent.appendChild(pages);
+
+  // event handler
+  tabs.addEventListener("click", function (e) {
+    console.log("event handler called");
+    pages.selected = tabs.selected;
+  });
 }
 
 function h$mkCCSSettingDOM(ccs) {
@@ -683,14 +735,20 @@ function h$createChart() {
 
   // wrap the canvas with a layer of "div"
   var chartDiv1 = document.createElement("div");
+  chartDiv1.setAttribute("flex", "");
+  chartDiv1.setAttribute("two", "");
   var chartCanvas = document.createElement("canvas");
-  chartCanvas.setAttribute("width", 800);
-  chartCanvas.setAttribute("height", 500);
   chartCanvas.setAttribute("id", "ghcjs-prof-chart");
+
+  // just to set aspect ratio
+  chartCanvas.setAttribute("width", 1);
+  chartCanvas.setAttribute("height", 1);
+
   chartDiv1.appendChild(chartCanvas);
   chartDiv.appendChild(chartDiv1);
 
   var settingsDiv = document.createElement("div");
+  settingsDiv.setAttribute("flex", "");
   var settingsUl = document.createElement("ul");
   settingsUl.setAttribute("id", "ghcjs-prof-settings-ul");
   // add initial CCS settings
@@ -725,6 +783,10 @@ function h$createChart() {
     pointDot : false,
     // Number - amount extra to add to the radius to cater for hit detection outside the drawn point
     pointHitDetectionRadius : 20,
+    // Boolean - whether or not the chart should be responsive and resize when the browser does.
+    responsive : true,
+    // Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
+    maintainAspectRatio: true,
     // Boolean - Whether to show a stroke for datasets
     datasetStroke : false,
     // Number - Pixel width of dataset stroke
@@ -896,6 +958,7 @@ document.addEventListener("DOMContentLoaded", function () {
   h$addCSS();
   h$addOverlayDOM();
   h$addCCSDOM();
+  h$mkSettingTabs(document.getElementById("ghcjs-prof-container"));
 });
 
 #endif
