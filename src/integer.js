@@ -376,7 +376,16 @@ function h$integer_cmm_sizeInBasezh(sa, abits, b) {
 var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
-    TRACE_INTEGER("decodeDouble " + x);
+    TRACE_INTEGER("integer_cmm_decodeDouble " + x);
+    var sgn = h$decodeDouble2Int(x);
+    var b   = h$bigFromInt(h$ret1).shiftLeft(32).add(h$bigFromWord(h$ret2));
+    h$ret1 = (!isNaN(x) && sgn < 0) ? b.negate() : b;
+    TRACE_INTEGER("integer_cmm_decodeDouble s: " + h$ret1 + " e: " + h$ret3);
+    return h$ret3; // exponent
+}
+
+function h$integer_cmm_decodeDoublezhFallback(x) {
+    TRACE_INTEGER("integer_cmm_decodeDouble fallback " + x);
     if(isNaN(x)) {
       h$ret1 = h$bigFromInt(3).shiftLeft(51).negate();
       return 972;
@@ -406,6 +415,7 @@ function h$integer_cmm_decodeDoublezh(x) {
       n *= 2;
     }
     h$ret1 = h$bigFromNumber(n);
+    TRACE_INTEGER("integer_cmm_decodeDoubleFallback s: " + h$ret1 + " e: " + exponent);
     return exponent;
 }
 

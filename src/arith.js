@@ -358,31 +358,118 @@ function h$isFloatDenormalized(d) {
   return (d !== 0 && Math.abs(d) < 2.2250738585072014e-308) ? 1 : 0;
 }
 
-function h$decodeFloatInt(d) {
+var h$convertBuffer = new ArrayBuffer(8);
+var h$convertDouble = new Float64Array(h$convertBuffer);
+var h$convertFloat  = new Float32Array(h$convertBuffer);
+var h$convertInt    = new Int32Array(h$convertBuffer);
+
+// use direct inspection through typed array for decoding floating point numbers if this test gives
+// the expected answer. fixme: does this test catch all non-ieee or weird endianness situations?
+h$convertFloat[0] = 0.75;
+// h$convertFloat[0] = 1/0; // to force using fallbacks
+var h$decodeFloatInt   = h$convertInt[0] === 1061158912 ? h$decodeFloatIntArray   : h$decodeFloatIntFallback;
+var h$decodeDouble2Int = h$convertInt[0] === 1061158912 ? h$decodeDouble2IntArray : h$decodeDouble2IntFallback;
+
+function h$decodeFloatIntArray(d) {
+    TRACE_ARITH("decodeFloatIntArray: " + d);
+    if(isNaN(d)) {
+        h$ret1 = 105;
+        return -12582912;
+    }
+    h$convertFloat[0] = d;
+    var i = h$convertInt[0];
+    var exp = (i&2139095040) >> 23;
+    var s   = i&8388607;
+    if(exp === 0) { // zero or denormal
+        if(s === 0) {
+            TRACE_ARITH("decodeFloatIntArray s: 0 e: 0");
+            h$ret1 = 0;
+            return 0;
+        } else {
+            h$convertFloat[0] = d*8388608;
+            i = h$convertInt[0];
+            TRACE_ARITH("decodeFloatIntArray s: " + ((((i&8388607)<<7)|(i&2147483648))>>7) +  " e: " + ((i&2139095040) >> 23) - 173);
+            h$ret1 = ((i&2139095040) >> 23) - 173;
+            return (((i&8388607)<<7)|(i&2147483648))>>7;
+        }
+    } else {
+        TRACE_ARITH("decodeFloatIntArray s: " + ((((s|8388608)<<7)|(i&2147483648))>>7) +  " e: " + (exp-150));
+        h$ret1 = exp - 150;
+        return (((s|8388608)<<7)|(i&2147483648))>>7;
+    }
+}
+
+function h$decodeFloatIntFallback(d) {
+    TRACE_ARITH("decodeFloatIntFallback: " + d);
     if(isNaN(d)) {
       h$ret1 = 105;
       return -12582912;
     }
-    var exponent    = h$integer_cmm_decodeDoublezh(d)+29;
-    var significand = h$ret1.shiftRight(29).intValue();
+    var exponent = h$integer_cmm_decodeDoublezhFallback(d)+29;
+    var significand = h$ret1.shiftRight(28).add(h$bigOne).shiftRight(1).intValue();
     if(exponent > 105) {
       exponent = 105;
-      significand = significand > 0 ? 8388608 : -8388608;
-    } else if(exponent < -151) {
+      significand = d > 0 ? 8388608 : -8388608;
+    } else if(exponent < -151 || significand === 0) {
       significand = 0;
       exponent = 0;
     }
+    TRACE_ARITH("decodeFloatIntFallback s: " + significand + " e: " + exponent);
     h$ret1 = exponent;
     return significand;
 }
 
-function h$decodeDouble2Int(d) {
-   var exponent    = h$integer_cmm_decodeDoublezh(d);
-   var significand = h$ret1;
-   var sign = d<0?-1:1;
-   h$ret1 = significand.shiftRight(32).intValue(); // correct sign?
-   h$ret2 = significand.intValue();
-   return sign;
+function h$decodeDouble2IntArray(d) {
+    TRACE_ARITH("decodeDouble2IntArray: " + d);
+    if(isNaN(d)) {
+        h$ret3 = 972;
+        h$ret2 = 0;
+        h$ret1 = -1572864;
+        return 1;
+    }
+    h$convertDouble[0] = d;
+    TRACE_ARITH("decodeDouble2IntArray binary: " + h$convertInt[0].toString(2) + " " + h$convertInt[1].toString(2));
+    var i1 = h$convertInt[1];
+    h$ret2 = h$convertInt[0];
+    var exp = (i1&2146435072)>>>20;
+    if(exp === 0) { // denormal or zero
+        if((i1&2147483647) === 0 && h$ret2 === 0) {
+            h$ret1 = 0;
+            h$ret3 = 0;
+        } else {
+            h$convertDouble[0] = d*9007199254740992;
+            i1 = h$convertInt[1];
+            h$ret1 = (i1&1048575)|1048576;
+            h$ret2 = h$convertInt[0];
+            h$ret3 = ((i1&2146435072)>>>20)-1128;
+        }
+    } else {
+        h$ret3 = exp-1075;
+        h$ret1 = (i1&1048575)|1048576;
+    }
+    TRACE_ARITH("decodeDouble2IntArray: exp: " + h$ret3 + " significand: " + h$ret1 + " " + h$ret2);
+    return i1<0?-1:1;
+}
+
+function h$decodeDouble2IntFallback(d) {
+    TRACE_ARITH("decodeDouble2IntFallback: " + d);
+    if(isNaN(d)) {
+        h$ret3 = 972;
+        h$ret2 = 0;
+        h$ret1 = -1572864;
+        return 1;
+    }
+    var exponent    = h$integer_cmm_decodeDoublezhFallback(d);
+    var significand = h$ret1;
+    var sign = d<0?-1:1;
+    var s = significand.abs();
+    h$decodeDouble2IntArray(d);
+    TRACE_ARITH("decodeDouble2IntArray: exp: " + h$ret3 + " significand: " + h$ret1 + " " + h$ret2);
+    h$ret1 = s.shiftRight(32).intValue();
+    h$ret2 = s.intValue();
+    h$ret3 = exponent;
+    TRACE_ARITH("decodeDouble2IntFallback: exp: " + h$ret3 + " significand: " + h$ret1 + " " + h$ret2);
+    return sign;
 }
 
 // round .5 to nearest even number
