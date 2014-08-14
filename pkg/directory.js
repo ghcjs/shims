@@ -247,6 +247,20 @@ function h$directory_getAppUserDataDirectory(appName) {
         return "/";
 }
 
+function h$directory_getUserDocumentsDirectory(appName) {
+    TRACE_DIRECTORY("getUserDocumentsDirectory: " + appName);
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        if(process.env['HOME'])
+            return process.env['HOME'];
+        // fixme handle Windows
+        TRACE_DIRECTORY("getUserDocumentsDirectory fallback");
+        return "/";
+    } else
+#endif
+        return "/";
+}
+
 function h$directory_getTemporaryDirectory() {
     TRACE_DIRECTORY("getTemporaryDirectory");
 #ifndef GHCJS_BROWSER
