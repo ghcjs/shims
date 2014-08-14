@@ -507,22 +507,41 @@ function h$scheduler(next) {
 }
 
 function h$scheduleMainLoop() {
+    TRACE_SCHEDULER("scheduling next main loop wakeup");
     if(h$mainLoopImmediate) return;
     h$clearScheduleMainLoop();
     if(h$delayed.size() === 0) {
 #ifndef GHCJS_BROWSER
-        if(typeof setTimeout !== 'undefined')
+        if(typeof setTimeout !== 'undefined') {
 #endif
+            TRACE_SCHEDULER("scheduling main loop wakeup in " + delay + "ms");
             h$mainLoopTimeout = setTimeout(h$mainLoop, h$gcInterval);
+#ifndef GHCJS_BROWSER
+        }
+#endif
         return;
     }
     var now = Date.now();
     var delay = Math.min(Math.max(h$delayed.peekPrio()-now, 0), h$gcInterval);
 #ifndef GHCJS_BROWSER
-    if(typeof setTimeout !== 'undefined')
+    if(typeof setTimeout !== 'undefined') {
 #endif
-        h$mainLoopTimeout = setTimeout(h$mainLoop, delay);
+        if(delay >= 1) {
+            TRACE_SCHEDULER("scheduling main loop wakeup in " + delay + "ms");
+            // node.js 0.10.30 has trouble with non-integral delays
+            h$mainLoopTimeout = setTimeout(h$mainLoop, Math.round(delay));
+        } else {
+            h$mainLoopImmediate = setImmediate(h$mainLoop);
+        }
+#ifndef GHCJS_BROWSER
+    }
+#endif
 }
+
+var h$animationFrameMainLoop = false;
+#ifdef GHCJS_ANIMATIONFRAME_MAINLOOP
+h$animationFrameMainLoop = true;
+#endif
 
 function h$clearScheduleMainLoop() {
     if(h$mainLoopTimeout) {
@@ -532,6 +551,10 @@ function h$clearScheduleMainLoop() {
     if(h$mainLoopImmediate) {
         clearImmediate(h$mainLoopImmediate);
         h$mainLoopImmediate = null;
+    }
+    if(h$mainLoopFrame) {
+        cancelAnimationFrame(h$mainLoopFrame);
+        h$mainLoopFrame = null;
     }
 }
 
@@ -552,8 +575,12 @@ function h$startMainLoop() {
 #endif
 }
 
+var h$busyYield    = GHCJS_BUSY_YIELD;
+var h$schedQuantum = GHCJS_SCHED_QUANTUM;
+
 var h$mainLoopImmediate = null; // immediate id if main loop has been scheduled immediately
 var h$mainLoopTimeout = null;   // timeout id if main loop has been scheduled with a timeout
+var h$mainLoopFrame = null;   // timeout id if main loop has been scheduled with an animation frame
 var h$running = false;
 var h$next = null;
 function h$mainLoop() {
@@ -578,14 +605,18 @@ function h$mainLoop() {
             h$scheduleMainLoop();
             return;
         }
-        // yield to js after GHCJS_BUSY_YIELD
-        if(Date.now() - start > GHCJS_BUSY_YIELD) {
+        // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
+        if(Date.now() - start > h$busyYield) {
             TRACE_SCHEDULER("yielding to js");
             if(c !== h$reschedule) h$suspendCurrentThread(c);
             h$next = h$currentThread;
             h$currentThread = null;
             h$running = false;
-            h$mainLoopImmediate = setImmediate(h$mainLoop);
+            if(h$animationFrameMainLoop) {
+                h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
+            } else {
+                h$mainLoopImmediate = setImmediate(h$mainLoop);
+            }
             return;
         }
         // preemptively schedule threads after 10*GHCJS_SCHED_CHECK calls
@@ -593,7 +624,7 @@ function h$mainLoop() {
 #ifndef GHCJS_NO_CATCH_MAINLOOP
         try {
 #endif
-            while(c !== h$reschedule && Date.now() - scheduled < GHCJS_SCHED_QUANTUM) {
+            while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
                 count = 0;
                 while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
 #ifdef GHCJS_TRACE_CALLS
