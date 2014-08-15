@@ -395,6 +395,55 @@ function h$includePolymer() {
   head.appendChild(tabsLink);
 }
 
+function h$mkOverlay() {
+  var overlay = document.createElement("core-overlay");
+  overlay.setAttribute("id", "ghcjs-prof-overlay");
+
+  var h2 = document.createElement("h2");
+  h2.appendChild(document.createTextNode("Retained object counts per CSS"));
+  overlay.appendChild(h2);
+
+  document.querySelector("body").appendChild(overlay);
+}
+
+function h$mkTabs() {
+  var tabs = document.createElement("paper-tabs");
+  tabs.setAttribute("selected", "0");
+  tabs.setAttribute("noink", "");
+  tabs.setAttribute("nobar", "");
+
+  var barsTab = document.createElement("paper-tab");
+  barsTab.appendChild(document.createTextNode("Bars"));
+  tabs.appendChild(barsTab);
+
+  var linesTab = document.createElement("paper-tab");
+  linesTab.appendChild(document.createTextNode("Lines"));
+  tabs.appendChild(linesTab);
+
+  var barsTabContent = document.createElement("div");
+  barsTabContent.setAttribute("id", "ghcjs-prof-bars");
+
+  var linesTabContent = document.createElement("div");
+  linesTabContent.setAttribute("id", "ghcjs-prof-lines");
+
+  var pages = document.createElement("core-pages");
+  pages.setAttribute("id", "ghcjs-prof-pages");
+  pages.setAttribute("selected", "0");
+  pages.appendChild(barsTabContent);
+  pages.appendChild(linesTabContent);
+
+  // add elements to the given parent
+  var overlay = document.getElementById("ghcjs-prof-overlay");
+  overlay.appendChild(tabs);
+  overlay.appendChild(pages);
+
+  // event handler
+  tabs.addEventListener("click", function (e) {
+    console.log("event handler called");
+    pages.selected = tabs.selected;
+  });
+}
+
 function h$includeChartjs(callback) {
   var chartjs = document.createElement("script");
   chartjs.setAttribute("src", "Chart.js");
@@ -407,9 +456,12 @@ function h$addCSS() {
 
   var css =
     "\
-      #ghcjs-prof-container {\
+      #ghcjs-prof-bars, #ghcjs-prof-lines {\
         overflow: scroll;\
-        height: 300px;\
+      }\
+\
+      #ghcjs-prof-pages {\
+        height: 400px;\
       }\
 \
       .ghcjs-prof-column-left { width: 20%; }\
@@ -443,6 +495,7 @@ function h$addCSS() {
         outline: 1px solid rgba(0,0,0,0.2);\
         box-shadow: 0 4px 16px rgba(0,0,0,0.2);\
         width: 80%;\
+        height: 600px;\
       }\
     ";
 
@@ -455,12 +508,7 @@ function h$addCSS() {
 }
 
 function h$addOverlayDOM() {
-  var overlay = document.createElement("core-overlay");
-  overlay.setAttribute("id", "ghcjs-prof-overlay");
-
-  var h2 = document.createElement("h2");
-  h2.appendChild(document.createTextNode("Retained object counts per CSS"));
-  overlay.appendChild(h2);
+  var overlay = document.getElementById("ghcjs-prof-bars");
 
   var div = document.createElement("div");
   div.setAttribute("flex", "");
@@ -472,13 +520,6 @@ function h$addOverlayDOM() {
 
   div.appendChild(ul);
   overlay.appendChild(div);
-
-  var button = document.createElement("button");
-  button.setAttribute("core-overlay-toggle", "");
-  button.appendChild(document.createTextNode("Close"));
-  overlay.appendChild(button);
-
-  document.getElementsByTagName("body")[0].appendChild(overlay);
 }
 
 // Return id of the div that shows info of given CCS
@@ -540,54 +581,6 @@ function h$mkCCSDOM(ccs) {
   return div;
 }
 
-function h$mkSettingTabs(parent) {
-  // <paper-tabs id="ghcjs-prof-checkbox-tabs" selected="CCS" noink nobar>
-  //   <paper-tab name="CCS">CCS</paper-tab>
-  //   <paper-tab name="module">Module</paper-tab>
-  // </paper-tabs>
-  // <tab show="CCS" id="ghcjs-prof-ccs-tab"></tab>
-  // <tab show="module" id="ghcjs-prof-module-tab"></tab>
-
-  var tabs = document.createElement("paper-tabs");
-  tabs.setAttribute("id", "ghcjs-prof-checkbox-tabs");
-  tabs.setAttribute("selected", "0");
-  tabs.setAttribute("noink", "");
-  tabs.setAttribute("nobar", "");
-
-  var ccsTab = document.createElement("paper-tab");
-  ccsTab.appendChild(document.createTextNode("CCS"));
-  tabs.appendChild(ccsTab);
-
-  var moduleTab = document.createElement("paper-tab");
-  moduleTab.appendChild(document.createTextNode("Module"));
-  tabs.appendChild(moduleTab);
-
-  var ccsTabContent = document.createElement("div");
-  ccsTabContent.setAttribute("id", "ghcjs-prof-ccs-tab");
-
-  var moduleTabContent = document.createElement("div");
-  moduleTabContent.setAttribute("id", "ghcjs-prof-module-tab");
-
-  // for testing purposes
-  ccsTabContent.appendChild(document.createTextNode("ccs tab"));
-  moduleTabContent.appendChild(document.createTextNode("module tab"));
-
-  var pages = document.createElement("core-pages");
-  pages.setAttribute("selected", "0");
-  pages.appendChild(ccsTabContent);
-  pages.appendChild(moduleTabContent);
-
-  // add elements to the given parent
-  parent.appendChild(tabs);
-  parent.appendChild(pages);
-
-  // event handler
-  tabs.addEventListener("click", function (e) {
-    console.log("event handler called");
-    pages.selected = tabs.selected;
-  });
-}
-
 function h$mkCCSSettingDOM(ccs) {
   // <li>
   //   <div>
@@ -620,7 +613,44 @@ function h$mkCCSSettingDOM(ccs) {
     ccs.hidden = !this.checked;
     h$showOrHideCCS(ccs);
     h$chart.update();
-  }
+  };
+
+  return settingLi;
+}
+
+function h$mkCCSModuleSettingDOM(module) {
+  var settingCheckbox = document.createElement("input");
+  settingCheckbox.setAttribute("type", "checkbox");
+  settingCheckbox.setAttribute("id", module + "-enabled");
+  settingCheckbox.setAttribute("checked", "");
+
+  var settingCheckboxLabel = document.createElement("label");
+  settingCheckboxLabel.appendChild(settingCheckbox);
+  settingCheckboxLabel.appendChild(document.createTextNode(module));
+
+  var settingLi = document.createElement("li");
+  settingLi.appendChild(settingCheckboxLabel);
+
+  settingCheckbox.onchange = function () {
+    console.log("checkbox changed");
+    if (this.checked) {
+      for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+        var ccs = h$ccsList[ccsIdx];
+        if (ccs.cc.module === module) {
+          console.log("checking a checkbox");
+          document.getElementById(h$mkDivId(ccs) + "-enabled").checked = true;
+        }
+      }
+    } else {
+      for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+        var ccs = h$ccsList[ccsIdx];
+        if (ccs.cc.module === module) {
+          console.log("unchecking a checkbox");
+          document.getElementById(h$mkDivId(ccs) + "-enabled").checked = false;
+        }
+      }
+    }
+  };
 
   return settingLi;
 }
@@ -729,11 +759,12 @@ function h$getRandomColor() {
 
 var h$chart;
 function h$createChart() {
+  // wrapping div
   var chartDiv = document.createElement("div");
   chartDiv.setAttribute("horizontal", "");
   chartDiv.setAttribute("layout", "");
 
-  // wrap the canvas with a layer of "div"
+  // wrap the canvas with a layer of "div" for layout
   var chartDiv1 = document.createElement("div");
   chartDiv1.setAttribute("flex", "");
   chartDiv1.setAttribute("two", "");
@@ -747,20 +778,64 @@ function h$createChart() {
   chartDiv1.appendChild(chartCanvas);
   chartDiv.appendChild(chartDiv1);
 
+  // div for settings
   var settingsDiv = document.createElement("div");
   settingsDiv.setAttribute("flex", "");
-  var settingsUl = document.createElement("ul");
-  settingsUl.setAttribute("id", "ghcjs-prof-settings-ul");
+
+  // put filter by CCS/module tabs
+  var tabs = document.createElement("paper-tabs");
+  tabs.setAttribute("selected", "0");
+  tabs.setAttribute("noink", "");
+  tabs.setAttribute("nobar", "");
+
+  var filterCCSTab = document.createElement("paper-tab");
+  filterCCSTab.appendChild(document.createTextNode("Filter by CCS"));
+  tabs.appendChild(filterCCSTab);
+
+  var filterModuleTab = document.createElement("paper-tab");
+  filterModuleTab.appendChild(document.createTextNode("Filter by module"));
+  tabs.appendChild(filterModuleTab);
+
+  settingsDiv.appendChild(tabs);
+
+  // set up pages for tabs
+  var pages = document.createElement("core-pages");
+  pages.setAttribute("id", "ghcjs-prof-settings-pages");
+  pages.setAttribute("selected", "0");
+  tabs.addEventListener("click", function (e) {
+    console.log("event handler called");
+    pages.selected = tabs.selected;
+  });
+
+  // filter by CCS tab contents
+  var ccsUl = document.createElement("ul");
+  ccsUl.setAttribute("id", "ghcjs-prof-settings-ul");
   // add initial CCS settings
   for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
     var ccs = h$ccsList[ccsIdx];
     if (ccs.prevStack === null || ccs.prevStack === undefined)
-      settingsUl.appendChild(h$mkCCSSettingDOM(ccs));
+      ccsUl.appendChild(h$mkCCSSettingDOM(ccs));
   }
-  settingsDiv.appendChild(settingsUl);
+  pages.appendChild(ccsUl);
+
+  // filter by module tab contents
+  var moduleUl = document.createElement("ul");
+  moduleUl.setAttribute("id", "ghcjs-prof-module-settings-ul");
+  // add module settings
+  var modules = {};
+  for (var ccsIdx = 0; ccsIdx < h$ccsList.length; ccsIdx++) {
+    var ccs = h$ccsList[ccsIdx];
+    modules[ccs.cc.module] = true;
+  }
+  for (module in modules)
+    moduleUl.appendChild(h$mkCCSModuleSettingDOM(module));
+  pages.appendChild(moduleUl);
+
+  settingsDiv.appendChild(pages);
+
   chartDiv.appendChild(settingsDiv);
 
-  document.getElementById("ghcjs-prof-container").appendChild(chartDiv);
+  document.getElementById("ghcjs-prof-lines").appendChild(chartDiv);
 
   var ctx = chartCanvas.getContext("2d");
   var initialData = {
@@ -954,11 +1029,12 @@ function h$showOrHideCCS(ccs) {
 
 document.addEventListener("DOMContentLoaded", function () {
   h$includePolymer();
+  h$mkOverlay();
+  h$mkTabs();
   h$includeChartjs(h$createChart);
   h$addCSS();
   h$addOverlayDOM();
   h$addCCSDOM();
-  h$mkSettingTabs(document.getElementById("ghcjs-prof-container"));
 });
 
 #endif
