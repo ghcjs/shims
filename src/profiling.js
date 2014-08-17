@@ -341,20 +341,6 @@ function h$printRetainedInfo() {
 
 var h$ghcjsGui = null;
 
-// There's this problem with adding new data to Chart.js:
-// Let's say in the beginning I have this top-level CCSs:
-//   - CCS1
-//   - CCS2
-// Later a CC is pushed to CCS1 and we had:
-//   - CCS1
-//   - - CCS1.CC
-//   - CCS2
-//  Now I have to add `CCS1.CC` dataset to the chart and then to update
-//  I need to know what index to put `CCS1.CC`s data in update array.
-//  h$lineIdxs keeps track of this.
-//  Note that we don't need to save top-level CCSs indexes.
-
-
 function h$loadResource(elem, props, f) {
     var e = document.createElement(elem);
     for(var p in props) e[p] = props[p];
