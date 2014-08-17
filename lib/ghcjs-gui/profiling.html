@@ -21,29 +21,29 @@
   </template>
   <script>
     Polymer({
-    ready: function() {
-    this.dat = h$profData;
-    },
-    observe: {
-      'dat.latest': 'newSamples'
-    },
-    newSamples: function() {
-      if(!this.dat || !this.dat.latest) return;
-      // redraw plots
-      var labels = [], i, j, n, s;
-      var vals = [];
-      for(i=0;i<this.dat.samples.length;i++) { labels[i] = i; } // fixme use time instead
-      for(i=0;i<5;i++) {
-        vals[i] = [];
-        n = this.dat.latest.values[i].i;
-        for(j=0;j<this.dat.samples.length;j++) {
-          var s = this.dat.samples[j];
-          vals[i][j] = (n < s.index.length) ? s.values[s.index[n]].inherited : 0;
+      ready: function() {
+        this.dat = h$profData;
+      },
+      observe: {
+        'dat.latest': 'newSamples'
+      },
+      newSamples: function() {
+        if(!this.dat || !this.dat.latest) return;
+        // redraw plots
+        var labels = [], i, j, n, s;
+        var vals = [];
+        for(i=0;i<this.dat.samples.length;i++) { labels[i] = i; } // fixme use time instead
+        for(i=0;i<5;i++) {
+          vals[i] = [];
+          n = this.dat.latest.values[i].i;
+          for(j=0;j<this.dat.samples.length;j++) {
+            var s = this.dat.samples[j];
+            vals[i][j] = (n < s.index.length) ? s.values[s.index[n]].inherited : 0;
+          }
         }
+        var colors = [ "253,180,92", "247,70,74", "70,191,189", "148,159,177", "77,83,96"];
+        this.$.plot.plotData = { labels: labels, values: vals, colors: colors };
       }
-      var colors = [ "253,180,92", "247,70,74", "70,191,189", "148,159,177", "77,83,96"];
-      this.$.plot.plotData = { labels: labels, values: vals, colors: colors };
-    }
     });
   </script>
 </polymer-element>
@@ -73,16 +73,16 @@
       .relativeAlloc { opacity: 0.1; position: absolute; height: 40px; display: block;  width: 100%; bottom: 0; z-index: 0; }
       :host { display: block; position: relative; min-width: 100px; font-size: 0.8rem; background-color: #fff; }
       .relativeAlloc::shadow #activeProgress { background-color: #f00; }
-      .relativeAlloc::shadow #secondaryProgress { background: transparent; } 
+      .relativeAlloc::shadow #secondaryProgress { background: transparent; }
       .relativeAlloc::shadow #progressContainer { background: transparent; }
     </style>
   </template>
 
   <script>
     Polymer({
-    ready: function() {
-    this.dat = h$profData;
-    }
+      ready: function() {
+        this.dat = h$profData;
+      }
     });
   </script>
 </polymer-element>

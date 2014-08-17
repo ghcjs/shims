@@ -16,23 +16,23 @@
         <div class="splitTop" flex></div>
         <core-splitter direction="down" class="horizontal"></core-splitter>
         <div id="contents">
-        <core-header-panel>
-          <core-toolbar>
-            <div class="bottom fit" horizontal layout>
-              <paper-tabs id="mainMode" flex noink selected="0">
-                <paper-tab name="profiling">heap profiling</paper-tab>
-                <paper-tab name="threadscope">threadscope</paper-tab>
-                <paper-tab name="debugger">debugger</paper-tab>
-              </paper-tabs>
-              <core-icon-button icon="close" on-click="{{closeGui}}"></core-icon-button>
-            </div>
-          </core-toolbar>
-          <fixed-pages fit id="mainPage" selected="0">
-            <div name="profiling"><ghcjs-profiling fit></ghcjs-profiling></div>
-            <div name="threadscope">threadscope not yet implemented</div>
-            <div name="debugger">debugger not yet implemented</div>
-          </fixed-pages>
-        </core-header-panel>
+          <core-header-panel>
+            <core-toolbar>
+              <div class="bottom fit" horizontal layout>
+                <paper-tabs id="mainMode" flex noink selected="0">
+                  <paper-tab name="profiling">heap profiling</paper-tab>
+                  <paper-tab name="threadscope">threadscope</paper-tab>
+                  <paper-tab name="debugger">debugger</paper-tab>
+                </paper-tabs>
+                <core-icon-button icon="close" on-click="{{closeGui}}"></core-icon-button>
+              </div>
+            </core-toolbar>
+            <fixed-pages fit id="mainPage" selected="0">
+              <div name="profiling"><ghcjs-profiling fit></ghcjs-profiling></div>
+              <div name="threadscope">threadscope not yet implemented</div>
+              <div name="debugger">debugger not yet implemented</div>
+            </fixed-pages>
+          </core-header-panel>
         </div>
       </div>
     </core-overlay>
@@ -64,16 +64,16 @@
   </template>
   <script>
     Polymer({
-    ready: function() {
-    var that = this;
-    this.$.mainMode.addEventListener('click', function(e) {
+      ready: function() {
+        var that = this;
+        this.$.mainMode.addEventListener('click', function(e) {
           that.$.mainPage.selected = that.$.mainMode.selected;
-    });
-    this.$.gui.toggle();
-    },
-    closeGui: function() {
-      this.$.gui.close();
-    }
+        });
+        this.$.gui.toggle();
+      },
+      closeGui: function() {
+        this.$.gui.close();
+      }
     });
   </script>
 </polymer-element>
