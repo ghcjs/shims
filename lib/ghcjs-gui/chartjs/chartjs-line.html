@@ -1,0 +1,63 @@
+<link rel="import" href="../../polymer-components/polymer/polymer.html">
+<link rel="import" href="../resize-listener/resize-listener.html">
+
+<link rel="import" href="chartjs-import.html">
+
+<polymer-element name="chartjs-line" attributes="plotData">
+  <template>
+    <div id="container">
+      <resize-listener id="resize"></resize-listener>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <style>
+      :host {
+        display: block;
+        height: 100%;
+      }
+      #container {
+        position: relative;
+        height: 100%;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer({
+    ready: function() { this.redraw(); },
+    redraw: function () {
+    this.datasets = [];
+    if(!this.plotData.values.length || this.plotData.values[0].length < 3) return;
+        this.plotData.values.forEach(function (val, i) {
+          this.datasets.push({
+          fillColor: "rgba(0,0,0,0)",
+          strokeColor:  "rgba(" + this.plotData.colors[i] + ",1)",
+          pointColor: "rgba(0,0,0,0)",
+          pointStrokeColor: "#fff",
+          data: this.plotData.values[i]
+          });
+        }, this);
+
+    this.data = { labels: this.plotData.labels, datasets: this.datasets };
+    this.$.canvas.width = this.$.container.clientWidth;
+    this.$.canvas.height = this.$.container.clientHeight;
+        this.ctx = this.$.canvas.getContext('2d');
+        var ch = new Chart(this.ctx).Line(this.data, { maintainAspectRatio: false, animation: false });
+        var redraw = false;
+        this.$.resize.addEventListener('x-resized', function() {
+          if(!redraw) {
+            redraw = true;
+            requestAnimationFrame(function() {
+              ch.resize().reflow();
+              ch.draw();
+              redraw = false;
+            });
+          }
+        }, false);
+    },
+    plotDataChanged: function() {
+      this.redraw();
+    },
+    plotData: { labels: [], values: [], colors: [] }
+    });
+  </script>
+</polymer-element>

@@ -1,0 +1,96 @@
+<link rel="import" href="../../polymer-components/polymer/polymer.html">
+
+<!--
+An element that fires x-resized events when its offsetParent is resized
+
+To get resize events for some element, make sure that it's positioned,
+for example by adding position: relative; to its style.
+
+code and approach based on https://github.com/sdecima/javascript-detect-element-resize
+-->
+
+<polymer-element name="resize-listener">
+  <template>
+    <div id="resize">
+      <div id="resizeTrigger">
+        <div id="expandTrigger"><div id="expandTriggerCh"></div></div>
+        <div id="contractTrigger"></div>
+      </div>
+    </div>
+    <style>
+      :host, #resize {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: -1;
+      }
+      #resizeTrigger {
+        visibility: hidden;
+      }
+      #resizeTrigger, #resizeTrigger > div, #contractTrigger:before {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+      #resizeTrigger > div {
+        background: #eee;
+        overflow: auto;
+      }
+      #contractTrigger:before {
+        width: 200%;
+        height: 200%;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer({
+      domReady: function() {
+        var that = this, e = this.$.resize, w = -1, h = -1;
+        var contract = this.$.contractTrigger;
+        var expand   = this.$.expandTrigger;
+        var expandCh = this.$.expandTriggerCh;
+        var frame = null;
+        var requestFrame = window.requestAnimationFrame
+             || window.mozRequestAnimationFrame
+             || window.webkitRequestAnimationFrame
+             || function(fn){ return window.setTimeout(fn, 20); };
+        var cancelFrame = window.cancelAnimationFrame
+             || window.mozCancelAnimationFrame
+             || window.webkitCancelAnimationFrame
+             || window.clearTimeout;
+        function resetScroll() {
+          function t(e) { e.scrollLeft = e.scrollWidth; e.scrollTop = e.scrollHeight; }
+          t(contract);
+          expandCh.style.width = expand.offsetWidth + 1 + 'px';
+          expandCh.style.height = expand.offsetHeight+ 1 + 'px';
+          t(expand);
+        }
+        function f() {
+          frame = null;
+          if(w !== e.offsetWidth || h !== e.offsetHeight) {
+            w = e.offsetWidth;
+            h = e.offsetHeight;
+            that.fire('x-resized');
+          }
+        }
+        function l(event) {
+          resetScroll();
+          if(frame) cancelFrame(frame);
+          frame = requestFrame(f);
+        }
+        if(document.attachEvent) e.attachEvent('onresize', f);
+        else e.addEventListener('scroll', l, true);
+        resetScroll();
+        f();
+      }
+    });
+  </script>
+</polymer-element>

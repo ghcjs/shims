@@ -1,0 +1,89 @@
+<link rel="import" href="../polymer-components/polymer/polymer.html">
+<link rel="import" href="../polymer-components/core-list/core-list.html">
+<link rel="import" href="../polymer-components/core-splitter/core-splitter.html">
+<link rel="import" href="../polymer-components/paper-progress/paper-progress.html">
+<link rel="import" href="../polymer-components/core-toolbar/core-toolbar.html">
+<link rel="import" href="../polymer-components/core-scroll-header-panel/core-scroll-header-panel.html">
+<link rel="import" href="chartjs/chartjs-line.html">
+
+<polymer-element name="ghcjs-profiling">
+  <template>
+    <div id="profGui" fit layout horizontal>
+      <chartjs-line flex id="plot"></chartjs-line>
+      <core-splitter direction="right"></core-splitter>
+      <ghcjs-ccslist></ghcjs-ccslist>
+    </div>
+    <style>
+      #profGui { background-color: #fff; }
+      ghcjs-ccslist { width: 40%; }
+      core-splitter { width: 8px; }
+    </style>
+  </template>
+  <script>
+    Polymer({
+    ready: function() {
+    this.dat = h$profData;
+    },
+    observe: {
+      'dat.latest': 'newSamples'
+    },
+    newSamples: function() {
+      if(!this.dat || !this.dat.latest) return;
+      // redraw plots
+      var labels = [], i, j, n, s;
+      var vals = [];
+      for(i=0;i<this.dat.samples.length;i++) { labels[i] = i; } // fixme use time instead
+      for(i=0;i<5;i++) {
+        vals[i] = [];
+        n = this.dat.latest.values[i].i;
+        for(j=0;j<this.dat.samples.length;j++) {
+          var s = this.dat.samples[j];
+          vals[i][j] = (n < s.index.length) ? s.values[s.index[n]].inherited : 0;
+        }
+      }
+      var colors = [ "253,180,92", "247,70,74", "70,191,189", "148,159,177", "77,83,96"];
+      this.$.plot.plotData = { labels: labels, values: vals, colors: colors };
+    }
+    });
+  </script>
+</polymer-element>
+
+<polymer-element name="ghcjs-ccslist">
+  <template>
+    <core-scroll-header-panel fit>
+      <core-toolbar>add some filter/sort options here/select all/select none</core-toolbar>
+      <core-list content data="{{dat.latest.values}}" data-max="{{dat.latest.maxInherit}}" height="40">
+        <template>
+          <div class="{{ {item: true, selected: selected} | tokenList }}">
+            <div class="label">{{ccs.cc.module}}.{{ccs.cc.label}} ({{ccs.cc.srcloc}})</div>
+            <div class="inherit">{{inherited}}</div>
+            <div class="selfalloc">{{self}}</div>
+            <paper-progress class="relativeAlloc" value="{{(100*inherited/sample.maxInherit)}}"></paper-progress>
+          </div>
+        </template>
+      </core-list>
+      </core-scroll-header-panel>
+    <style>
+      core-toolbar { background-color: #fff; font-size: 0.9rem; height: 42px; }
+      .item { position: relative; width: 100%; overflow: hidden; height: 40px; border-bottom: 1px solid rgba(0,0,0,0.1); border-top: 1px solid #fff; background-color: #f8f8f8; }
+      .selected { background-color: #eee; }
+      .selfalloc { position: absolute; right: 16px; top: 4px; z-index: 1; }
+      .inherit { position: absolute; right: 16px; bottom: 4px; z-index: 1; }
+      .label { position: relative; left: 12px; z-index: 4; line-height: 40px; vertical-align: middle; }
+      .relativeAlloc { opacity: 0.1; position: absolute; height: 40px; display: block;  width: 100%; bottom: 0; z-index: 0; }
+      :host { display: block; position: relative; min-width: 100px; font-size: 0.8rem; background-color: #fff; }
+      .relativeAlloc::shadow #activeProgress { background-color: #f00; }
+      .relativeAlloc::shadow #secondaryProgress { background: transparent; } 
+      .relativeAlloc::shadow #progressContainer { background: transparent; }
+    </style>
+  </template>
+
+  <script>
+    Polymer({
+    ready: function() {
+    this.dat = h$profData;
+    }
+    });
+  </script>
+</polymer-element>
+
