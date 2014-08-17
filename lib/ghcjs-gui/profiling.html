@@ -52,7 +52,7 @@
   <template>
     <core-scroll-header-panel fit>
       <core-toolbar>add some filter/sort options here/select all/select none</core-toolbar>
-      <core-list content data="{{dat.latest.values}}" data-max="{{dat.latest.maxInherit}}" height="40">
+      <core-list content data="{{dat.latest.values}}" data-max="{{dat.latest.maxInherit}}" height="40" id="ccslist">
         <template>
           <div class="{{ {item: true, selected: selected} | tokenList }}">
             <div class="label">{{ccs.cc.module}}.{{ccs.cc.label}} ({{ccs.cc.srcloc}})</div>
@@ -75,6 +75,7 @@
       .relativeAlloc::shadow #activeProgress { background-color: #f00; }
       .relativeAlloc::shadow #secondaryProgress { background: transparent; }
       .relativeAlloc::shadow #progressContainer { background: transparent; }
+      #ccslist { overflow: hidden; }
     </style>
   </template>
 
