@@ -66,18 +66,6 @@ function h$CCS(parent, cc) {
   this.inheritedTicks = 0;
   this.inheritedAlloc = 0;
 
-#ifdef GHCJS_PROF_GUI
-  // for plotting retained obj counts with flot
-  this.plotData       = [0];
-  // has non-zero allocation counts in last few cycles.
-  // (e.g. it's worth showing)
-  this.active         = true;
-  // checkbox status
-  this.hidden         = false;
-  // if hidden is true, then it's never shown
-  // if hidden is false, then it's shown only when it's active
-#endif
-
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
 
@@ -354,7 +342,7 @@ function h$loadResource(elem, props, f) {
 
 function h$loadGui() {
     h$loadResource('script', {'src': 'polymer-components/platform/platform.js'}, function() {
-        h$loadResource('link', {'rel': 'import', 'href': 'ghcjs-gui/ghcjs-gui.html' }, function() {
+        h$loadResource('link', {'rel': 'import', 'href': 'ghcjs-gui/ghcjs-gui.html'}, function() {
             h$ghcjsGui = document.createElement('ghcjs-gui');
             document.body.appendChild(h$ghcjsGui);
         });
