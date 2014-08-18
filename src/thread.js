@@ -118,7 +118,7 @@ function h$fork(a, inherit) {
     t.mask = h$currentThread.mask;
   }
 #ifdef GHCJS_PROF
-  t.ccs = h$CCS_MAIN;
+  t.cc = h$CCS_MAIN;
 #endif
   // TRACE_SCHEDULER("sched: action forked: " + a.f.n);
   t.stack[4] = h$ap_1_0;
@@ -690,7 +690,7 @@ function h$runSync(a, cont) {
   var c = h$return;
   var t = new h$Thread();
 #ifdef GHCJS_PROF
-  t.ccs = h$currentThread.ccs; // TODO: not sure about this
+  t.cc = h$currentThread.cc; // TODO: not sure about this
 #endif
   t.isSynchronous = true;
   t.continueAsync = cont;
@@ -858,7 +858,7 @@ function h$syncThreadState(tid) {
 function h$main(a) {
   var t = new h$Thread();
 #ifdef GHCJS_PROF
-  t.ccs = a.cc;
+  t.cc = a.cc;
 #endif
   //TRACE_SCHEDULER("sched: starting main thread");
     t.stack[0] = h$doneMain;
