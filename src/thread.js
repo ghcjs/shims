@@ -859,7 +859,7 @@ function h$syncThreadState(tid) {
 function h$main(a) {
   var t = new h$Thread();
 #ifdef GHCJS_PROF
-  t.ccs = a.ccs;
+  t.ccs = a.cc;
 #endif
   //TRACE_SCHEDULER("sched: starting main thread");
     t.stack[0] = h$doneMain;
