@@ -366,7 +366,7 @@ function h$updateProfData() {
     for(var i=0;i<h$ccsList.length;i++) {
         var ccs = h$ccsList[i];
         h$inheritRetained(ccs);
-        s.values.push({i:i, ccs: ccs, self:ccs.retained, inherited: ccs.inheritedRetain, sample: s});
+        s.values.push({i:i, ccs: ccs, inherited: ccs.inheritedRetain, sample: s});
         maxRetained = Math.max(maxRetained, ccs.retained);
         maxInherit  = Math.max(maxInherit, ccs.inheritedRetain);
     }
