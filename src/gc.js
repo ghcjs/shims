@@ -56,16 +56,18 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 // these macros use a local mark variable
 #define IS_MARKED(obj) ((typeof obj.m === 'number' && (obj.m & 3) === mark) || (typeof obj.m === 'object' && ((obj.m.m & 3) === mark)))
 
-#ifdef GHCJS_PROF_GUI
+#ifdef GHCJS_PROF
 #define MARK_OBJ(obj)                       \
   if(typeof obj.m === 'number') {           \
-    obj.m = (obj.m&-4)|mark;                \
-    if (obj.constructor !== h$Thread)       \
+    if((obj.m & 3) !== mark) {              \
+      obj.m = (obj.m&-4)|mark;              \
       obj.cc.retained++;                    \
+    }                                       \
   } else {                                  \
-    obj.m.m = (obj.m.m & -4)|mark;          \
-    if (obj.constructor !== h$Thread)       \
+    if((obj.m.m & 3) !== mark) {            \
+      obj.m.m = (obj.m.m & -4)|mark;        \
       obj.cc.retained++;                    \
+    }                                       \
   }
 #else
 #define MARK_OBJ(obj)                       \
@@ -196,7 +198,7 @@ function h$gc(t) {
     var start = Date.now();
     h$resetRegisters();
     h$resetResultVars();
-#ifdef GHCJS_PROF_GUI
+#ifdef GHCJS_PROF
     h$resetRetained();
 #endif
     h$gcMark = 5-h$gcMark;

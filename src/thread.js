@@ -84,7 +84,7 @@ function h$Thread() {
     this.continueAsync = false;
     this.m = 0;                   // gc mark
 #ifdef GHCJS_PROF
-    this.ccs = h$CCS_SYSTEM;      // cost-centre stack
+    this.cc = h$CCS_SYSTEM;       // cost-centre stack
 #endif
     this._key = this.tid;         // for storing in h$Set / h$Map
 }
