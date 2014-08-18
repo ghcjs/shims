@@ -1,5 +1,8 @@
 env:
-    - GHCVER=7.8.3
+    - GHCVER=7.8.3 TEST_PART=CORE1
+    - GHCVER=7.8.3 TEST_PART=CORE2
+    - GHCVER=7.8.3 TEST_PART=PROFILING
+    - GHCVER=7.8.3 TEST_PART=GHCJS
 
 before_install:
     - export GHCJS_BOOTING=1
@@ -38,16 +41,14 @@ install:
     - git checkout $TRAVIS_BRANCH
     - cd ..
     - cabal install ./ghcjs --enable-tests --enable-benchmarks
-    - cd ..
+    - cd ghcjs
     - ghcjs --version
     - ghcjs-boot --version
-    - ghcjs-boot --dev --build-stage1-unbooted --with-node nodejs -j2 --no-prof --no-haddock --shims-dev-repo $SHIMS_REPO --shims-dev-branch $TRAVIS_COMMIT
-    - cabal install -j2 --ghcjs random QuickCheck syb stm
+    - ./test/runTravis.sh boot
     - ghcjs-pkg list
-    - cd _ghcjs_deps/ghcjs
 
 script:
-    - ./dist/build/test/test --travis --with-node nodejs --no-profiling -j 2 -t ghc -t conc -t integer -t pkg
+    - ./test/runTravis.sh test
 
 notifications:
   irc:
