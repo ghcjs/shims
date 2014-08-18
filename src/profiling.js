@@ -327,7 +327,8 @@ function h$printRetainedInfo() {
 // Profiling GUI
 
 var h$ghcjsGui = null;
-
+var h$platformLoadedEarly = false;
+var h$platformScript = 'polymer-components/platform/platform.js';
 function h$loadResource(elem, props, f) {
     var e = document.createElement(elem);
     for(var p in props) e[p] = props[p];
@@ -339,17 +340,19 @@ function h$loadResource(elem, props, f) {
     var elems = document.getElementsByTagName('head');
     if(elems.length) elems[0].appendChild(e);
     else document.addEventListener('DOMContentLoaded', function() {
-             document.getElementsByTagName('head')[0].appendChild(e);
+           document.getElementsByTagName('head')[0].appendChild(e);
          });
 }
 
 function h$loadGui() {
-    h$loadResource('script', {'src': 'polymer-components/platform/platform.js'}, function() {
+    function f() {
         h$loadResource('link', {'rel': 'import', 'href': 'ghcjs-gui/ghcjs-gui.html'}, function() {
             h$ghcjsGui = document.createElement('ghcjs-gui');
             document.body.appendChild(h$ghcjsGui);
         });
-    });
+    }
+    if(h$platformLoadedEarly) f();
+    else h$loadResource('script', {'src': h$platformScript}, f);
 }
 
 function h$mkCCSLabel(ccs) {
@@ -369,7 +372,7 @@ function h$updateProfData() {
     for(var i=0;i<h$ccsList.length;i++) {
         var ccs = h$ccsList[i];
         h$inheritRetained(ccs);
-        s.values.push({i:i, ccs: ccs, self:ccs.retained, inherited: ccs.inheritedRetain, sample: s});
+        s.values.push({i:i, ccs: ccs, self: ccs.retained, inherited: ccs.inheritedRetain, sample: s});
         maxRetained = Math.max(maxRetained, ccs.retained);
         maxInherit  = Math.max(maxInherit, ccs.inheritedRetain);
     }
@@ -380,6 +383,17 @@ function h$updateProfData() {
     h$profData.samples.push(s);
     h$profData.latest = s;
     if(h$profData.samples.length > h$profDataMax) h$profData.samples.shift();
+}
+
+// we need to inject the polymer platform as early as possible if no native web components support is available
+if(typeof HTMLHtmlElement !== 'undefined' && !HTMLHtmlElement.prototype.createShadowRoot) {
+    if(h$isBrowser) {
+        var req = new XMLHttpRequest();
+        req.open("GET", h$platformScript, false);
+        req.send(null);
+        eval.call(this, req.responseText);
+        h$platformLoadedEarly = true;
+    }
 }
 
 #ifdef GHCJS_PROF_GUI
