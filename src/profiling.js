@@ -357,8 +357,7 @@ function h$mkCCSLabel(ccs) {
 }
 
 var h$profDataMax = 50; // before we start rotating out old sample sets
-var h$profData    = { ccss: h$ccsList
-                    , samples: []
+var h$profData    = { samples: []
                     , latest: null
                     }
 var h$noProfUpd = false;
