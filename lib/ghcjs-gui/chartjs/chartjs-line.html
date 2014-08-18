@@ -34,7 +34,8 @@
             strokeColor: datasetColor,
             pointColor: datasetColor,
             pointStrokeColor: "#fff",
-            data: val
+            data: val,
+            label: this.plotData.datasetLabels[i]
           });
         }, this);
         var data = { labels: this.plotData.labels, datasets: datasets };

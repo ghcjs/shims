@@ -30,8 +30,7 @@
       newSamples: function() {
         if(!this.dat || !this.dat.latest) return;
         // redraw plots
-        var labels = [], i, j, n, s;
-        var vals = [];
+        var labels = [], datasetLabels = [], vals = [], i, j, n, s;
         for(i=0;i<this.dat.samples.length;i++) { labels[i] = i; } // fixme use time instead
         for(i=0;i<5;i++) {
           vals[i] = [];
@@ -40,9 +39,15 @@
             var s = this.dat.samples[j];
             vals[i][j] = (n < s.index.length) ? s.values[s.index[n]].inherited : 0;
           }
+          datasetLabels[i] = h$mkCCSLabel(s.values[s.index[n]].ccs);
         }
         var colors = [ "253,180,92", "247,70,74", "70,191,189", "148,159,177", "77,83,96"];
-        this.$.plot.plotData = { labels: labels, values: vals, colors: colors };
+        this.$.plot.plotData = {
+          labels: labels,
+          values: vals,
+          colors: colors,
+          datasetLabels: datasetLabels
+        };
       }
     });
   </script>

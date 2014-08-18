@@ -352,6 +352,10 @@ function h$loadGui() {
     });
 }
 
+function h$mkCCSLabel(ccs) {
+  return ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+}
+
 var h$profDataMax = 50; // before we start rotating out old sample sets
 var h$profData    = { ccss: h$ccsList
                     , samples: []
