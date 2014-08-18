@@ -324,7 +324,6 @@ function h$printRetainedInfo() {
   console.log("END");
 }
 
-#ifdef GHCJS_PROF_GUI
 // Profiling GUI
 
 var h$ghcjsGui = null;
@@ -337,7 +336,11 @@ function h$loadResource(elem, props, f) {
             if(e.readyState === 'loaded') f();
         }
     } else e.onload = function() { f(); }
-    document.getElementsByTagName('head')[0].appendChild(e);
+    var elems = document.getElementsByTagName('head');
+    if(elems.length) elems[0].appendChild(e);
+    else document.addEventListener('DOMContentLoaded', function() {
+             document.getElementsByTagName('head')[0].appendChild(e);
+         });
 }
 
 function h$loadGui() {
@@ -356,7 +359,7 @@ var h$profData    = { ccss: h$ccsList
                     }
 var h$noProfUpd = false;
 function h$updateProfData() {
-    if(h$noProfUpd) return;
+    if(h$noProfUpd || !h$ghcjsGui) return;
     var maxRetained = 0;
     var maxInherit  = 0;
     var s = {time: Date.now(), values: [], maxRetained: 0, maxInherit: 0, index: []};
@@ -376,8 +379,6 @@ function h$updateProfData() {
     if(h$profData.samples.length > h$profDataMax) h$profData.samples.shift();
 }
 
-function h$updateDOMs() {
-    h$updateProfData();
-}
-
+#ifdef GHCJS_PROF_GUI
+h$loadGui();
 #endif
