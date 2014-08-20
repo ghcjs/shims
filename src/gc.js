@@ -263,7 +263,9 @@ function h$gc(t) {
 
     h$finalizeDom();    // remove all unreachable DOM retainers
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
+#ifdef GHCJS_PROF
     h$updateProfData();
+#endif
 
     var now = Date.now();
     h$lastGc = now;
