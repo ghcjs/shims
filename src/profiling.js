@@ -279,12 +279,19 @@ function h$buildCCSPtr(o) {
 // Updating and printing retained obj count of stacks, to be used in GC scan
 //
 
-// reset retained object counts
 function h$resetRetained() {
   for (var i = 0; i < h$ccsList.length; i++) {
     var ccs = h$ccsList[i];
     ccs.retained = 0;
     ccs.inheritedRetain = 0;
+  }
+}
+
+function h$resetAllocCounts() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    ccs.totalAlloc += ccs.lastAlloc;
+    ccs.lastAlloc = 0;
   }
 }
 

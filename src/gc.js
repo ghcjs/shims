@@ -200,6 +200,7 @@ function h$gc(t) {
     h$resetResultVars();
 #ifdef GHCJS_PROF
     h$resetRetained();
+    h$resetAllocCounts();
 #endif
     h$gcMark = 5-h$gcMark;
     var i;
