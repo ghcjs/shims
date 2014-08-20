@@ -31,8 +31,6 @@ function h$CC(label, module, srcloc, isCaf) {
   this.srcloc    = srcloc;
   this.isCaf     = isCaf;
   this._key      = ++h$CCUnique;
-  this.memAlloc  = 0;
-  this.timeTicks = 0;
   h$ccList.push(this);
 }
 
@@ -58,13 +56,8 @@ function h$CCS(parent, cc) {
     this.prevStack = null;
   }
   this.prevStack      = parent;
-  this.sccCount       = 0;
-  this.timeTicks      = 0;
-  this.memAlloc       = 0;
   this.retained       = 0; // retained object count, counted in last GC cycle
   this.inheritedRetain= 0; // inherited retained counts
-  this.inheritedTicks = 0;
-  this.inheritedAlloc = 0;
 
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
