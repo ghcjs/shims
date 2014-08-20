@@ -58,6 +58,8 @@ function h$CCS(parent, cc) {
   this.prevStack      = parent;
   this.retained       = 0; // retained object count, counted in last GC cycle
   this.inheritedRetain= 0; // inherited retained counts
+  this.totalAlloc     = 0; // total allocated object count (set after major GC cycle)
+  this.lastAlloc      = 0; // allocations done since last GC cycle
 
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
