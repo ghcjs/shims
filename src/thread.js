@@ -892,6 +892,9 @@ function h$MVar() {
   this.waiters = null;  // waiting for a value in the MVar with ReadMVar
   this.m       = 0; // gc mark
   this.id      = ++h$mvarId;
+#ifdef GHCJS_PROF
+  this.cc      = h$currentThread.ccs;
+#endif
 }
 
 // set the MVar to empty unless there are writers
@@ -1034,6 +1037,9 @@ function h$writeMVarJs2(mv,val1,val2) {
 function h$MutVar(v) {
     this.val = v;
     this.m = 0;
+#ifdef GHCJS_PROF
+    this.cc = h$currentThread.ccs;
+#endif
 }
 
 function h$atomicModifyMutVar(mv, fun) {
