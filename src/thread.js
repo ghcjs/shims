@@ -1100,7 +1100,11 @@ function h$mkForeignCallback(x) {
         if(x.mv === null) { // callback called synchronously
             x.mv = arguments;
         } else {
+#ifdef GHCJS_PROF
+            h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments, h$CCS_DONT_CARE));
+#else
             h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+#endif
             h$mainLoop();
         }
     }

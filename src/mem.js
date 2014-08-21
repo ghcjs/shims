@@ -405,7 +405,11 @@ function h$initInfoTables ( depth      // depth in the base chain
           var c = (hasTail === 1) ? nextObj() : h$ghczmprimZCGHCziTypesziZMZN;
           TRACE_META("list length: " + n);
           while(n--) {
+#ifdef GHCJS_PROF
+              c = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, nextArg(), c, h$currentThread.ccs);
+#else
               c = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, nextArg(), c);
+#endif
           }
           o.f  = c.f;
           o.d1 = c.d1;
