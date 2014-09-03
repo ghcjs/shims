@@ -938,6 +938,9 @@ var h$stableNameN = 1;
 function h$StableName(m) {
     this.m = m;
     this.s = null;
+#ifdef GHCJS_PROF
+    this.cc = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 }
 
 function h$makeStableName(x) {
