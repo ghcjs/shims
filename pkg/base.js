@@ -368,14 +368,16 @@ function h$base_fillStat(fs, b, off) {
     b.i3[o+3] = 0; // fixme
     b.i3[o+4] = 0; // fixme
     b.i3[o+5] = fs.dev;
-    b.i3[o+6] = fs.ino;
-    b.i3[o+7] = fs.uid;
-    b.i3[o+8] = fs.gid;
+    var i = goog.math.Long.fromNumber(fs.ino);
+    b.i3[o+6] = i.getHighBits();
+    b.i3[o+7] = i.getLowBits();
+    b.i3[o+8] = fs.uid;
+    b.i3[o+9] = fs.gid;
 }
 #endif
 
-// [mode,size1,size2,mtime1,mtime2,dev,ino,uid,gid] all 32 bit
-/** @const */ var h$base_sizeof_stat = 36;
+// [mode,size1,size2,mtime1,mtime2,dev,ino1,ino2,uid,gid] all 32 bit
+/** @const */ var h$base_sizeof_stat = 40;
 
 function h$base_st_mtime(stat, stat_off) {
     h$ret1 = stat.i3[(stat_off>>2)+4];
@@ -396,6 +398,7 @@ function h$base_st_dev(stat, stat_off) {
 }
 
 function h$base_st_ino(stat, stat_off) {
+    h$ret1 = stat.i3[(stat_off>>2)+7];
     return stat.i3[(stat_off>>2)+6];
 }
 
