@@ -36,7 +36,6 @@ function h$stc(i,c) {
     h$CAFsReset.push(i.f);
 }
 
-
 #ifdef GHCJS_PROF
 function h$stl(o, xs, t, ccs) {
 #else
@@ -75,6 +74,12 @@ function h$d() {
 #endif
     h$staticDelayed.push(c);
     return c;
+}
+
+var h$allocN = 0;
+function h$traceAlloc(x) {
+    h$log("allocating: " + (++h$allocN));
+    x.alloc = h$allocN;
 }
 
 // fixme remove this when we have a better way to immediately init these things
@@ -309,13 +314,14 @@ function h$initInfoTables ( depth      // depth in the base chain
         ot = 0;
         break;
       case 1: // fun
-        ot        = 1
-        var arity = next();
-        var skipRegs = next();
+        ot           = 1
+        var arity    = next();
+        var skipRegs = next()-1;
+        if(skipRegs === -1) throw "h$initInfoTables: unknown register info for function";
         var skip     = skipRegs & 1;
         var regs     = skipRegs >>> 1;
-        oregs     = (regs << 8) | skip;
-        oa        = arity + ((regs-1+skip) << 8);
+        oregs        = (regs << 8) | skip;
+        oa           = arity + ((regs-1+skip) << 8);
         break;
       case 2:  // con
         ot = 2;
@@ -324,8 +330,8 @@ function h$initInfoTables ( depth      // depth in the base chain
       case 3: // stack frame
         ot = -1;
         oa = 0;
-        oregs = next();
-        oregs = ((oregs >>> 1) << 8) | (oregs & 1);
+        oregs = next() - 1;
+        if(oregs !== -1) oregs = ((oregs >>> 1) << 8) | (oregs & 1);
         break;
       default: throw ("h$initInfoTables: invalid closure type")
     }

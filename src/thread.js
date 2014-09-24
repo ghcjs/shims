@@ -50,7 +50,7 @@ function h$logCall(c) {
     f = c.toString().substring(0,20); // h$collectProps(c);
   }
   h$log(h$threadString(h$currentThread) + ":" + h$sp + "  calling: " + f + "    " + JSON.stringify([h$printReg(h$r1), h$printReg(h$r2), h$printReg(h$r3), h$printReg(h$r4), h$printReg(h$r5)]));
-  h$checkStack();
+  h$checkStack(c);
 }
 #endif
 
@@ -575,6 +575,14 @@ function h$startMainLoop() {
 #endif
 }
 
+#if defined(GHCJS_TRACE_CALLS) || defined(GHCJS_TRACE_STACK)
+var h$traceCallsTicks = 0;
+#ifndef GHCJS_TRACE_CALLS_DELAY
+#define GHCJS_TRACE_CALLS_DELAY 0
+#endif
+var h$traceCallsDelay = GHCJS_TRACE_CALLS_DELAY;
+#endif
+
 var h$busyYield    = GHCJS_BUSY_YIELD;
 var h$schedQuantum = GHCJS_SCHED_QUANTUM;
 
@@ -627,11 +635,15 @@ function h$mainLoop() {
             while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
                 count = 0;
                 while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
+#if defined(GHCJS_TRACE_CALLS) || defined(GHCJS_TRACE_STACK)
+		    h$traceCallsTicks++;
+		    if(h$traceCallsTicks % 1000000 === 0) h$log("ticks: " + h$traceCallsTicks);
+#endif
 #ifdef GHCJS_TRACE_CALLS
-                    h$logCall(c);
+                    if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logCall(c);
 #endif
 #ifdef GHCJS_TRACE_STACK
-                    h$logStack();
+                    if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logStack(c);
 #endif
                     c = c();
 #if !defined(GHCJS_TRACE_CALLS) && !defined(GHCJS_TRACE_STACK) && !defined(GHCJS_SCHED_DEBUG)
@@ -657,16 +669,21 @@ function h$mainLoop() {
             c = null;
             if(h$stack && h$stack[0] === h$doneMain) {
                 h$stack = null;
-                h$log("uncaught exception in Haskell main thread: " + e.toString());
+                h$reportMainLoopException(e);
                 h$doneMain();
                 return;
             } else {
                 h$stack = null;
-                h$log("uncaught exception in Haskell thread: " + e.toString());
+                h$reportMainLoopException(e);
             }
         }
 #endif
     } while(true);
+}
+
+function h$reportMainLoopException(e) {
+    h$log("uncaught exception in Haskell main thread: " + e.toString());
+    if(e.stack) h$log(e.stack)
 }
 
 // run the supplied IO action in a new thread

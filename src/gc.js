@@ -354,7 +354,7 @@ function h$follow(obj, sp) {
             }
         }
 #endif
-        if(c !== null && typeof c === 'object' && ((typeof c.m === 'number' && (c.m&3) !== mark) || (typeof c.m === 'object' && c.m !== null && typeof c.m.m === 'number' && (c.m.m&3) !== mark))) {
+        if(c !== null && c !== undefined && typeof c === 'object' && ((typeof c.m === 'number' && (c.m&3) !== mark) || (typeof c.m === 'object' && c.m !== null && typeof c.m.m === 'number' && (c.m.m&3) !== mark))) {
             var doMark = false;
             var cf = c.f;
             TRACE_GC("first accepted");
