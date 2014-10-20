@@ -1,0 +1,64 @@
+<link rel="import" href="../../polymer-components/polymer/polymer.html">
+<link rel="import" href="../resize-listener/resize-listener.html">
+
+<link rel="import" href="chartjs-import.html">
+
+<polymer-element name="chartjs-line" attributes="plotData">
+  <template>
+    <div id="container">
+      <resize-listener id="resize"></resize-listener>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <style>
+      :host {
+        display: block;
+        height: 100%;
+      }
+      #container {
+        position: relative;
+        height: 100%;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer({
+      ready: function() { this.redraw(); },
+      redraw: function () {
+        var datasets = [];
+        if(!this.plotData.values.length || this.plotData.values[0].length < 3) return;
+        this.plotData.values.forEach(function (val, i) {
+          var datasetColor = "rgba(" + this.plotData.colors[i] + ",1)";
+          datasets.push({
+            fillColor: datasetColor,
+            strokeColor: datasetColor,
+            pointColor: datasetColor,
+            pointStrokeColor: "#fff",
+            data: val,
+            label: this.plotData.datasetLabels[i]
+          });
+        }, this);
+        var data = { labels: this.plotData.labels, datasets: datasets };
+        this.$.canvas.width = this.$.container.clientWidth;
+        this.$.canvas.height = this.$.container.clientHeight;
+        this.ctx = this.$.canvas.getContext('2d');
+        var options = {
+          maintainAspectRatio: false,
+          animation: false,
+          datasetFill : false,
+          multiTooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>",
+          tooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>"
+        };
+        var ch = new Chart(this.ctx).Line(data, options);
+        requestAnimationFrame(function() {
+          ch.resize().reflow();
+          ch.draw();
+        });
+      },
+      plotDataChanged: function() {
+        this.redraw();
+      },
+      plotData: { labels: [], values: [], colors: [] }
+    });
+  </script>
+</polymer-element>

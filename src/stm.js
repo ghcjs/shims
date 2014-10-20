@@ -29,6 +29,9 @@ function h$Transaction(o, parent) {
     this.state         = h$stmTransactionActive;
     this.invariants    = []; // invariants added in this transaction
     this.m             = 0;  // gc mark
+#ifdef GHCJS_PROF
+    this.cc            = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 }
 
 var h$stmInvariantN = 0;
@@ -52,6 +55,9 @@ function h$TVar(v) {
     this.invariants = null;        // invariants that use this TVar (h$Set)
     this.m          = 0;           // gc mark
     this._key       = ++h$TVarN;   // for storing in h$Map/h$Set
+#ifdef GHCJS_PROF
+    this.cc         = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 }
 
 /** @constructor */

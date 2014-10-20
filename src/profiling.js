@@ -1,4 +1,5 @@
-// Used definitions: GHCJS_TRACE_PROF and GHCJS_ASSERT_PROF
+
+// Used definitions: GHCJS_TRACE_PROF, GHCJS_ASSERT_PROF and GHCJS_PROF_GUI
 
 #ifdef GHCJS_ASSERT_PROF
 function assert(condition, message) {
@@ -30,8 +31,6 @@ function h$CC(label, module, srcloc, isCaf) {
   this.srcloc    = srcloc;
   this.isCaf     = isCaf;
   this._key      = ++h$CCUnique;
-  this.memAlloc  = 0;
-  this.timeTicks = 0;
   h$ccList.push(this);
 }
 
@@ -57,11 +56,11 @@ function h$CCS(parent, cc) {
     this.prevStack = null;
   }
   this.prevStack      = parent;
-  this.sccCount       = 0;
-  this.timeTicks      = 0;
-  this.memAlloc       = 0;
-  this.inheritedTicks = 0;
-  this.inheritedAlloc = 0;
+  this.retained       = 0; // retained object count, counted in last GC cycle
+  this.inheritedRetain= 0; // inherited retained counts
+  this.totalAlloc     = 0; // total allocated object count (set after major GC cycle)
+  this.lastAlloc      = 0; // allocations done since last GC cycle
+
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
 
@@ -275,3 +274,130 @@ function h$buildCCSPtr(o) {
   ccs.arr[h$ccsCC_offset] = [h$buildCCPtr(o.cc), 0];
   return ccs;
 }
+
+//
+// Updating and printing retained obj count of stacks, to be used in GC scan
+//
+
+function h$resetRetained() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    ccs.retained = 0;
+    ccs.inheritedRetain = 0;
+  }
+}
+
+function h$resetAllocCounts() {
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    ccs.totalAlloc += ccs.lastAlloc;
+    ccs.lastAlloc = 0;
+  }
+}
+
+function h$updRetained(obj) {
+  // h$gc visits all kinds of objects, not just heap objects
+  // so we're checking if the object has cc field
+  // assuming we added cc field to every heap object, this should work correctly
+  if (obj.cc !== undefined) {
+    ASSERT(obj.cc.retained !== null && obj.cc.retained !== undefined);
+    obj.cc.retained++;
+  }
+}
+
+function h$inheritRetained(ccs) {
+  var consedCCS = ccs.consed.values();
+  for (var i = 0; i < consedCCS.length; i++) {
+    h$inheritRetained(consedCCS[i]);
+    ccs.inheritedRetain += consedCCS[i].inheritedRetain;
+  }
+  ccs.inheritedRetain += ccs.retained;
+}
+
+function h$printRetainedInfo() {
+  h$inheritRetained(h$CCS_MAIN);
+
+  for (var i = 0; i < h$ccsList.length; i++) {
+    var ccs = h$ccsList[i];
+    if (ccs.inheritedRetain !== 0) {
+      console.log(h$ccsString(ccs));
+    }
+  }
+  console.log("END");
+}
+
+// Profiling GUI
+
+var h$ghcjsGui = null;
+var h$platformLoadedEarly = false;
+var h$platformScript = 'polymer-components/platform/platform.js';
+function h$loadResource(elem, props, f) {
+    var e = document.createElement(elem);
+    for(var p in props) e[p] = props[p];
+    if(typeof document.attachEvent === "object") {
+        e.onreadystatechange = function() {
+            if(e.readyState === 'loaded') f();
+        }
+    } else e.onload = function() { f(); }
+    var elems = document.getElementsByTagName('head');
+    if(elems.length) elems[0].appendChild(e);
+    else document.addEventListener('DOMContentLoaded', function() {
+           document.getElementsByTagName('head')[0].appendChild(e);
+         });
+}
+
+function h$loadGui() {
+    function f() {
+        h$loadResource('link', {'rel': 'import', 'href': 'ghcjs-gui/ghcjs-gui.html'}, function() {
+            h$ghcjsGui = document.createElement('ghcjs-gui');
+            document.body.appendChild(h$ghcjsGui);
+        });
+    }
+    if(h$platformLoadedEarly) f();
+    else h$loadResource('script', {'src': h$platformScript}, f);
+}
+
+function h$mkCCSLabel(ccs) {
+  return ccs.cc.module + '.' + ccs.cc.label + ' ('  + ccs.cc.srcloc + ')';
+}
+
+var h$profDataMax = 50; // before we start rotating out old sample sets
+var h$profData    = { samples: []
+                    , latest: null
+                    }
+var h$noProfUpd = false;
+function h$updateProfData() {
+    if(h$noProfUpd || !h$ghcjsGui) return;
+    var maxRetained = 0;
+    var maxInherit  = 0;
+    var s = {time: Date.now(), values: [], maxRetained: 0, maxInherit: 0, index: []};
+    for(var i=0;i<h$ccsList.length;i++) {
+        var ccs = h$ccsList[i];
+        h$inheritRetained(ccs);
+        s.values.push({i:i, ccs: ccs, self: ccs.retained, inherited: ccs.inheritedRetain, sample: s});
+        maxRetained = Math.max(maxRetained, ccs.retained);
+        maxInherit  = Math.max(maxInherit, ccs.inheritedRetain);
+    }
+    s.maxRetained = maxRetained;
+    s.maxInherit  = maxInherit;
+    s.values.sort(function(a,b) { return b.inherited - a.inherited });
+    for(i=0;i<h$ccsList.length;i++) s.index[s.values[i].i] = i;
+    h$profData.samples.push(s);
+    h$profData.latest = s;
+    if(h$profData.samples.length > h$profDataMax) h$profData.samples.shift();
+}
+
+// we need to inject the polymer platform as early as possible if no native web components support is available
+if(typeof HTMLHtmlElement !== 'undefined' && !HTMLHtmlElement.prototype.createShadowRoot) {
+    if(h$isBrowser) {
+        var req = new XMLHttpRequest();
+        req.open("GET", h$platformScript, false);
+        req.send(null);
+        eval.call(this, req.responseText);
+        h$platformLoadedEarly = true;
+    }
+}
+
+#ifdef GHCJS_PROF_GUI
+h$loadGui();
+#endif

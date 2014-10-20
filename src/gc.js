@@ -55,7 +55,29 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 
 // these macros use a local mark variable
 #define IS_MARKED(obj) ((typeof obj.m === 'number' && (obj.m & 3) === mark) || (typeof obj.m === 'object' && ((obj.m.m & 3) === mark)))
-#define MARK_OBJ(obj) if(typeof obj.m === 'number') obj.m = (obj.m&-4)|mark; else obj.m.m = (obj.m.m & -4)|mark;
+
+#ifdef GHCJS_PROF
+#define MARK_OBJ(obj)                       \
+  if(typeof obj.m === 'number') {           \
+    if((obj.m & 3) !== mark) {              \
+      obj.m = (obj.m&-4)|mark;              \
+      obj.cc.retained++;                    \
+    }                                       \
+  } else {                                  \
+    if((obj.m.m & 3) !== mark) {            \
+      obj.m.m = (obj.m.m & -4)|mark;        \
+      obj.cc.retained++;                    \
+    }                                       \
+  }
+#else
+#define MARK_OBJ(obj)                       \
+  if(typeof obj.m === 'number') {           \
+    obj.m = (obj.m&-4)|mark;                \
+  } else {                                  \
+    obj.m.m = (obj.m.m & -4)|mark;          \
+  }
+#endif
+
 
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
 
@@ -176,6 +198,10 @@ function h$gc(t) {
     var start = Date.now();
     h$resetRegisters();
     h$resetResultVars();
+#ifdef GHCJS_PROF
+    h$resetRetained();
+    h$resetAllocCounts();
+#endif
     h$gcMark = 5-h$gcMark;
     var i;
     TRACE_GC("scanning extensible retention roots")
@@ -237,6 +263,9 @@ function h$gc(t) {
 
     h$finalizeDom();    // remove all unreachable DOM retainers
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
+#ifdef GHCJS_PROF
+    h$updateProfData();
+#endif
 
     var now = Date.now();
     h$lastGc = now;

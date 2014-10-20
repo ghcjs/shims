@@ -84,7 +84,8 @@ function h$Thread() {
     this.continueAsync = false;
     this.m = 0;                   // gc mark
 #ifdef GHCJS_PROF
-    this.ccs = h$CCS_SYSTEM;      // cost-centre stack
+    this.ccs = h$CCS_SYSTEM;      // current cost-centre stack of this thread
+    this.cc  = h$CCS_DONT_CARE;   // cost centre stack for the thread object itself
 #endif
     this._key = this.tid;         // for storing in h$Set / h$Map
 }
@@ -908,6 +909,9 @@ function h$MVar() {
   this.waiters = null;  // waiting for a value in the MVar with ReadMVar
   this.m       = 0; // gc mark
   this.id      = ++h$mvarId;
+#ifdef GHCJS_PROF
+  this.cc      = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 }
 
 // set the MVar to empty unless there are writers
@@ -1050,6 +1054,9 @@ function h$writeMVarJs2(mv,val1,val2) {
 function h$MutVar(v) {
     this.val = v;
     this.m = 0;
+#ifdef GHCJS_PROF
+    this.cc = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 }
 
 function h$atomicModifyMutVar(mv, fun) {
@@ -1110,7 +1117,11 @@ function h$mkForeignCallback(x) {
         if(x.mv === null) { // callback called synchronously
             x.mv = arguments;
         } else {
+#ifdef GHCJS_PROF
+            h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments, h$CCS_DONT_CARE));
+#else
             h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+#endif
             h$mainLoop();
         }
     }

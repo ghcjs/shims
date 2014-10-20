@@ -1,0 +1,79 @@
+<link rel="import" href="../polymer-components/polymer/polymer.html">
+<link rel="import" href="../polymer-components/core-header-panel/core-header-panel.html">
+<link rel="import" href="../polymer-components/core-toolbar/core-toolbar.html">
+<link rel="import" href="../polymer-components/core-overlay/core-overlay.html">
+<link rel="import" href="../polymer-components/core-splitter/core-splitter.html">
+<link rel="import" href="../polymer-components/core-icon-button/core-icon-button.html">
+<link rel="import" href="../polymer-components/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="fixed-pages/fixed-pages.html">
+<link rel="import" href="profiling.html">
+
+<polymer-element name="ghcjs-gui">
+  <template>
+    <core-overlay id="gui" autoCloseDisabled>
+      <div vertical layout class="splitLayout">
+        <div class="splitTop" flex></div>
+        <core-splitter direction="down" class="horizontal"></core-splitter>
+        <div id="contents">
+          <core-header-panel>
+            <core-toolbar>
+              <div class="bottom fit" horizontal layout>
+                <paper-tabs id="mainMode" flex noink selected="0">
+                  <paper-tab name="profiling">heap profiling</paper-tab>
+                  <paper-tab name="threadscope">threadscope</paper-tab>
+                  <paper-tab name="debugger">debugger</paper-tab>
+                </paper-tabs>
+                <core-icon-button icon="close" on-click="{{closeGui}}"></core-icon-button>
+              </div>
+            </core-toolbar>
+            <fixed-pages fit id="mainPage" selected="0">
+              <div name="profiling"><ghcjs-profiling fit></ghcjs-profiling></div>
+              <div name="threadscope">threadscope not yet implemented</div>
+              <div name="debugger">debugger not yet implemented</div>
+            </fixed-pages>
+          </core-header-panel>
+        </div>
+      </div>
+    </core-overlay>
+    <style>
+      core-splitter.horizontal { height: 8px; box-shadow: none; background-color: #CFD8DC; pointer-events: all; border-top: 1px solid rgba(0,0,0,0.1); }
+      .splitLayout { background: transparent; pointer-events: none; height: 100%; }
+      .splitTop { background: transparent; pointer-events: none; /* height: 30%; */ }
+      .empty { height: 0; margin: 0; padding: 0; background: transparent; }
+      core-toolbar { height: 26px; }
+      core-icon-button { padding: 2px; font-size: 0.7rem; }
+      core-icon-button::shadow core-icon { width: 20px; height: 20px; }
+      paper-tabs::shadow #selectionBar { background-color: #0895D3; }
+      paper-tabs { height: 30px; }
+      core-header-panel { background-color: #eee; height: 100%; pointer-events: all; position: relative; display: block;}
+      #mainPage { width: 100%; height: 100%; }
+      #contents { min-height: 120px; height: 65%; }
+      #gui {
+        pointer-events: none;
+        font-family: sans-serif;
+        font-weight: 500;
+        background: transparent;
+        margin: 0;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer({
+      ready: function() {
+        var that = this;
+        this.$.mainMode.addEventListener('click', function(e) {
+          that.$.mainPage.selected = that.$.mainMode.selected;
+        });
+        this.$.gui.toggle();
+      },
+      closeGui: function() {
+        this.$.gui.close();
+      }
+    });
+  </script>
+</polymer-element>

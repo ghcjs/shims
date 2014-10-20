@@ -84,6 +84,9 @@ function h$Weak(key, val, finalizer) {
         this.finalizer = fin;
     }
     this.m = 0;
+#ifdef GHCJS_PROF
+    this.cc = h$currentThread ? (h$currentThread.ccs || h$CCS_SYSTEM) : h$CCS_SYSTEM;
+#endif
 //    h$scannedWeaks.push(this); // fixme debug
 }
 
