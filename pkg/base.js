@@ -501,7 +501,7 @@ if(h$isNode) {
     h$base_readFile = function(fd, fdo, buf, buf_offset, n, c) {
         var pos = typeof fdo.pos === 'number' ? fdo.pos : null;
         TRACE_IO("base_readFile: " + fd + " " + pos + " " + buf_offset + " " + n);
-        h$fs.read(fd, new Buffer(n), buf_offset, n, pos, function(err, bytesRead, nbuf) {
+        h$fs.read(fd, new Buffer(n), 0, n, pos, function(err, bytesRead, nbuf) {
             if(err) {
                 h$setErrno(err);
                 c(-1);
