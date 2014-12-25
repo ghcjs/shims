@@ -216,7 +216,7 @@ function h$integer_cmm_remIntegerzh(sa, abits, sb, bbits) {
 }
 
 function h$integer_cmm_remIntegerWordzh(sa, abits, b) {
-    TRACE_INTEGER("remInteger: " + abits + " " + bbits);
+    TRACE_INTEGER("remIntegerWord: " + abits + " " + b);
     var bbits = h$bigFromWord(b);
     return abits.subtract(bbits.multiply(abits.divide(bbits)));
 }
@@ -512,3 +512,86 @@ function h$__int_encodeFloat(i,e) {
    return i * Math.pow(2,e);
 }
 
+var h$integer_clz32 = Math.clz32 || function(x) {
+    if (x < 0)   return 0;
+    if (x === 0) return 32;
+    return 31 - ((Math.log(x) / Math.LN2) | 0);
+}
+
+function h$integer_wordLog2(w) {
+    TRACE_INTEGER("integer_wordLog2 " + w);
+    return 31 - h$integer_clz32(w);
+}
+
+function h$integer_integerLog2(i) {
+    TRACE_INTEGER("integer_integerLog2 " + i + " -> " + (i.bitLength()-1));
+    return i.bitLength()-1;
+}
+
+function h$integer_integerLog2IsPowerOf2(i) {
+    TRACE_INTEGER("integer_integerLog2IsPowerOf2 " + i);
+    var b = i.bitLength();
+    h$ret1 = (b === 0 || i.getLowestSetBit() !== b) ? 1 : 0;
+    TRACE_INTEGER("integer_integerLog2IsPowerOf2 result" + h$ret1 + " " + (b-1));
+    return b-1;
+}
+
+function h$integer_intLog2IsPowerOf2(i) {
+    TRACE_INTEGER("integer_intLog2IsPowerOf2 " + i);
+    var l = 31 - h$integer_clz32(i);
+    h$ret1 = (i !== (1 << l)) ? 1 : 0;
+    TRACE_INTEGER("integer_intLog2IsPowerOf2 result " + h$ret1 + " " + l);
+    return l;
+}
+
+function h$integer_roundingMode(i,j) {
+    TRACE_INTEGER("integer_roundingMode");
+    return 1; // round to even, is that correct?
+}
+
+function h$integer_mkBigInt(i) {
+#ifdef GHCJS_PROF
+    return h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, i, h$CCS_SYSTEM);
+#else
+    return h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, i);
+#endif
+}
+
+function h$integer_mkSmallInt(i) {
+#ifdef GHCJS_PROF
+    return h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, i, h$CCS_SYSTEM);
+#else
+    return h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, i);
+#endif
+}
+
+function h$integer_smartJ(i) {
+    TRACE_INTEGER("integer_smartJ");
+    if(i.bitLength() >= 32) return h$integer_mkBigInt(i);
+    return h$integer_mkSmallInt(i.intValue()|0)
+}
+
+function h$integer_mpzToInteger(i) {
+    TRACE_INTEGER("integer_mpzToInteger");
+    if(typeof i === 'number') return h$integer_mkSmallInt(i);
+    return h$integer_smartJ(i);
+}
+
+var h$integer_negTwoThirtyOne = h$integer_mkBigInt(h$bigFromInt(-2147483648).negate());
+function h$integer_mpzNeg(i) {
+    TRACE_INTEGER("integer_mpzNeg");
+    if(typeof i === 'number') {
+	return (i === -2147483648) ? h$integer_negTwoThirtyOne : -i;
+    }
+    return i.negate();
+}
+
+function h$integer_absInteger(i) {
+    TRACE_INTEGER("integer_absInteger");
+    return i.abs();
+}
+
+function h$integer_negateInteger(i) {
+    TRACE_INTEGER("integer_negateInteger");
+    return i.negate();
+}
