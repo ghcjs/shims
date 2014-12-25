@@ -591,6 +591,10 @@ var h$base_fds = [h$base_stdin_fd, h$base_stdout_fd, h$base_stderr_fd];
 
 function h$shutdownHaskellAndExit(code, fast) {
 #ifndef GHCJS_BROWSER
+#ifdef GHCJS_LOG_BUFFER
+    if(h$isNode) console.log(h$logBuffer);
+    if(h$isJsShell) print(h$logBuffer);
+#endif
     if(h$isNode) {
         process.exit(code);
     } else if(h$isJsShell) {

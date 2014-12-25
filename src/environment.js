@@ -20,6 +20,7 @@ var h$logBuffer = [];
 #endif
 function h$log() {
 #ifdef GHCJS_LOG_BUFFER
+  if(!h$logBuffer) return;
   var s = '';
   for(var i=0;i<arguments.length;i++) { s = s + arguments[i]; }
   h$logBuffer.push(s);
@@ -33,9 +34,13 @@ function h$log() {
       h$glbl.print.apply(this,arguments);
     }
   } else {
+    if(typeof console !== 'undefined') {
 #endif
-    console.log.apply(console, arguments);
+      console.log.apply(console, arguments);
 #ifndef GHCJS_BROWSER
+    } else if(typeof print !== 'undefined') {
+      print.apply(null, arguments);
+    }
   }
 #endif
 #endif
