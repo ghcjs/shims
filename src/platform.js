@@ -1,3 +1,4 @@
+
 /* platform-specific setup */
 
 // top-level debug initialization needs this. declare it in case we aren't in the same file as out.js
@@ -31,7 +32,7 @@ if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof requi
     var h$child       = child_process;
     var h$process     = process;
     var h$processConstants = process['binding']('constants');
-} else if(typeof snarf !== undefined && typeof evalInFrame !== 'undefined' && typeof enableStackWalkingAssertion !== 'undefined') {
+} else if(typeof snarf !== undefined && typeof evalInFrame !== 'undefined' && typeof countHeap !== 'undefined') {
     h$isJsShell = true;
     this.console = { log: this.print };
 } else {
