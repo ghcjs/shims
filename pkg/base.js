@@ -602,3 +602,8 @@ function h$shutdownHaskellAndExit(code, fast) {
     }
 #endif
 }
+
+// RAND_MAX = 32767
+function h$rand() {
+  return (32768 * Math.random()) & 32767;
+}
