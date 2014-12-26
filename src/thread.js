@@ -593,8 +593,12 @@ var h$running = false;
 var h$next = null;
 function h$mainLoop() {
     if(h$running) return;
-    h$running = true;
     h$clearScheduleMainLoop();
+    if(h$currentThread) {
+	h$scheduleMainLoop();
+	return;
+    }
+    h$running = true;
     h$runInitStatic();
     h$currentThread = h$next;
     if(h$next !== null) {
