@@ -514,7 +514,7 @@ function h$scheduleMainLoop() {
 #ifndef GHCJS_BROWSER
         if(typeof setTimeout !== 'undefined') {
 #endif
-            TRACE_SCHEDULER("scheduling main loop wakeup in " + delay + "ms");
+            TRACE_SCHEDULER("scheduling main loop wakeup in " + h$gcInterval + "ms");
             h$mainLoopTimeout = setTimeout(h$mainLoop, h$gcInterval);
 #ifndef GHCJS_BROWSER
         }
