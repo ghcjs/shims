@@ -673,20 +673,21 @@ function h$mainLoop() {
             c = null;
             if(h$stack && h$stack[0] === h$doneMain) {
                 h$stack = null;
-                h$reportMainLoopException(e);
+                h$reportMainLoopException(e, true);
                 h$doneMain();
                 return;
             } else {
                 h$stack = null;
-                h$reportMainLoopException(e);
+                h$reportMainLoopException(e, false);
             }
         }
 #endif
     } while(true);
 }
 
-function h$reportMainLoopException(e) {
-    h$log("uncaught exception in Haskell main thread: " + e.toString());
+function h$reportMainLoopException(e, isMainThread) {
+    var main = isMainThread ? " main" : "";
+    h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
     if(e.stack) h$log(e.stack)
 }
 
