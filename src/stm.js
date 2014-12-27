@@ -109,7 +109,18 @@ function h$stmCommitTransaction() {
     var wtv, i = tvs.iter();
     if(t.parent === null) { // top-level commit
         TRACE_STM("committing top-level transaction");
-        while((wtv = i.nextVal()) !== null) h$stmCommitTVar(wtv.tvar, wtv.val);
+	// write new value to TVars and collect blocked threads
+        var thread, threadi, blockedThreads = new h$Set();
+        while((wtv = i.nextVal()) !== null) {
+	    h$stmCommitTVar(wtv.tvar, wtv.val, blockedThreads);
+	}
+	// wake up all blocked threads
+        threadi = blockedThreads.iter();
+        while((thread = threadi.next()) !== null) {
+	    h$stmRemoveBlockedThread(thread.blockedOn, thread);
+            h$wakeupThread(thread);
+	}
+	// commit our new invariants
         for(var j=0;j<t.invariants.length;j++) {
             h$stmCommitInvariant(t.invariants[j]);
         }
@@ -185,7 +196,7 @@ function h$stmSuspendRetry() {
         tv.blocked.add(h$currentThread);
         tvs.add(tv);
     }
-    waiting = new h$TVarsWaiting(tvs);
+    var waiting = new h$TVarsWaiting(tvs);
     h$blockThread(h$currentThread, waiting);
     h$p2(waiting, h$stmResumeRetry_e);
     return h$reschedule;
@@ -274,22 +285,18 @@ function h$stmCheckInvariants() {
             while((iv = iii.next()) !== null) addCheck(iv);
         }
     }
-    for(j=0;j<t.invariants.length;j++) {
+    for(var j=0;j<t.invariants.length;j++) {
         addCheck(t.invariants[j]);
     }
     return h$stack[h$sp];
 }
 
-function h$stmCommitTVar(tv, v) {
+function h$stmCommitTVar(tv, v, threads) {
     TRACE_STM("committing tvar: " + tv._key + " " + (v === tv.val));
     if(v !== tv.val) {
         var thr, iter = tv.blocked.iter();
-        while((thr = iter.next()) !== null) {
-            if(thr.status === h$threadBlocked) {
-                TRACE_STM("h$stmCommitTVar: waking up thread: " + h$threadString(thr));
-                h$wakeupThread(thr);
-            }
-        }
+        while((thr = iter.next()) !== null) threads.add(thr);
+        tv.blocked.clear();
         tv.val = v;
     }
 }

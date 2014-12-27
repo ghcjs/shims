@@ -366,7 +366,7 @@ function h$removeThreadBlock(t) {
         }
       }
     } else if (o instanceof h$TVarsWaiting) {
-      h$stmRemoveBlockedThread(o.tvars, t)
+      h$stmRemoveBlockedThread(o, t)
     } else if(o.f && o.f.t === h$BLACKHOLE_CLOSURE) {
       TRACE_SCHEDULER("blocked on blackhole");
       h$removeFromArray(o.d2,t);
