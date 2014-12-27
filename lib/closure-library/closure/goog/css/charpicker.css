@@ -49,7 +49,7 @@
 }
 
 .goog-char-picker-grid {
-  overflow: hide;
+  overflow: hidden;
   height: 250px;
   width: 250px;
   position: relative;
@@ -115,7 +115,8 @@
   outline: none;
 }
 
-.goog-char-picker-grid .goog-flat-button-hover {
+.goog-char-picker-grid .goog-flat-button-hover,
+.goog-char-picker-grid .goog-flat-button-focus {
   background-color: #ffcc33;
 }
 
