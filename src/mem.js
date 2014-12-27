@@ -495,7 +495,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i] = src.u8[i];
     }
-    ret1 = 0;
+    h$ret1 = 0;
     return dst;
   } else if(arguments.length === 5) { // Addr# -> Addr# copy
     var dst = arguments[0];
@@ -506,7 +506,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i+dst_off] = src.u8[i+src_off];
     }
-    ret1 = dst_off;
+    h$ret1 = dst_off;
     return dst;
   } else {
     throw "h$memcpy: unexpected argument";

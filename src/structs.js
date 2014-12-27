@@ -42,6 +42,7 @@ h$Set.prototype.add = function(o) {
 }
 
 h$Set.prototype.remove = function(o) {
+    if(this._size === 0) return;
     var k = this._keys, v = this._vals, x = k[o._key];
     if(x !== undefined) {
         delete k[o._key];
@@ -57,7 +58,15 @@ h$Set.prototype.remove = function(o) {
 }
 
 h$Set.prototype.has = function(o) {
-    return this.keys[o._key] !== undefined;
+    return this._keys[o._key] !== undefined;
+}
+
+h$Set.prototype.clear = function() {
+    if(this._size > 0) {
+	this._keys = [];
+	this._vals = [];
+	this._size = 0;
+    }
 }
 
 h$Set.prototype.iter = function() {

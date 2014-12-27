@@ -225,7 +225,7 @@ function h$gc(t) {
     // now everything has been marked, bring out your dead references
 
     // run finalizers for all weak references with unreachable keys
-    finalizers = h$finalizeWeaks();
+    var finalizers = h$finalizeWeaks();
     h$clearWeaks();
     for(i=0;i<finalizers.length;i++) {
         var fin = finalizers[i].finalizer;
@@ -250,7 +250,7 @@ function h$gc(t) {
 }
 
 function h$markRetained() {
-    var marked, c, mark = h$gcMark;
+    var iter, marked, c, mark = h$gcMark;
     do {
         TRACE_GC("mark retained iteration");
         marked = false;

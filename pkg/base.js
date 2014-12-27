@@ -156,14 +156,10 @@ function h$base_open(file, file_off, how, mode, c) {
         var acc  = how & h$base_o_accmode;
         // passing a number lets node.js use it directly as the flags (undocumented)
         if(acc === h$base_o_rdonly) {
-            read  = true;
             flags = h$processConstants['O_RDONLY'];
         } else if(acc === h$base_o_wronly) {
-            write = true;
             flags = h$processConstants['O_WRONLY'];
         } else { // r+w
-            read  = true;
-            write = true;
             flags = h$processConstants['O_RDWR'];
         }
         off = (how & h$base_o_append) ? -1 : 0;
