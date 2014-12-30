@@ -614,6 +614,7 @@ function h$mainLoop() {
         if(c === null) { // no running threads
             h$next = null;
             h$running = false;
+	    h$currentThread = null;
             h$scheduleMainLoop();
             return;
         }
@@ -788,6 +789,9 @@ function h$runSync(a, cont) {
     h$stack = ct.stack;
     h$sp = csp;
     h$r1 = cr1;
+  } else {
+    h$currentThread = null;
+    h$stack = null;
   }
   if(t.status !== h$threadFinished && !cont) {
     h$removeThreadBlock(t);
