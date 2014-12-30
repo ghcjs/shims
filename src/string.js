@@ -348,11 +348,17 @@ function h$toStr(b,o,l) {
   var end = 2*(o+l);
   var k = 0;
   var dv = b.dv;
+  var s = '';
   for(var i=2*o;i<end;i+=2) {
     var cc = dv.getUint16(i,true);
     a[k++] = cc;
+    if(k === 60000) {
+      s += String.fromCharCode.apply(this, a);
+      k = 0;
+      a = [];
+    }
   }
-  return String.fromCharCode.apply(this, a);
+  return s + String.fromCharCode.apply(this, a);
 }
 
 /*
