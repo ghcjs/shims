@@ -561,6 +561,34 @@ if(h$isNode) {
         printErr(h$decodeUtf8(buf, n, buf_offset));
         c(n);
     }
+} else if(h$isJsCore) {
+    h$base_readStdin = function(fd, fdo, buf, buf_offset, n, c) {
+	c(0);
+    }
+    var h$base_stdoutLeftover = { f: print, val: null };
+    var h$base_stderrLeftover = { f: debug, val: null };
+    var h$base_writeWithLeftover = function(buf, n, buf_offset, c, lo) {
+	var lines = h$decodeUtf8(buf, n, buf_offset).split(/\r?\n/);
+	if(lines.length === 1) {
+	    if(lines[0].length) {
+		if(lo.val !== null) lo.val += lines[0];
+		else lo.val = lines[0];
+	    }
+	} else {
+            lo.f(((lo.val !== null) ? lo.val : '') + lines[0]);
+	    for(var i=1;i<lines.length-1;i++) lo.f(lines[i]);
+	    if(lines[lines.length-1].length) lo.val = lines[lines.length-1];
+	    else lo.val = null;
+	}
+	c(n);
+    }
+    h$base_writeStdout = function(fd, fdo, buf, buf_offset, n, c) {
+	h$base_writeWithLeftover(buf, n, buf_offset, c, h$base_stdoutLeftover);
+    }
+    h$base_writeStderr = function(fd, fdo, buf, buf_offset, n, c) {
+	// writing to stderr not supported, write to stdout
+	h$base_writeWithLeftover(buf, n, buf_offset, c, h$base_stderrLeftover);
+    }
 } else { // browser / fallback
 #endif
     h$base_readStdin = function(fd, fdo, buf, buf_offset, n, c) {
@@ -589,12 +617,18 @@ function h$shutdownHaskellAndExit(code, fast) {
 #ifndef GHCJS_BROWSER
 #ifdef GHCJS_LOG_BUFFER
     if(h$isNode) console.log(h$logBuffer);
-    if(h$isJsShell) print(h$logBuffer);
+    if(h$isJsShell || h$isJsCore) print(h$logBuffer);
 #endif
     if(h$isNode) {
         process.exit(code);
     } else if(h$isJsShell) {
         quit(code);
+    } else if(h$isJsCore) {
+	if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
+	if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
+	// jsc does not support returning a nonzero value, print it instead
+	if(code !== 0) debug("GHCJS JSC exit status: " + code);
+	quit();
     }
 #endif
 }

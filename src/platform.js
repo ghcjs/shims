@@ -17,6 +17,7 @@ function h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e() { return h$stack[h$sp]; };
 #ifndef GHCJS_BROWSER
 var h$isNode    = false; // runtime is node.js
 var h$isJsShell = false; // runtime is SpiderMonkey jsshell
+var h$isJsCore  = false; // runtime is JavaScriptCore jsc
 var h$isBrowser = false; // running in browser or everything else
 // load all required node.js modules
 if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
@@ -32,9 +33,11 @@ if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof requi
     var h$child       = child_process;
     var h$process     = process;
     var h$processConstants = process['binding']('constants');
-} else if(typeof snarf !== undefined && typeof evalInFrame !== 'undefined' && typeof countHeap !== 'undefined') {
+} else if(typeof snarf !== 'undefined' && typeof evalInFrame !== 'undefined' && typeof countHeap !== 'undefined') {
     h$isJsShell = true;
     this.console = { log: this.print };
+} else if(typeof numberOfDFGCompiles !== 'undefined' && typeof jscStack !== 'undefined') {
+    h$isJsCore = true;
 } else {
     h$isBrowser = true;
 }

@@ -75,7 +75,7 @@ if(h$isNode) {
 } else if(h$isJsShell && typeof h$getGlobal(this).scriptArgs !== 'undefined') {
     h$programArgs = h$getGlobal(this).scriptArgs.slice(0);
     h$programArgs.unshift("a.js");
-} else if(h$isJsShell && typeof h$getGlobal(this).arguments !== 'undefined') {
+} else if((h$isJsShell || h$isJsCore) && typeof h$getGlobal(this).arguments !== 'undefined') {
     h$programArgs = h$getGlobal(this).arguments.slice(0);
     h$programArgs.unshift("a.js");
 } else {
@@ -162,6 +162,11 @@ function h$debugBelch2(buf1, buf_offset1, buf2, buf_offset2) {
 }
 
 function h$errorMsg(pat) {
+#ifndef GHCJS_BROWSER
+  function stripTrailingNewline(xs) {
+    return xs.replace(/\r?\n$/, "");
+  }
+#endif
   // poor man's vprintf
   var str = pat;
   for(var i=1;i<arguments.length;i++) {
@@ -171,9 +176,18 @@ function h$errorMsg(pat) {
   if(h$isNode) {
     process.stderr.write(str);
   } else if (h$isJsShell && typeof printErr !== 'undefined') {
-    printErr(str);
+    if(str.length) printErr(stripTrailingNewline(str));
   } else if (h$isJsShell && typeof putstr !== 'undefined') {
     putstr(str);
+  } else if (h$isJsCore) {
+    if(str.length) {
+	if(h$base_stderrLeftover.val !== null) {
+	    debug(h$base_stderrLeftover.val + stripTrailingNewline(str));
+	    h$base_stderrLeftover.val = null;
+	} else {
+	    debug(stripTrailingNewline(str));
+	}
+    }
   } else {
 #endif
     if(typeof console !== 'undefined') {
