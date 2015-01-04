@@ -19,3 +19,4 @@ js:
   - src/weak.js
   - src/thread.js
   - src/stm.js
+  - src/staticpointer.js
