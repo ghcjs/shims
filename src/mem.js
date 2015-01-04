@@ -1003,7 +1003,7 @@ function h$memset() {
   for(var i=buf_off;i<end;i++) {
     buf_v.u8[i] = chr;
   }
-  ret1 = buf_off;
+  h$ret1 = buf_off;
   return buf_v;
 }
 
