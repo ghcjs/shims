@@ -17,6 +17,42 @@ function assert(condition, message) {
 #define TRACE(args...)
 #endif
 
+/*
+  install the ghcjs-profiling package from /utils/ghcjs-node-profiling
+  to collect cost centre stack information with the node.js profiler
+ */
+var h$registerCC = null, h$registerCCS = null, h$setCCS = null;
+var h$runProf = function(f) {
+    f();
+}
+if(h$isNode) {
+    try {
+        var p = require('ghcjs-profiling');
+        if(p.isProfiling()) {
+            h$registerCC  = p.registerCC;
+            h$registerCCS = p.registerCCS;
+            h$setCCS      = p.setCCS;
+            h$runProf     = p.runCC;
+        }
+    } catch(e) {}
+}
+
+var h$cachedCurrentCcs = -1;
+function h$reportCurrentCcs() {
+    if(h$setCCS) {
+        if(h$currentThread) {
+            var ccsKey = h$currentThread.ccs._key;
+            if(h$cachedCurrentCcs !== ccsKey) {
+                h$cachedCurrentCcs = ccsKey;
+                h$setCCS(ccsKey);
+            }
+        } else if(h$cachedCurrentCcs !== -1) {
+            h$cachedCurrentCcs = -1;
+            h$setCCS(2147483647); // set to invalid CCS
+        }
+    }
+}
+
 
 var h$ccList  = [];
 var h$ccsList = [];
@@ -29,9 +65,10 @@ function h$CC(label, module, srcloc, isCaf) {
   this.module    = module;
   this.srcloc    = srcloc;
   this.isCaf     = isCaf;
-  this._key      = ++h$CCUnique;
+  this._key      = h$CCUnique++;
   this.memAlloc  = 0;
   this.timeTicks = 0;
+  if(h$registerCC) h$registerCC(this._key, label, module + ' ' + srcloc, -1,-1);
   h$ccList.push(this);
 }
 
@@ -45,7 +82,7 @@ function h$CCS(parent, cc) {
   }
   this.consed = new h$Map();
   this.cc     = cc;
-  this._key   = ++h$CCSUnique;
+  this._key   = h$CCSUnique++;
   if (parent) {
     this.root      = parent.root;
     this.depth     = parent.depth + 1;
@@ -62,6 +99,11 @@ function h$CCS(parent, cc) {
   this.memAlloc       = 0;
   this.inheritedTicks = 0;
   this.inheritedAlloc = 0;
+  if(h$registerCCS) {
+    var x = this, stack = [];
+    while(x) { stack.push(x.cc._key); x = x.prevStack; }
+    h$registerCCS(this._key, stack);
+  }
   h$ccsList.push(this);  /* we need all ccs for statistics, not just the root ones */
 }
 
@@ -118,12 +160,14 @@ function h$restoreCCS(ccs) {
     TRACE("restoreccs from:", h$ccsString(h$currentThread.ccs));
     TRACE("             to:", h$ccsString(ccs));
     h$currentThread.ccs = ccs;
+    h$reportCurrentCcs();
 }
 
 function h$enterThunkCCS(ccsthunk) {
   ASSERT(ccsthunk !== null && ccsthunk !== undefined, "ccsthunk is null or undefined");
   TRACE("entering ccsthunk:", h$ccsString(ccsthunk));
   h$currentThread.ccs = ccsthunk;
+  h$reportCurrentCcs();
 }
 
 function h$enterFunCCS(ccsapp, // stack at call site
@@ -152,6 +196,7 @@ function h$enterFunCCS(ccsapp, // stack at call site
   // of the function stack to the current CCS.
   if (ccsfn.root !== ccsapp.root) {
     h$currentThread.ccs = h$appendCCS(ccsapp, ccsfn);
+    h$reportCurrentCcs();
     return;
   }
 
@@ -163,17 +208,20 @@ function h$enterFunCCS(ccsapp, // stack at call site
       tmp = tmp.prevStack;
     }
     h$currentThread.ccs = h$enterFunEqualStacks(ccsapp, tmp, ccsfn);
+    h$reportCurrentCcs();
     return;
   }
 
   // uncommon case 5: ccsfn is deeper than CCCS
   if (ccsfn.depth > ccsapp.depth) {
     h$currentThread.ccs = h$enterFunCurShorter(ccsapp, ccsfn, ccsfn.depth - ccsapp.depth);
+    h$reportCurrentCcs();
     return;
   }
 
   // uncommon case 6: stacks are equal depth, but different
   h$currentThread.ccs = h$enterFunEqualStacks(ccsapp, ccsapp, ccsfn);
+  h$reportCurrentCcs();
 }
 
 function h$appendCCS(ccs1, ccs2) {

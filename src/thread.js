@@ -453,8 +453,14 @@ function h$scheduler(next) {
                 }
                 var ct = h$currentThread;
                 h$currentThread = null;
+#ifdef GHCJS_PROF
+                h$reportCurrentCcs();
+#endif
                 h$gc(ct);
                 h$currentThread = ct;
+#ifdef GHCJS_PROF
+                h$reportCurrentCcs();
+#endif
                 // gc might replace the stack of a thread, so reload it
                 h$stack = h$currentThread.stack;
                 h$sp    = h$currentThread.sp
@@ -464,6 +470,9 @@ function h$scheduler(next) {
         } else {
             TRACE_SCHEDULER("sched: pausing");
             h$currentThread = null;
+#ifdef GHCJS_PROF
+            h$reportCurrentCcs();
+#endif
             // We could set a timer here so we do a gc even if Haskell pauses for a long time.
             // However, currently this isn't necessary because h$mainLoop always sets a timer
             // before it pauses.
@@ -493,12 +502,18 @@ function h$scheduler(next) {
         // gc if needed
         if(now - h$lastGc > h$gcInterval) {
             h$currentThread = null;
+#ifdef GHCJS_PROF
+            h$reportCurrentCcs();
+#endif
             h$gc(t);
         }
         // schedule new one
         h$currentThread = t;
         h$stack = t.stack;
         h$sp = t.sp;
+#ifdef GHCJS_PROF
+        h$reportCurrentCcs();
+#endif
         TRACE_SCHEDULER("sched: scheduling " + h$threadString(t) + " sp: " + h$sp);
         // TRACE_SCHEDULER("sp thing: " + h$stack[h$sp].n);
         // h$dumpStackTop(h$stack,0,h$sp);
@@ -592,6 +607,11 @@ var h$mainLoopFrame = null;   // timeout id if main loop has been scheduled with
 var h$running = false;
 var h$next = null;
 function h$mainLoop() {
+#ifdef GHCJS_PROF
+    h$runProf(h$actualMainLoop);
+}
+function h$actualMainLoop() {
+#endif
     if(h$running) return;
     h$clearScheduleMainLoop();
     if(h$currentThread) {
@@ -601,6 +621,9 @@ function h$mainLoop() {
     h$running = true;
     h$runInitStatic();
     h$currentThread = h$next;
+#ifdef GHCJS_PROF
+    h$reportCurrentCcs();
+#endif
     if(h$next !== null) {
         h$stack = h$currentThread.stack;
         h$sp    = h$currentThread.sp;
@@ -615,6 +638,9 @@ function h$mainLoop() {
             h$next = null;
             h$running = false;
 	    h$currentThread = null;
+#ifdef GHCJS_PROF
+            h$reportCurrentCcs();
+#endif
             h$scheduleMainLoop();
             return;
         }
@@ -624,6 +650,9 @@ function h$mainLoop() {
             if(c !== h$reschedule) h$suspendCurrentThread(c);
             h$next = h$currentThread;
             h$currentThread = null;
+#ifdef GHCJS_PROF
+            h$reportCurrentCcs();
+#endif
             h$running = false;
             if(h$animationFrameMainLoop) {
                 h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
@@ -671,6 +700,9 @@ function h$mainLoop() {
             h$currentThread.status = h$threadDied;
             h$currentThread.stack = null;
             h$currentThread = null;
+#ifdef GHCJS_PROF
+            h$reportCurrentCcs();
+#endif
             c = null;
             if(h$stack && h$stack[0] === h$doneMain) {
                 h$stack = null;
@@ -730,6 +762,9 @@ function h$runSync(a, cont) {
   h$currentThread = t;
   h$stack = t.stack;
   h$sp = t.sp;
+#ifdef GHCJS_PROF
+  h$reportCurrentCcs();
+#endif
   try {
     while(true) {
       TRACE_SCHEDULER("h$runSync: entering main loop");
@@ -793,6 +828,9 @@ function h$runSync(a, cont) {
     h$currentThread = null;
     h$stack = null;
   }
+#ifdef GHCJS_PROF
+  h$reportCurrentCcs();
+#endif
   if(t.status !== h$threadFinished && !cont) {
     h$removeThreadBlock(t);
     h$finishThread(t);
@@ -820,6 +858,9 @@ function h$runBlackholeThreadSync(bh) {
   h$currentThread = bh.d1;
   h$stack = h$currentThread.stack;
   h$sp = h$currentThread.sp;
+#ifdef GHCJS_PROF
+  h$reportCurrentCcs();
+#endif
   var c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
   TRACE_SCHEDULER("switched thread status running: " + (h$currentThread.status === h$threadRunning));
   try {
@@ -844,6 +885,9 @@ function h$runBlackholeThreadSync(bh) {
           }
           h$stack = h$currentThread.stack;
           h$sp = h$currentThread.sp;
+#ifdef GHCJS_PROF
+          h$reportCurrentCcs();
+#endif
           c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
         } else {
           TRACE_SCHEDULER("thread blocked on something that's not a black hole, failing");
@@ -859,6 +903,9 @@ function h$runBlackholeThreadSync(bh) {
           h$currentThread = currentBh.d1;
           h$stack = h$currentThread.stack;
           h$sp = h$currentThread.sp;
+#ifdef GHCJS_PROF
+          h$reportCurrentCcs();
+#endif
         } else {
           TRACE_SCHEDULER("last blackhole removed, success!");
           success = true;
@@ -871,6 +918,9 @@ function h$runBlackholeThreadSync(bh) {
   h$sp = sp;
   h$stack = ct.stack;
   h$currentThread = ct;
+#ifdef GHCJS_PROF
+  h$reportCurrentCcs();
+#endif
   return success;
 }
 
