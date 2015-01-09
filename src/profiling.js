@@ -26,15 +26,17 @@ var h$runProf = function(f) {
     f();
 }
 if(h$isNode) {
-    try {
-        var p = require('ghcjs-profiling');
-        if(p.isProfiling()) {
-            h$registerCC  = p.registerCC;
-            h$registerCCS = p.registerCCS;
-            h$setCCS      = p.setCCS;
-            h$runProf     = p.runCC;
-        }
-    } catch(e) {}
+    (function() {
+	try {
+            var p = require('ghcjs-profiling');
+            if(p.isProfiling()) {
+		h$registerCC  = p.registerCC;
+		h$registerCCS = p.registerCCS;
+		h$setCCS      = p.setCCS;
+		h$runProf     = p.runCC;
+            }
+	} catch(e) {}
+    })();
 }
 
 var h$cachedCurrentCcs = -1;
