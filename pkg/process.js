@@ -251,7 +251,10 @@ function h$process_waitForProcess(pid, code_d, code_o, c) {
             h$process_getProcessExitCode(pid, code_d, code_o);
             c(0);
         } else {
-            p.waiters.push(c);
+            p.waiters.push(function(code) {
+		code_d.i3[code_o] = code;
+		c(0);
+	    });
         }
     } else
 #endif
