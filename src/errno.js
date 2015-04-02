@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 #include "HsBaseConfig.h"
 
 #ifdef GHCJS_TRACE_ERRNO
@@ -21,12 +23,11 @@ function h$unsupported(status, c) {
 }
 
 function h$strerror(err) {
-    h$ret1 = 0;
     if(err === 12456) return h$encodeUtf8("operation unsupported on this platform");
 #ifdef GHCJS_BROWSER
-    return h$encodeUtf8("unknown error");
+    RETURN_UBX_TUP2(h$encodeUtf8("unknown error"), 0);
 #else
-    return h$encodeUtf8(h$errorStrs[err] || "unknown error");
+    RETURN_UBX_TUP2(h$encodeUtf8(h$errorStrs[err] || "unknown error"), 0);
 #endif
 }
 

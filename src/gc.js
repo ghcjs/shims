@@ -46,6 +46,8 @@
   - mark posted exceptions to thread
 */
 
+#include <ghcjs/rts.h>
+
 #ifdef GHCJS_TRACE_GC
 function h$traceGC() { h$log.apply(h$log, arguments); }
 #define TRACE_GC(args...) h$traceGC(args)
@@ -264,21 +266,6 @@ function h$markRetained() {
             }
         }
 
-        // mark all callbacks where at least one of the DOM retainers is reachable
-        iter = h$domRoots.iter();
-        while((c = iter.next()) !== null) {
-            if(!h$isMarked(c.root) && c.domRoots && c.domRoots.size() > 0) {
-                var dr, domRetainers = c.domRoots.iter();
-                while((dr = domRetainers.next()) !== null) {
-                    if(h$isReachableDom(dr)) {
-                        TRACE_GC("recursively marking weak DOM retained root");
-                        h$follow(c.root);
-                        marked = true;
-                    }
-                }
-            }
-        }
-
         // mark weak values for reachable keys
         for(var i=h$scannedWeaks.length-1;i>=0;i--) {
             var w = h$scannedWeaks[i];
@@ -490,7 +477,7 @@ function h$finalizeMVars() {
     TRACE_GC("finalizing MVars");
     var i, t, iter = h$blocked.iter();
     while((t = iter.next()) !== null) {
-        if(t.status === h$threadBlocked && t.blockedOn instanceof h$MVar) {
+        if(t.status === THREAD_BLOCKED && t.blockedOn instanceof h$MVar) {
             // if h$unboxFFIResult is the top of the stack, then we cannot kill
             // the thread since it's waiting for async FFI
             if(t.blockedOn.m !== h$gcMark && t.stack[t.sp] !== h$unboxFFIResult) {

@@ -43,21 +43,21 @@ function h$typeOf(o) {
     }
 }
 
-function h$listprops(o) {
+function h$listProps(o) {
     if (!(o instanceof Object)) {
         return [];
     }
-    var l = [];
+    var l = [], i = 0;
     for (var prop in o) {
-        l.push(prop);
+        l[i++] = prop;
     }
     return l;
 }
 
 function h$flattenObj(o) {
-    var l = [];
+    var l = [], i = 0;
     for (var prop in o) {
-        l.push([prop, o[prop]]);
+        l[i++] = [prop, o[prop]];
     }
     return l;
 }

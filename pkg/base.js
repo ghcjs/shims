@@ -1,4 +1,5 @@
 #include "HsBaseConfig.h"
+#include <ghcjs/rts.h>
 
 // #define GHCJS_TRACE_IO 1
 
@@ -376,13 +377,11 @@ function h$base_fillStat(fs, b, off) {
 /** @const */ var h$base_sizeof_stat = 40;
 
 function h$base_st_mtime(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+4];
-    return stat.i3[(stat_off>>2)+3];
+    RETURN_UBX_TUP2(stat.i3[(stat_off>>2)+3], stat.i3[(stat_off>>2)+4]);
 }
 
 function h$base_st_size(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+2];
-    return stat.i3[(stat_off>>2)+1];
+    RETURN_UBX_TUP2(stat.i3[(stat_off>>2)+1], stat.i3[(stat_off>>2)+2]);
 }
 
 function h$base_st_mode(stat, stat_off) {
@@ -394,8 +393,7 @@ function h$base_st_dev(stat, stat_off) {
 }
 
 function h$base_st_ino(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+7];
-    return stat.i3[(stat_off>>2)+6];
+    RETURN_UBX_TUP2(stat.i3[(stat_off>>2)+6], stat.i3[(stat_off>>2)+7]);
 }
 
 /** @const */ var h$base_echo            = 1;
@@ -419,8 +417,7 @@ function h$base_poke_lflag(termios, termios_off, flag) {
 }
 
 function h$base_ptr_c_cc(termios, termios_off) {
-    h$ret1 = 0;
-    return h$newByteArray(8);
+    RETURN_UBX_TUP2(h$newByteArray(8), 0);
 }
 
 /** @const */ var h$base_default_buffer_size = 32768;
@@ -434,13 +431,11 @@ function h$base_c_s_issock(mode) {
 /** @const */ var h$base_SEEK_END = 2;
 
 function h$base_set_saved_termios(a, b, c) {
-    h$ret1 = 0
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$base_get_saved_termios(r) {
-    h$ret1 = 0;
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 // fixme
@@ -619,17 +614,7 @@ function h$shutdownHaskellAndExit(code, fast) {
     if(h$isNode) console.log(h$logBuffer);
     if(h$isJsShell || h$isJsCore) print(h$logBuffer);
 #endif
-    if(h$isNode) {
-        process.exit(code);
-    } else if(h$isJsShell) {
-        quit(code);
-    } else if(h$isJsCore) {
-	if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
-	if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
-	// jsc does not support returning a nonzero value, print it instead
-	if(code !== 0) debug("GHCJS JSC exit status: " + code);
-	quit();
-    }
+    h$exitProcess(code);
 #endif
 }
 

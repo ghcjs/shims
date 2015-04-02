@@ -101,14 +101,12 @@ function h$finalizeWeak(w) {
     TRACE_WEAK("finalizing weak of " + h$stableNameInt(w.keym));
     w.val  = null;
     if(w.finalizer === null || w.finalizer.finalizer === null) {
-        h$ret1 = 0;
-        return null;
+        RETURN_UBX_TUP2(null, 0);
     } else {
         var r = w.finalizer.finalizer;
         h$finalizers.remove(w.finalizer);
         w.finalizer = null;
-        h$ret1 = 1;
-        return r;
+        RETURN_UBX_TUP2(r, 1);
     }
 }
 

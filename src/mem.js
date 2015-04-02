@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 // #define GHCJS_TRACE_META 1
 
 #ifdef GHCJS_TRACE_META
@@ -47,13 +49,10 @@ function h$stl(o, xs, t) {
         for(var i=xs.length-1;i>=0;i--) {
             x = xs[i];
             if(!x && x !== false && x !== 0) throw "h$toHsList: invalid element";
-#ifdef GHCJS_PROF
-            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r, ccs);
-#else
-            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r);
-#endif
+            r = MK_CONS_CC(x, r, ccs);
         }
     }
+    // fixme direct object manip
     o.f  = r.f;
     o.d1 = r.d1;
     o.d2 = r.d2;
@@ -62,6 +61,21 @@ function h$stl(o, xs, t) {
     o.cc = ccs;
 #endif
 }
+
+// some utilities for constructing common objects from JS in the RTS or foreign code.
+// when profiling, the current ccs is assigned
+
+// #ifdef GHCJS_PROF
+// var h$nil = h$c(h$ghczmprimZCGHCziTypesziZMZN_con_e, h$CCS_SYSTEM);
+// #else
+// var h$nil = h$c(h$ghczmprimZCGHCziTypesziZMZN_con_e);
+// #endif
+
+// #ifdef GHCJS_PROF
+// var h$nothing = h$c(h$baseZCGHCziBaseziNothing_con_e, h$CCS_SYSTEM);
+// #else
+//var h$nothing = h$c(h$baseZCGHCziBaseziNothing_con_e);
+// #endif
 
 // delayed init for top-level closures
 var h$staticDelayed = [];
@@ -402,16 +416,16 @@ function h$initInfoTables ( depth      // depth in the base chain
           break;
       case 8: // staticEmptyList
           TRACE_META("staticEmptyList");
-          o.f = h$ghczmprimZCGHCziTypesziZMZN.f;
+          o.f = HS_NIL_CON;
           break;
       case 9: // staticList
           TRACE_META("staticList");
           n = next();
           var hasTail = next();
-          var c = (hasTail === 1) ? nextObj() : h$ghczmprimZCGHCziTypesziZMZN;
+          var c = (hasTail === 1) ? nextObj() : HS_NIL;
           TRACE_META("list length: " + n);
           while(n--) {
-              c = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, nextArg(), c);
+              c = MK_CONS(nextArg(), c);
           }
           o.f  = c.f;
           o.d1 = c.d1;
@@ -495,8 +509,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i] = src.u8[i];
     }
-    h$ret1 = 0;
-    return dst;
+    RETURN_UBX_TUP2(dst, 0);
   } else if(arguments.length === 5) { // Addr# -> Addr# copy
     var dst = arguments[0];
     var dst_off = arguments[1]
@@ -506,8 +519,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i+dst_off] = src.u8[i+src_off];
     }
-    h$ret1 = dst_off;
-    return dst;
+    RETURN_UBX_TUP2(dst, dst_off);
   } else {
     throw "h$memcpy: unexpected argument";
   }
@@ -844,12 +856,10 @@ function h$mkExportDyn(t, f) {
 function h$memchr(a_v, a_o, c, n) {
   for(var i=0;i<n;i++) {
     if(a_v.u8[a_o+i] === c) {
-      h$ret1 = a_o+i;
-      return a_v;
+      RETURN_UBX_TUP2(a_v, a_o+i);
     }
   }
-  h$ret1 = 0;
-  return null;
+  RETURN_UBX_TUP2(null, 0);
 }
 
 function h$strlen(a_v, a_o) {
@@ -968,8 +978,7 @@ function h$eqStableName(s1o,s2o) {
 function h$makeStablePtr(v) {
   var buf = h$newByteArray(4);
   buf.arr = [v];
-  h$ret1 = 0;
-  return buf;
+  RETURN_UBX_TUP2(buf, 0);
 }
 
 function h$hs_free_stable_ptr(stable) {
@@ -977,8 +986,7 @@ function h$hs_free_stable_ptr(stable) {
 }
 
 function h$malloc(n) {
-  h$ret1 = 0;
-  return h$newByteArray(n);
+  RETURN_UBX_TUP2(h$newByteArray(n), 0);
 }
 
 function h$free() {
@@ -1003,8 +1011,7 @@ function h$memset() {
   for(var i=buf_off;i<end;i++) {
     buf_v.u8[i] = chr;
   }
-  h$ret1 = buf_off;
-  return buf_v;
+  RETURN_UBX_TUP2(buf_v, buf_off);
 }
 
 function h$memcmp(a_v, a_o, b_v, b_o, n) {
@@ -1024,11 +1031,10 @@ function h$memmove(a_v, a_o, b_v, b_o, n) {
       a_v.u8[a_o+i] = tmp[i];
     }
   }
-  h$ret1 = a_o;
-  return a_v;
+  RETURN_UBX_TUP2(a_v, a_o);
 }
 function h$mkPtr(v, o) {
-  return h$c2(h$baseZCGHCziPtrziPtr_con_e, v, o);
+  return MK_PTR(v, o);
 };
 function h$mkFunctionPtr(f) {
   var d = h$newByteArray(4);
@@ -1037,93 +1043,70 @@ function h$mkFunctionPtr(f) {
 }
 var h$freeHaskellFunctionPtr = function () {
 }
-/*
-function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
-    h$ret1 = hptr_2;
-    return hptr;
-};
-*/
 
 // extra roots for the heap scanner: objects with root property
 var h$extraRootsN = 0;
 var h$extraRoots = new h$Set();
 
 // 
-var h$domRoots = new h$Set();
+// var h$domRoots = new h$Set();
 
-function h$makeCallback(retain, f, extraArgs, action) {
+function h$makeCallback(/* retain, */ f, extraArgs, action) {
     var args = extraArgs.slice(0);
     args.unshift(action);
     var c = function() {
         return f.apply(this, args);
     }
-    if(retain === true) {
+    // if(retain === true) {
         c._key = ++h$extraRootsN;
         c.root = action;
         h$extraRoots.add(c);
-    } else if(retain) { // DOM retain
+    // } else if(retain) { // DOM retain
 
-    }
+    // } 
     return c;
 }
 
-function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
+function h$makeCallbackApply(/* retain, */ n, f, extraArgs, fun) {
   var c;
   if(n === 1) {
     c = function(x) {
       var args = extraArgs.slice(0);
-      var action = h$c2(h$ap1_e, fun, h$mkJSRef(x));
+      var action = MK_AP1(fun, MK_JSREF(x));
       args.unshift(action);
       return f.apply(this, args);
     }
   } else if (n === 2) {
     c = function(x,y) {
       var args = extraArgs.slice(0);
-      var action = h$c3(h$ap2_e, fun, h$mkJSRef(x), h$mkJSRef(y));
+      var action = MK_AP2(fun, MK_JSREF(x), MK_JSREF(y));
       args.unshift(action);
       return f.apply(this, args);
     }
   } else {
-    throw "h$makeCallbackApply: unsupported arity";
+    throw new Error("h$makeCallbackApply: unsupported arity");
   }
-  if(retain === true) {
+  // if(retain === true) {
       c.root = fun;
       c._key = ++h$extraRootsN;
       h$extraRoots.add(c);
-  } else if(retain) {
+  // } else if(retain) {
     // fixme: retain this while `retain' is in some DOM
-  } else {
+  // } else {
     // no retainer
-  }
+  // }
   return c;
 }
 
-function h$mkJSRef(x) {
-  return h$c1(h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e, x);
-}
-
-// fixme these don't guarantee that the object has a key!
 function h$retain(c) {
+  var k = c._key;
+  if(typeof k !== 'number') throw new Error("retained object does not have a key");
+  if(k === -1) c._key = ++h$extraRootsN;
   h$extraRoots.add(c);
-}
-
-function h$retainDom(d, c) {
-  h$domRoots.add(c);
-  c.domRoots = new h$Set();
-}
-
-function h$releasePermanent(c) {
-  h$extraRoots.remove(c);
 }
 
 function h$release(c) {
   h$extraRoots.remove(c);
-  h$domRoots.remove(c);
-}
-
-function h$releaseDom(c,d) {
-  if(c.domRoots) c.domRoots.remove(d);
-  if(!c.domRoots || c.domRoots.size() == 0) h$domRoots.remove(c);
 }
 
 function h$isInstanceOf(o,c) {
@@ -1137,8 +1120,7 @@ function h$getpagesize() {
 var h$MAP_ANONYMOUS = 0x20;
 function h$mmap(addr_d, addr_o, len, prot, flags, fd, offset1, offset2) {
   if(flags & h$MAP_ANONYMOUS || fd === -1) {
-    h$ret1 = 0;
-    return h$newByteArray(len);
+    RETURN_UBX_TUP2(h$newByteArray(len), 0);
   } else {
     throw "h$mmap: mapping a file is not yet supported";
   }

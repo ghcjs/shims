@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 function h$_hs_text_memcpy(dst_v,dst_o2,src_v,src_o2,n) {
   return h$memcpy(dst_v,2*dst_o2,src_v,2*src_o2,2*n);
 }
@@ -8,8 +10,8 @@ function h$_hs_text_memcmp(a_v,a_o2,b_v,b_o2,n) {
 
 // decoder below adapted from cbits/cbits.c in the text package
 
-var h$_text_UTF8_ACCEPT = 0;
-var h$_text_UTF8_REJECT = 12
+#define TEXT_UTF8_ACCEPT 0
+#define TEXT_UTF8_REJECT 12
 
 var h$_text_utf8d =
    [
@@ -51,8 +53,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
                                          , s
                                          ) {
   if(src_v === null || src_end_v === null) {
-    h$ret1 = src_end_o;
-    return null;
+    RETURN_UBX_TUP2(null, src_end_o);
   }
   var dsto = destoff_v.dv.getUint32(destoff_o,true) << 1;
   var srco = src_o;
@@ -63,7 +64,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
 
   function decode(b) {
     var type = h$_text_utf8d[b];
-    codepoint = (state !== h$_text_UTF8_ACCEPT) ?
+    codepoint = (state !== TEXT_UTF8_ACCEPT) ?
       (b & 0x3f) | (codepoint << 6) :
       (0xff >>> type) & b;
     state = h$_text_utf8d[256 + state + type];
@@ -71,8 +72,8 @@ function h$_hs_text_decode_utf8_internal ( dest_v
   }
 
   while (srco < src_end_o) {
-    if(decode(sdv.getUint8(srco++)) !== h$_text_UTF8_ACCEPT) {
-      if(state !== h$_text_UTF8_REJECT) {
+    if(decode(sdv.getUint8(srco++)) !== TEXT_UTF8_ACCEPT) {
+      if(state !== TEXT_UTF8_REJECT) {
         continue;
       } else {
         break;
@@ -92,8 +93,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
   s.state = state;
   s.codepoint = codepoint;
   destoff_v.dv.setUint32(destoff_o,dsto>>1,true);
-  h$ret1 = srco;
-  return src_v;
+  RETURN_UBX_TUP2(src_v, srco);
 }
 
 function h$_hs_text_decode_utf8_state( dest_v
@@ -107,18 +107,20 @@ function h$_hs_text_decode_utf8_state( dest_v
           , codepoint: codepoint0_v.dv.getUint32(codepoint0_o, true)
           , last: src_o
           };
-  var ret = h$_hs_text_decode_utf8_internal ( dest_v
-                                            , destoff_v, destoff_o
-                                            , src_v.arr[src_o][0], src_v.arr[src_o][1]
-                                            , srcend_v, srcend_o
-                                            , s
-                                            );
+  var ret, ret1;
+  CALL_UBX_TUP2( ret
+               , ret1
+               , h$_hs_text_decode_utf8_internal ( dest_v
+						 , destoff_v, destoff_o
+						 , src_v.arr[src_o][0], src_v.arr[src_o][1]
+						 , srcend_v, srcend_o
+						 , s
+						 ));
   src_v.arr[src_o][1] = s.last;
   state0_v.dv.setUint32(state0_o, s.state, true);
   codepoint0_v.dv.setUint32(codepoint0_o, s.codepoint, true);
-  if(s.state === h$_text_UTF8_REJECT)
-    h$ret1--;
-  return ret;
+  if(s.state === TEXT_UTF8_REJECT) ret1--;
+  RETURN_UBX_TUP2(ret, ret1);
 }
 
 function h$_hs_text_decode_utf8( dest_v
@@ -127,19 +129,21 @@ function h$_hs_text_decode_utf8( dest_v
                                , srcend_v, srcend_o
                                ) {
   /* Back up if we have an incomplete or invalid encoding */
-  var s = { state: h$_text_UTF8_ACCEPT
+  var s = { state: TEXT_UTF8_ACCEPT
           , codepoint: 0
           , last: src_o
           };
-  var ret = h$_hs_text_decode_utf8_internal ( dest_v
-                                            , destoff_v, destoff_o
-                                            , src_v, src_o
-                                            , srcend_v, srcend_o
-                                            , s
-                                            );
-  if (s.state !== h$_text_UTF8_ACCEPT)
-    h$ret1--;
-  return ret;
+  var ret, ret1;
+  CALL_UBX_TUP2( ret
+	       , ret1
+	       , h$_hs_text_decode_utf8_internal ( dest_v
+                                                 , destoff_v, destoff_o
+                                                 , src_v, src_o
+                                                 , srcend_v, srcend_o
+                                                 , s
+                                                 ));
+  if (s.state !== TEXT_UTF8_ACCEPT) ret1--;
+  RETURN_UBX_TUP2(ret, ret1);
 }
 
 

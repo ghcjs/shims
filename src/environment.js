@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 #ifdef GHCJS_TRACE_ENV
 function h$logEnv() { h$log.apply(h$log,arguments); }
 #define TRACE_ENV(args...) h$logEnv(args)
@@ -119,7 +121,6 @@ function h$getpid() {
 
 function h$__hscore_environ() {
     TRACE_ENV("hscore_environ");
-    h$ret1 = 0;
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         var env = [], i;
@@ -129,23 +130,22 @@ function h$__hscore_environ() {
         p.arr = [];
         for(i=0;i<env.length;i++) p.arr[4*i] = [h$encodeUtf8(env[i]), 0];
         p.arr[4*env.length] = [null, 0];
-        return p;
+        RETURN_UBX_TUP2(p, 0);
     }
 #endif
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$getenv(name, name_off) {
     TRACE_ENV("getenv");
-    h$ret1 = 0;
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         var n = h$decodeUtf8z(name, name_off);
         if(typeof process.env[n] !== 'undefined')
-            return h$encodeUtf8(process.env[n]);
+            RETURN_UBX_TUP2(h$encodeUtf8(process.env[n]), 0);
     }
 #endif
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$errorBelch() {
@@ -268,7 +268,6 @@ function h$localtime_r(timep_v, timep_o, result_v, result_o) {
   if(!result_v.arr) result_v.arr = [];
   result_v.arr[result_o + 40] = [h$myTimeZone, 0];
   result_v.arr[result_o + 48] = [h$myTimeZone, 0];
-  h$ret1 = result_o;
-  return result_v;
+  RETURN_UBX_TUP2(result_v, result_o);
 }
 var h$__hscore_localtime_r = h$localtime_r;

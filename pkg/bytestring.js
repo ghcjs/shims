@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 // translated from bytestring cbits/fpstring.c
 
 function h$fps_reverse(a_v, a_o, b_v, b_o, n) {
@@ -79,8 +81,7 @@ function h$_hs_bytestring_int_dec(x, buf_d, buf_o) {
         x = (x / 10) | 0;
         bu8[ptr++] = h$_hs_bytestring_digits[x * 10 - x_tmp];
         if(x === 0) {
-            h$ret1 = ptr;
-            return buf_d;
+            RETURN_UBX_TUP2(buf_d, ptr);
         } else {
             x = -x;
         }
@@ -99,8 +100,7 @@ function h$_hs_bytestring_int_dec(x, buf_d, buf_o) {
         bu8[ptr--]   = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 
 // signed long long ints (64 bit integers)
@@ -118,8 +118,7 @@ function h$_hs_bytestring_long_long_int_dec(x_a, x_b, buf_d, buf_o) {
         x = x.div(l10);
         bu8[ptr++] = h$_hs_bytestring_digits[x.multiply(l10).subtract(x_tmp).getLowBits()];
         if(x.isZero()) {
-            h$ret1 = ptr;
-            return buf_d;
+            RETURN_UBX_TUP2(buf_d, ptr);
         } else {
             x = x.negate();
         }
@@ -139,8 +138,7 @@ function h$_hs_bytestring_long_long_int_dec(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 
 // unsigned integers
@@ -162,8 +160,7 @@ function h$_hs_bytestring_uint_dec(x, buf_d, buf_o) {
         bu8[ptr--]   = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 
 function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
@@ -186,8 +183,7 @@ function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--]   = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 
 // Padded, decimal, positive integers for the decimal output of bignums
@@ -256,8 +252,7 @@ function h$_hs_bytestring_uint_hex(x, buf_d, buf_o) {
         bu8[ptr--]   = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 
 // unsigned long ints (64 bit words)
@@ -285,7 +280,6 @@ function h$_hs_bytestring_long_long_uint_hex(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--]   = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    RETURN_UBX_TUP2(buf_d, next_free);
 }
 

@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 // encode a string constant
 function h$str(s) {
   var enc = null;
@@ -22,13 +24,13 @@ function h$rstr(d) {
 
 // these aren't added to the CAFs, so the list stays in mem indefinitely, is that a problem?
 #ifdef GHCJS_PROF
-function h$strt(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsString(str, cc); }, cc); }
-function h$strta(str, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str, cc); }, cc); }
-function h$strtb(arr, cc) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr, cc); }, cc); }
+function h$strt(str, cc) { return MK_LAZY_CC(function() { return h$toHsString(str, cc); }, c));
+function h$strta(str, cc) { return MK_LAZY_CC(function() { return h$toHsStringA(str, cc); }, cc); }
+function h$strtb(arr, cc) { return MK_LAZY_CC(function() { return h$toHsStringMU8(arr, cc); }, cc); }
 #else
-function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }); }
-function h$strta(str) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
-function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }); }
+function h$strt(str) { return MK_LAZY(function() { return h$toHsString(str); }); }
+function h$strta(str) { return MK_LAZY(function() { return h$toHsStringA(str); }); }
+function h$strtb(arr) { return MK_LAZY(function() { return h$toHsStringMU8(arr); }); }
 #endif
 
 // unpack strings without thunks
@@ -72,9 +74,14 @@ function h$u_iswalnum(a) {
   return h$alnum[a] == 1 ? 1 : 0;
 }
 
+// var h$spaceChars = [9,10,11,12,13,32,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8239,8287,12288];
+function h$isSpace(a) {
+    if(a<5760) return a===32||(a>=9&&a<=13)||a===160;
+    return (a>=8192&&a<=8202)||a===5760||a===8239||a===8287||a===12288;
+}
+
 function h$u_iswspace(a) {
-    return '\t\n\v\f\r \u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000'
-        .indexOf(String.fromCharCode(a)) !== -1 ? 1 : 0;
+    return h$isSpace(a)?1:0;
 }
 
 var h$lower = null;
@@ -203,9 +210,8 @@ function h$u_gencat(a) {
 }
 
 function h$localeEncoding() {
-    //   h$log("### localeEncoding");
-   h$ret1 = 0; // offset 0
-   return h$encodeUtf8("UTF-8");
+   // h$log("### localeEncoding");
+   RETURN_UBX_TUP2(h$encodeUtf8("UTF-8"), 0); // offset 0
 }
 
 function h$rawStringData(str) {
@@ -328,38 +334,6 @@ function h$encodeUtf16(str) {
   return v;
 }
 
-// convert a string to a buffer, set second field in
-// Addr# to length
-function h$fromStr(s) {
-  var l = s.length;
-  var b = h$newByteArray(l * 2);
-  var dv = b.dv;
-  for(var i=l-1;i>=0;i--) {
-    dv.setUint16(i<<1, s.charCodeAt(i), true);
-  }
-  h$ret1 = l;
-  return b;
-}
-
-// convert a Data.Text buffer with offset/length to a
-// JS string
-function h$toStr(b,o,l) {
-  var a = [];
-  var end = 2*(o+l);
-  var k = 0;
-  var dv = b.dv;
-  var s = '';
-  for(var i=2*o;i<end;i+=2) {
-    var cc = dv.getUint16(i,true);
-    a[k++] = cc;
-    if(k === 60000) {
-      s += String.fromCharCode.apply(this, a);
-      k = 0;
-      a = [];
-    }
-  }
-  return s + String.fromCharCode.apply(this, a);
-}
 
 /*
 function h$encodeUtf16(str) {
@@ -394,7 +368,7 @@ function h$decodeUtf16l(v, byteLen, start) {
   for(var i=0;i<byteLen;i+=2) {
     a[i>>1] = v.dv.getUint16(i+start,true);
   }
-  return String.fromCharCode.apply(this, a);
+  return h$charCodeArrayToString(arr);
 }
 var h$dU16 = h$decodeUtf16;
 
@@ -477,7 +451,7 @@ function h$decodeUtf8(v,n0,start) {
       arr.push(code);
     }
   }
-  return String.fromCharCode.apply(this, arr);
+  return h$charCodeArrayToString(arr);
 }
 
 // fixme what if terminator, then we read past end
@@ -488,7 +462,18 @@ function h$decodeUtf16(v) {
   for(var i=0;i<n;i+=2) {
     arr.push(dv.getUint16(i,true));
   }
-  return String.fromCharCode.apply(this, arr);
+  return h$charCodeArrayToString(arr);
+}
+
+function h$charCodeArrayToString(arr) {
+    if(arr.length <= 60000) {
+	return String.fromCharCode.apply(this, arr);
+    }
+    var r = '';
+    for(var i=0;i<arr.length;i+=60000) {
+	r += String.fromCharCode.apply(this, arr.slice(i, i+60000));
+    }
+    return r;
 }
 
 function h$hs_iconv_open(to,to_off,from,from_off) {
@@ -551,20 +536,16 @@ function h$toHsString(str, cc) {
 #else
 function h$toHsString(str) {
 #endif
-  if(typeof str !== 'string') return h$ghczmprimZCGHCziTypesziZMZN;
+  if(typeof str !== 'string') return HS_NIL;
   var i = str.length - 1;
-  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  var r = HS_NIL;
   while(i>=0) {
     var cp = str.charCodeAt(i);
     if(cp >= 0xDC00 && cp <= 0xDFFF && i > 0) {
       --i;
       cp = (cp - 0xDC00) + (str.charCodeAt(i) - 0xD800) * 1024 + 0x10000;
     }
-#ifdef GHCJS_PROF
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r, cc);
-#else
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
-#endif
+    r = MK_CONS_CC(cp, r, cc);
     --i;
   }
   return r;
@@ -573,13 +554,10 @@ function h$toHsString(str) {
 // string must have been completely forced first
 function h$fromHsString(str) {
     var xs = '';
-    while(str.f.a === 2) {
-        if(typeof str.d1 === 'number') {
-            xs += String.fromCharCode(str.d1);
-        } else {
-            xs += String.fromCharCode(str.d1.d1); // unbox_e
-        }
-        str = str.d2;
+    while(IS_CONS(str)) {
+	var h = CONS_HEAD(str);
+	xs += String.fromCharCode(UNWRAP_NUMBER(h));
+        str = CONS_TAIL(str);
     }
     return xs;
 }
@@ -587,9 +565,9 @@ function h$fromHsString(str) {
 // list of JSRef to array, list must have been completely forced first
 function h$fromHsListJSRef(xs) {
     var arr = [];
-    while(xs.f.a === 2) {
-        arr.push(xs.d1.d1);
-        xs = xs.d2;
+    while(IS_CONS(xs)) {
+        arr.push(JSREF_VAL(CONS_HEAD(xs)));
+        xs = CONS_TAIL(xs);
     }
     return arr;
 }
@@ -600,18 +578,14 @@ function h$toHsStringA(str, cc) {
 #else
 function h$toHsStringA(str) {
 #endif
-  if(typeof str !== 'string') return h$ghczmprimZCGHCziTypesziZMZN;
-  var i = str.length - 1;
-  var r = h$ghczmprimZCGHCziTypesziZMZN;
-  while(i>=0) {
-#ifdef GHCJS_PROF
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r, cc);
-#else
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
-#endif
-    --i;
-  }
-  return r;
+    if(typeof str !== 'string') return HS_NIL;
+    var i = str.length - 1;
+    var r = HS_NIL;
+    while(i>=0) {
+	r = MK_CONS_CC(str.charCodeAt(i), r, cc);
+	--i;
+    }
+    return r;
 }
 
 // convert array with modified UTF-8 encoded text
@@ -620,7 +594,7 @@ function h$toHsStringMU8(arr, cc) {
 #else
 function h$toHsStringMU8(arr) {
 #endif
-    var accept = false, b, n = 0, cp = 0, r = h$ghczmprimZCGHCziTypesziZMZN, i = arr.length - 1;
+    var accept = false, b, n = 0, cp = 0, r = HS_NIL;
     while(i >= 0) {
         b = arr[i];
         if(!(b & 128)) {
@@ -633,11 +607,7 @@ function h$toHsStringMU8(arr) {
             accept = true;
         }
         if(accept) {
-#ifdef GHCJS_PROF
-            r  = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r, cc);
-#else
-            r  = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
-#endif
+            r  = MK_CONS_CC(cp, r, cc);
             cp = 0
             n  = 0;
         } else {
@@ -654,13 +624,9 @@ function h$toHsList(arr, cc) {
 #else
 function h$toHsList(arr) {
 #endif
-  var r = h$ghczmprimZCGHCziTypesziZMZN;
+  var r = HS_NIL;
   for(var i=arr.length-1;i>=0;i--) {
-#ifdef GHCJS_PROF
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r, cc);
-#else
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
-#endif
+    r = MK_CONS_CC(arr[i], r, cc);
   }
   return r;
 }
@@ -671,17 +637,12 @@ function h$toHsListJSRef(arr, cc) {
 #else
 function h$toHsListJSRef(arr) {
 #endif
-    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    var r = HS_NIL;
     for(var i=arr.length-1;i>=0;i--) {
-#ifdef GHCJS_PROF
-        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r, cc);
-#else
-        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r);
-#endif
+	r = MK_CONS_CC(MK_JSREF(arr[i]), r, cc);
     }
     return r;
 }
-
 
 // unpack ascii string, append to existing Haskell string
 #ifdef GHCJS_PROF
@@ -692,11 +653,7 @@ function h$appendToHsStringA(str, appendTo) {
   var i = str.length - 1;
   var r = appendTo;
   while(i>=0) {
-#ifdef GHCJS_PROF
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r, cc);
-#else
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
-#endif
+    r = MK_CONS_CC(str.charCodeAt(i), r, cc);
     --i;
   }
   return r;
@@ -704,11 +661,10 @@ function h$appendToHsStringA(str, appendTo) {
 
 // throw e wrapped in a GHCJS.Prim.JSException  in the current thread
 function h$throwJSException(e) {
-  // a GHCJS.Prim.JSException
-  var jsE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,e,h$toHsString(e.toString()));
-  // wrap it in a SomeException, adding the Exception dictionary
-  var someE = h$c2(h$baseZCGHCziExceptionziSomeException_con_e,
-     h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException, jsE);
+  // create a JSException object and  wrap it in a SomeException
+  // adding the Exception dictionary
+  var someE = MK_SOMEEXCEPTION(HS_JSEXCEPTION_EXCEPTION,
+                               MK_JSEXCEPTION(e, e.toString));
   return h$throw(someE, true);
 }
 

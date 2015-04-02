@@ -1,3 +1,4 @@
+#include <ghcjs/rts.h>
 // preemptive threading support
 
 // run gc when this much time has passed (ms)
@@ -54,12 +55,6 @@ function h$logCall(c) {
 }
 #endif
 
-// thread status
-var h$threadRunning  = 0;
-var h$threadBlocked  = 1;
-var h$threadFinished = 16;
-var h$threadDied     = 17;
-
 var h$threadIdN = 0;
 
 // all threads except h$currentThread
@@ -70,7 +65,7 @@ var h$blocked = new h$Set();
 /** @constructor */
 function h$Thread() {
     this.tid = ++h$threadIdN;
-    this.status = h$threadRunning;
+    this.status = THREAD_RUNNING;
     this.stack = [h$done, 0, h$baseZCGHCziConcziSynczireportError, h$catch_e];
     this.sp = 3;
     this.mask = 0;                // async exceptions masked (0 unmasked, 1: uninterruptible, 2: interruptible)
@@ -130,9 +125,8 @@ function h$fork(a, inherit) {
 }
 
 function h$threadStatus(t) {
-  h$ret1 = 1; // capability
-  h$ret2 = 0; // locked
-  return t.status;
+  // status, capability, locked
+  RETURN_UBX_TUP3(t.status, 1, 0);
 }
 
 function h$waitRead(fd) {
@@ -305,9 +299,9 @@ function h$postAsync(alreadySuspended,next) {
 // from any queues it was blocked on
 function h$wakeupThread(t) {
     TRACE_SCHEDULER("sched: waking up: " + h$threadString(t));
-    if(t.status === h$threadBlocked) {
+    if(t.status === THREAD_BLOCKED) {
         t.blockedOn = null;
-        t.status = h$threadRunning;
+        t.status = THREAD_RUNNING;
         h$blocked.remove(t);
     }
     t.interruptible = false;
@@ -320,14 +314,14 @@ function h$wakeupThread(t) {
 // queue it's blocked on
 function h$forceWakeupThread(t) {
   TRACE_SCHEDULER("forcing wakeup of: " + h$threadString(t));
-  if(t.status === h$threadBlocked) {
+  if(t.status === THREAD_BLOCKED) {
     h$removeThreadBlock(t);
     h$wakeupThread(t);
   }
 }
 
 function h$removeThreadBlock(t) {
-  if(t.status === h$threadBlocked) {
+  if(t.status === THREAD_BLOCKED) {
     var o = t.blockedOn;
     if(o === null || o === undefined) {
       throw ("h$removeThreadBlock: blocked on null or undefined: " + h$threadString(t));
@@ -367,9 +361,9 @@ function h$removeThreadBlock(t) {
       }
     } else if (o instanceof h$TVarsWaiting) {
       h$stmRemoveBlockedThread(o, t)
-    } else if(o.f && o.f.t === h$BLACKHOLE_CLOSURE) {
+    } else if(IS_BLACKHOLE(o)) {
       TRACE_SCHEDULER("blocked on blackhole");
-      h$removeFromArray(o.d2,t);
+      h$removeFromArray(BLACKHOLE_QUEUE(o),t);
     } else {
       throw ("h$removeThreadBlock: blocked on unknown object: " + h$collectProps(o));
     }
@@ -390,7 +384,7 @@ function h$removeFromArray(a,o) {
 
 function h$finishThread(t) {
     TRACE_SCHEDULER("sched: finishing: " + h$threadString(t));
-    t.status = h$threadFinished;
+    t.status = THREAD_FINISHED;
     h$blocked.remove(t);
     t.stack = null;
     t.mask = 0;
@@ -409,7 +403,7 @@ function h$blockThread(t,o,resume) {
     if(o === undefined || o === null) {
         throw ("h$blockThread, no block object: " + h$threadString(t));
     }
-    t.status = h$threadBlocked;
+    t.status = THREAD_BLOCKED;
     t.blockedOn = o;
     t.retryInterrupted = resume;
     t.sp = h$sp;
@@ -429,21 +423,21 @@ function h$scheduler(next) {
     // remove non-runnable threads
     if(h$currentThread && h$pendingAsync()) {
         TRACE_SCHEDULER("sched: received async exception, continuing thread");
-        if(h$currentThread.status !== h$threadRunning) {
+        if(h$currentThread.status !== THREAD_RUNNING) {
             h$forceWakeupThread(h$currentThread);
-            h$currentThread.status = h$threadRunning;
+            h$currentThread.status = THREAD_RUNNING;
         }
         h$postAsync(next === h$reschedule, next);
         return h$stack[h$sp];
     }
     var t;
     while(t = h$threads.dequeue()) {
-        if(t.status === h$threadRunning) { break; }
+        if(t.status === THREAD_RUNNING) { break; }
     }
     // if no other runnable threads, just continue current (if runnable)
     if(t === null) {
         TRACE_SCHEDULER("sched: no other runnable threads");
-        if(h$currentThread && h$currentThread.status === h$threadRunning) {
+        if(h$currentThread && h$currentThread.status === THREAD_RUNNING) {
             // do gc after a while
             if(now - h$lastGc > h$gcInterval) {
                 // save active data for the thread on its stack
@@ -483,7 +477,7 @@ function h$scheduler(next) {
     } else { // runnable thread in t, switch to it
         TRACE_SCHEDULER("sched: switching to: " + h$threadString(t));
         if(h$currentThread !== null) {
-            if(h$currentThread.status === h$threadRunning) {
+            if(h$currentThread.status === THREAD_RUNNING) {
                 h$threads.enqueue(h$currentThread);
             }
             // if h$reschedule called, thread takes care of suspend
@@ -697,18 +691,17 @@ function h$actualMainLoop() {
         } catch(e) {
             // uncaught exception in haskell code, kill thread
             // fixme: would we ever need to remove the thread from queues?
-            h$currentThread.status = h$threadDied;
+            h$currentThread.status = THREAD_DIED;
             h$currentThread.stack = null;
             h$currentThread = null;
 #ifdef GHCJS_PROF
             h$reportCurrentCcs();
 #endif
             c = null;
-            if(h$stack && h$stack[0] === h$doneMain) {
+            if(h$stack && h$stack[0] === h$doneMain_e) {
                 h$stack = null;
                 h$reportMainLoopException(e, true);
-                h$doneMain();
-                return;
+                h$doneMain_e();
             } else {
                 h$stack = null;
                 h$reportMainLoopException(e, false);
@@ -756,7 +749,7 @@ function h$runSync(a, cont) {
   t.stack[5] = a;
   t.stack[6] = h$return;
   t.sp = 6;
-  t.status = h$threadRunning;
+  t.status = THREAD_RUNNING;
   var excep = null;
   var blockedOn = null;
   h$currentThread = t;
@@ -789,15 +782,15 @@ function h$runSync(a, cont) {
 #endif
       }
       TRACE_SCHEDULER("h$runSync: main loop exited");
-      if(t.status === h$threadFinished) {
+      if(t.status === THREAD_FINISHED) {
         TRACE_SCHEDULER("h$runSync: thread finished");
         break;
       } else {
         TRACE_SCHEDULER("h$runSync: thread NOT finished");
       }
       var b = t.blockedOn;
-      if(typeof b === 'object' && b && b.f && b.f.t === h$BLACKHOLE_CLOSURE) {
-        var bhThread = b.d1;
+      if(IS_BLACKHOLE(b)) {
+        var bhThread = BLACKHOLE_TID(b);
         if(bhThread === ct || bhThread === t) { // hit a blackhole from running thread or ourselves
           TRACE_SCHEDULER("h$runSync: NonTermination");
           c = h$throw(h$baseZCControlziExceptionziBasezinonTermination, false);
@@ -831,7 +824,7 @@ function h$runSync(a, cont) {
 #ifdef GHCJS_PROF
   h$reportCurrentCcs();
 #endif
-  if(t.status !== h$threadFinished && !cont) {
+  if(t.status !== THREAD_FINISHED && !cont) {
     h$removeThreadBlock(t);
     h$finishThread(t);
   }
@@ -852,20 +845,20 @@ function h$runBlackholeThreadSync(bh) {
   var bhs = [];
   var currentBh  = bh;
   // we don't handle async exceptions here, don't run threads with pending exceptions
-  if(bh.d1.excep.length > 0) {
+  if(BLACKHOLE_TID(bh).excep.length > 0) {
     return false;
   }
-  h$currentThread = bh.d1;
+  h$currentThread = BLACKHOLE_TID(bh);
   h$stack = h$currentThread.stack;
   h$sp = h$currentThread.sp;
 #ifdef GHCJS_PROF
   h$reportCurrentCcs();
 #endif
-  var c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
-  TRACE_SCHEDULER("switched thread status running: " + (h$currentThread.status === h$threadRunning));
+  var c = (h$currentThread.status === THREAD_RUNNING)?h$stack[h$sp]:h$reschedule;
+  TRACE_SCHEDULER("switched thread status running: " + (h$currentThread.status === THREAD_RUNNING));
   try {
     while(true) {
-      while(c !== h$reschedule && currentBh.f.t === h$BLACKHOLE_CLOSURE) {
+      while(c !== h$reschedule && IS_BLACHOLE(currentBh)) {
         c = c();
         c = c();
         c = c();
@@ -873,13 +866,11 @@ function h$runBlackholeThreadSync(bh) {
         c = c();
       }
       if(c === h$reschedule) { // perhaps new blackhole, then continue with that thread, otherwise fail
-        if(typeof h$currentThread.blockedOn === 'object' &&
-           h$currentThread.blockedOn.f &&
-           h$currentThread.blockedOn.f.t === h$BLACKHOLE_CLOSURE) {
+        if(IS_BLACKHOLE(h$currentThread.blockedOn)) {
           TRACE_SCHEDULER("following another black hole");
           bhs.push(currentBh);
           currentBh = h$currentThread.blockedOn;
-          h$currentThread = h$currentThread.blockedOn.d1;
+          h$currentThread = BLACKHOLE_TID(h$currentThread.blockedOn);
           if(h$currentThread.excep.length > 0) {
             break;
           }
@@ -888,7 +879,7 @@ function h$runBlackholeThreadSync(bh) {
 #ifdef GHCJS_PROF
           h$reportCurrentCcs();
 #endif
-          c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
+          c = (h$currentThread.status === THREAD_RUNNING)?h$stack[h$sp]:h$reschedule;
         } else {
           TRACE_SCHEDULER("thread blocked on something that's not a black hole, failing");
           break;
@@ -900,7 +891,7 @@ function h$runBlackholeThreadSync(bh) {
         if(bhs.length > 0) {
           TRACE_SCHEDULER("to next black hole");
           currentBh = bhs.pop();
-          h$currentThread = currentBh.d1;
+          h$currentThread = BLACKHOLE_TID(currentBh);
           h$stack = h$currentThread.stack;
           h$sp = h$currentThread.sp;
 #ifdef GHCJS_PROF
@@ -926,7 +917,7 @@ function h$runBlackholeThreadSync(bh) {
 
 function h$syncThreadState(tid) {
   return (tid.isSynchronous ? 1 : 0) |
-         (tid.continueAsync ? 2 : 0);
+         ((tid.continueAsync || !tid.isSynchronous) ? 2 : 0);
 }
 
 // run the supplied IO action in a main thread
@@ -937,7 +928,7 @@ function h$main(a) {
   t.ccs = a.cc;
 #endif
   //TRACE_SCHEDULER("sched: starting main thread");
-    t.stack[0] = h$doneMain;
+    t.stack[0] = h$doneMain_e;
 #ifndef GHCJS_BROWSER
   if(!h$isBrowser) {
     t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler;
@@ -954,6 +945,30 @@ function h$main(a) {
   h$wakeupThread(t);
   h$startMainLoop();
   return t;
+}
+
+function h$doneMain() {
+#ifndef GHCJS_BROWSER
+  h$exitProcess(0);
+#endif
+  h$finishThread(h$currentThread);
+  return h$reschedule;
+}
+
+function h$exitProcess(code) {
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+	process.exit(code);
+    } else if(h$isJsShell) {
+	quit(code);
+    } else if(h$isJsCore) {
+	if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
+        if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
+        // jsc does not support returning a nonzero value, print it instead
+        if(code !== 0) debug("GHCJS JSC exit status: " + code);
+        quit();
+    }
+#endif
 }
 
 // MVar support
@@ -1032,12 +1047,11 @@ function h$takeMVar(mv) {
 function h$tryTakeMVar(mv) {
   TRACE_SCHEDULER("h$tryTakeMVar(" + mv.id + "): " + mv.val);
   if(mv.val === null) {
-    h$ret1 = null;
-    return 0;
+    RETURN_UBX_TUP2(0, null);
   } else {
-    h$ret1 = mv.val;
+    var v = mv.val;
     h$notifyMVarEmpty(mv);
-    return 1;
+    RETURN_UBX_TUP2(1, v);
   }
 }
 
@@ -1083,7 +1097,7 @@ function h$tryPutMVar(mv,val) {
 
 // box up a JavaScript value and write it to the MVar synchronously
 function h$writeMVarJs1(mv,val) {
-  var v = h$c1(h$data1_e, val);
+  var v = MK_DATA1_1(val);
   if(mv.val !== null) {
     TRACE_SCHEDULER("h$writeMVarJs1: was full");
     mv.writers.enqueue([null,v]);
@@ -1094,7 +1108,7 @@ function h$writeMVarJs1(mv,val) {
 }
 
 function h$writeMVarJs2(mv,val1,val2) {
-  var v = h$c2(h$data1_e, val1, val2);
+  var v = MK_DATA1_2(val1, val2);
   if(mv.val !== null) {
     TRACE_SCHEDULER("h$writeMVarJs2: was full");
     mv.writers.enqueue([null,v]);
@@ -1112,24 +1126,24 @@ function h$MutVar(v) {
 }
 
 function h$atomicModifyMutVar(mv, fun) {
-  var thunk = h$c2(h$ap1_e, fun, mv.val);
-  mv.val = h$c1(h$select1_e, thunk);
-  return h$c1(h$select2_e, thunk);
+  var thunk = MK_AP1(fun, mv.val);
+  mv.val = MK_SELECT1(thunk);
+  return MK_SELECT2(thunk);
 }
 
 // Black holes and updates
 // caller must save registers on stack
 function h$blockOnBlackhole(c) {
   TRACE_SCHEDULER("blackhole, blocking: " + h$collectProps(c));
-  if(c.d1 === h$currentThread) {
+  if(BLACKHOLE_TID(c) === h$currentThread) {
     TRACE_SCHEDULER("NonTermination");
     return h$throw(h$baseZCControlziExceptionziBasezinonTermination, false); // is this an async exception?
   }
   TRACE_SCHEDULER("blackhole, blocking thread: " + h$threadString(h$currentThread));
-  if(c.d2 === null) {
-    c.d2 = [h$currentThread];
+  if(BLACKHOLE_QUEUE(c) === null) {
+    SET_BLACKHOLE_QUEUE(c,[h$currentThread]);
   } else {
-    c.d2.push(h$currentThread);
+    BLACKHOLE_QUEUE(c).push(h$currentThread);
   }
   h$blockThread(h$currentThread,c,[h$resumeBlockOnBlackhole,c]);
   return h$reschedule;
@@ -1150,10 +1164,7 @@ function h$makeResumable(bh,start,end,extra) {
   }
 //  TRACE_SCHEDULER("making resumable " + (h$debugResumableId+1) + ", stack: ");
 //  h$dumpStackTop(s,0,s.length-1);
-  bh.f = h$resume_e;
-  bh.d1 = s;
-  bh.d2 = null;
-  //  bh.d2 = ++h$debugResumableId;
+  MAKE_RESUMABLE(bh, s);
 }
 
 var h$enabled_capabilities = h$newByteArray(4);
@@ -1169,7 +1180,7 @@ function h$mkForeignCallback(x) {
         if(x.mv === null) { // callback called synchronously
             x.mv = arguments;
         } else {
-            h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+            h$notifyMVarFull(x.mv, MK_DATA1_1(arguments));
             h$mainLoop();
         }
     }

@@ -18,14 +18,12 @@ function h$tcgetattr(x, y, z) {
 
 function h$__hscore_get_saved_termios(r) {
     TRACE_HSCORE("hscore_get_saved_termios: " + r);
-    h$ret1 = 0;
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$__hscore_set_saved_termios(a, b, c) {
     TRACE_HSCORE("hscore_set_saved_termios: " + a + " " + b + " " + c);
-    h$ret1 = 0;
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$__hscore_sizeof_sigset_t() {
@@ -35,8 +33,7 @@ function h$__hscore_sizeof_sigset_t() {
 
 function h$sigemptyset(a, b) {
     TRACE_HSCORE("sigemptyset: " + a + " " + b);
-    h$ret1 = 0;
-    return null;
+    RETURN_UBX_TUP2(null, 0);
 }
 
 function h$__hscore_sigttou() {
@@ -56,8 +53,7 @@ function h$__hscore_sig_block() {
 
 function h$sigprocmask(a,b,c,d,e) {
     TRACE_HSCORE("sigprocmask: " + a + " " + b + " " + c + " " + d + " " + e);
-    h$ret1 = 0;
-    return 0;
+    RETURN_UBX_TUP2(0, 0);
 }
 
 function h$__hscore_lflag(a,b) {
@@ -77,14 +73,12 @@ function h$__hscore_poke_lflag(a, b, c) {
 
 function h$__hscore_ptr_c_cc(a, b) {
     TRACE_HSCORE("hscore_ptr_c_cc: " + a + " " + b);
-    h$ret1 = 0;
-    return h$newByteArray(8); // null;
+    RETURN_UBX_TUP2(h$newByteArray(8), 0); // null;
 }
 
 function h$__hscore_vmin() {
     TRACE_HSCORE("hscore_vmin");
-    h$ret1 = 0;
-    return h$newByteArray(8); // null;
+    RETURN_UBX_TUP2(h$newByteArray(8), 0); // null;
 }
 
 function h$__hscore_vtime() {

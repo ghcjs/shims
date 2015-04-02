@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 /* 
    Integer and integer-gmp support
    partial GMP emulation
@@ -188,16 +190,14 @@ function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("quotRemInteger q: " + q.toString());
     var r = abits.subtract(q.multiply(bbits));
     TRACE_INTEGER("quotRemInteger r: " + r.toString());
-    h$ret1 = r;
-    return q;
+    RETURN_UBX_TUP2(q, r);
 }
 
 function h$integer_cmm_quotRemIntegerWordzh(sa, abits, b) {
     var bbits = h$bigFromWord(b);
     TRACE_INTEGER("quotRemIntegerWord: " + abits + " " + b);
     var q = abits.divide(bbits);
-    h$ret1 = abits.subtract(q.multiply(bbits));
-    return q;
+    RETURN_UBX_TUP2(q, abits.subtract(q.multiply(bbits)));
 }
 
 function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
@@ -225,12 +225,12 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("divModInteger: " + abits + " " + bbits);
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
+    TRACE_INTEGER("signums: " + abits.signum() + " " + bbits.signum() + " " + m.signum());
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         d = d.subtract(h$bigOne);
         m.addTo(bbits, m);
     }
-    h$ret1 = m;
-    return d;
+    RETURN_UBX_TUP2(d, m);
 }
 
 function h$integer_cmm_divModIntegerWordzh(sa, abits, b) {
@@ -242,9 +242,12 @@ function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
     TRACE_INTEGER("divInteger "  + abits + " " + bbits);
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
+    TRACE_INTEGER("signums: " + abits.signum() + " " + bbits.signum() + " " + m.signum());
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
+        TRACE_INTEGER("subtracting");
         d = d.subtract(h$bigOne);
     }
+    TRACE_INTEGER("divInteger result "  + d);
     return d;
 }
 
@@ -377,27 +380,27 @@ var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
     TRACE_INTEGER("integer_cmm_decodeDouble " + x);
-    var sgn = h$decodeDouble2Int(x);
-    var b   = h$bigFromInt(h$ret1).shiftLeft(32).add(h$bigFromWord(h$ret2));
-    h$ret1 = (!isNaN(x) && sgn < 0) ? b.negate() : b;
-    TRACE_INTEGER("integer_cmm_decodeDouble s: " + h$ret1 + " e: " + h$ret3);
-    return h$ret3; // exponent
+    var sgn, ret1, ret2, ret3;
+    CALL_UBX_TUP4(sgn, ret1, ret2, ret3, h$decodeDouble2Int(x));
+    var b   = h$bigFromInt(ret1).shiftLeft(32).add(h$bigFromWord(ret2));
+    ret1 = (!isNaN(x) && sgn < 0) ? b.negate() : b;
+    // var ret3 = h$ret3;
+    TRACE_INTEGER("integer_cmm_decodeDouble s: " + ret1 + " e: " + ret3);
+    RETURN_UBX_TUP2(ret3, ret1);
 }
 
 function h$integer_cmm_decodeDoublezhFallback(x) {
     TRACE_INTEGER("integer_cmm_decodeDouble fallback " + x);
     if(isNaN(x)) {
-      h$ret1 = h$bigFromInt(3).shiftLeft(51).negate();
-      return 972;
+      RETURN_UBX_TUP2(972, h$bigFromInt(3).shiftLeft(51).negate());
     }
     if( x < 0 ) {
-        var result = h$integer_cmm_decodeDoublezh(-x);
-        h$ret1 = h$ret1.negate();
-        return result;
+        var result, ret1;
+        CALL_UBX_TUP2(result, ret1, h$integer_cmm_decodeDoublezh(-x));
+        RETURN_UBX_TUP2(result, ret1.negate());
     }
     if(x === Number.POSITIVE_INFINITY) {
-        h$ret1 = h$bigOne.shiftLeft(52);
-        return 972;
+        RETURN_UBX_TUP2(972, h$bigOne.shiftLeft(52));
     }
     var exponent = (Math.floor(Math.log(x) * h$oneOverLog2)-52)|0;
     var n;
@@ -414,21 +417,19 @@ function h$integer_cmm_decodeDoublezhFallback(x) {
       exponent--;
       n *= 2;
     }
-    h$ret1 = h$bigFromNumber(n);
+    var ret1 = h$bigFromNumber(n);
     TRACE_INTEGER("integer_cmm_decodeDoubleFallback s: " + h$ret1 + " e: " + exponent);
-    return exponent;
+    RETURN_UBX_TUP2(exponent, ret1);
 }
 
 function h$integer_cmm_int2Integerzh(i) {
     TRACE_INTEGER("int2Integer "  + i);
-    h$ret1 = h$bigFromInt(i);
-    return 0;
+    RETURN_UBX_TUP2(0, h$bigFromInt(i));
 }
 
 function h$integer_cmm_word2Integerzh(i) {
     TRACE_INTEGER("word2Integer "  + i);
-    h$ret1 = h$bigFromWord(i);
-    return 0;
+    RETURN_UBX_TUP2(0, h$bigFromWord(i));
 }
 
 function h$integer_cmm_andIntegerzh(sa, abits, sb, bbits) {
@@ -467,26 +468,22 @@ function h$integer_cmm_complementIntegerzh(sa, abits) {
 
 function h$integer_cmm_int64ToIntegerzh(a0, a1) {
     TRACE_INTEGER("int64ToInteger "  + a0 + " " + a1);
-    h$ret1 = h$bigFromInt64(a0,a1);
-    return 0;
+    RETURN_UBX_TUP2(0, h$bigFromInt64(a0,a1));
 }
 
 function h$integer_cmm_word64ToIntegerzh(a0, a1) {
     TRACE_INTEGER("word64ToInteger "  + a0 + " " + a1);
-    h$ret1 = h$bigFromWord64(a0,a1);
-    return 0;
+    RETURN_UBX_TUP2(0, h$bigFromWord64(a0,a1))
 }
 
 function h$hs_integerToInt64(as, abits) {
     TRACE_INTEGER("integerToInt64 "  + abits);
-    h$ret1 = abits.intValue();
-    return abits.shiftRight(32).intValue();
+    RETURN_UBX_TUP2(abits.shiftRight(32).intValue(), abits.intValue());
 }
 
 function h$hs_integerToWord64(as, abits) {
     TRACE_INTEGER("integerToWord64 "  + abits);
-    h$ret1 = abits.intValue();
-    return abits.shiftRight(32).intValue();
+    RETURN_UBX_TUP2(abits.shiftRight(32).intValue(), abits.intValue());
 }
 
 function h$integer_cmm_integer2Intzh(as, abits) {
@@ -512,15 +509,9 @@ function h$__int_encodeFloat(i,e) {
    return i * Math.pow(2,e);
 }
 
-var h$integer_clz32 = Math.clz32 || function(x) {
-    if (x < 0)   return 0;
-    if (x === 0) return 32;
-    return 31 - ((Math.log(x) / Math.LN2) | 0);
-}
-
 function h$integer_wordLog2(w) {
     TRACE_INTEGER("integer_wordLog2 " + w);
-    return 31 - h$integer_clz32(w);
+    return 31 - h$clz32(w);
 }
 
 function h$integer_integerLog2(i) {
@@ -531,17 +522,17 @@ function h$integer_integerLog2(i) {
 function h$integer_integerLog2IsPowerOf2(i) {
     TRACE_INTEGER("integer_integerLog2IsPowerOf2 " + i);
     var b = i.bitLength();
-    h$ret1 = (b === 0 || i.getLowestSetBit() !== b) ? 1 : 0;
-    TRACE_INTEGER("integer_integerLog2IsPowerOf2 result" + h$ret1 + " " + (b-1));
-    return b-1;
+    var ret1 = (b === 0 || i.getLowestSetBit() !== b) ? 1 : 0;
+    TRACE_INTEGER("integer_integerLog2IsPowerOf2 result" + ret1 + " " + (b-1));
+    RETURN_UBX_TUP2(b-1, ret1);
 }
 
 function h$integer_intLog2IsPowerOf2(i) {
     TRACE_INTEGER("integer_intLog2IsPowerOf2 " + i);
-    var l = 31 - h$integer_clz32(i);
-    h$ret1 = (i !== (1 << l)) ? 1 : 0;
-    TRACE_INTEGER("integer_intLog2IsPowerOf2 result " + h$ret1 + " " + l);
-    return l;
+    var l = 31 - h$clz32(i);
+    var ret1 = (i !== (1 << l)) ? 1 : 0;
+    TRACE_INTEGER("integer_intLog2IsPowerOf2 result " + ret1 + " " + l);
+    RETURN_UBX_TUP2(l, ret1);
 }
 
 function h$integer_roundingMode(i,j) {
@@ -549,37 +540,21 @@ function h$integer_roundingMode(i,j) {
     return 1; // round to even, is that correct?
 }
 
-function h$integer_mkBigInt(i) {
-#ifdef GHCJS_PROF
-    return h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, i, h$CCS_SYSTEM);
-#else
-    return h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, i);
-#endif
-}
-
-function h$integer_mkSmallInt(i) {
-#ifdef GHCJS_PROF
-    return h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, i, h$CCS_SYSTEM);
-#else
-    return h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, i);
-#endif
-}
-
 function h$integer_smartJ(i) {
     TRACE_INTEGER("integer_smartJ");
-    if(i.bitLength() >= 32) return h$integer_mkBigInt(i);
-    return h$integer_mkSmallInt(i.intValue()|0)
+    if(i.bitLength() >= 32) return MK_INTEGER_J(i);
+    return MK_INTEGER_S(i.intValue()|0);
 }
 
 function h$integer_mpzToInteger(i) {
     TRACE_INTEGER("integer_mpzToInteger");
-    if(typeof i === 'number') return h$integer_mkSmallInt(i);
+    if(typeof i === 'number') return MK_INTEGER_S(i);
     return h$integer_smartJ(i);
 }
 
-var h$integer_negTwoThirtyOne = h$integer_mkBigInt(h$bigFromInt(-2147483648).negate());
+var h$integer_negTwoThirtyOne = MK_INTEGER_J(h$bigFromInt(-2147483648).negate());
 function h$integer_mpzNeg(i) {
-    TRACE_INTEGER("integer_mpzNeg");
+    TRACE_INTEGER("integer_mpzNeg: " + i + " " + typeof i);
     if(typeof i === 'number') {
 	return (i === -2147483648) ? h$integer_negTwoThirtyOne : -i;
     }
@@ -592,6 +567,6 @@ function h$integer_absInteger(i) {
 }
 
 function h$integer_negateInteger(i) {
-    TRACE_INTEGER("integer_negateInteger");
+    TRACE_INTEGER("integer_negateInteger: " + i + " -> " + i.negate());
     return i.negate();
 }
