@@ -24,7 +24,7 @@ function h$rstr(d) {
 
 // these aren't added to the CAFs, so the list stays in mem indefinitely, is that a problem?
 #ifdef GHCJS_PROF
-function h$strt(str, cc) { return MK_LAZY_CC(function() { return h$toHsString(str, cc); }, c));
+function h$strt(str, cc) { return MK_LAZY_CC(function() { return h$toHsString(str, cc); }, cc); }
 function h$strta(str, cc) { return MK_LAZY_CC(function() { return h$toHsStringA(str, cc); }, cc); }
 function h$strtb(arr, cc) { return MK_LAZY_CC(function() { return h$toHsStringMU8(arr, cc); }, cc); }
 #else
