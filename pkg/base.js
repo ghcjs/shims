@@ -518,8 +518,8 @@ if(h$isNode) {
 
     h$base_closeStdin = function(fd, fdo, c) {
         TRACE_IO("close stdin");
-        process.stdin.close();
-        c();
+        // process.stdin.close(); fixme
+        c(0);
     }
 
     h$base_writeFile = function(fd, fdo, buf, buf_offset, n, c) {
@@ -550,8 +550,8 @@ if(h$isNode) {
 
     h$base_closeStdout = function(fd, fdo, c) {
         TRACE_IO("close stdout");
-        process.stdout.close();
-        c();
+	// not actually closed, fixme?
+        c(0);
     }
 
     h$base_writeStderr = function(fd, fdo, buf, buf_offset, n, c) {
@@ -561,8 +561,8 @@ if(h$isNode) {
 
     h$base_closeStderr = function(fd, fdo, c) {
         TRACE_IO("close stderr");
-        process.stderr.close();
-        c();
+	// not actually closed, fixme?
+        c(0);
     }
 
     process.stdin.on('readable', h$base_process_stdin);
