@@ -410,7 +410,10 @@ function h$base_st_ino(stat, stat_off) {
 /** @const */ var h$base_fd_cloexec      = 0;
 /** @const */ var h$base_sizeof_termios  = 4;
 /** @const */ var h$base_sizeof_sigset_t = 4;
-/** @const */ var h$base_lflag           = 0;
+
+function h$base_lflag(termios, termios_off) {
+    return 0;
+}
 
 function h$base_poke_lflag(termios, termios_off, flag) {
     return 0;
