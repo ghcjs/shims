@@ -1,9 +1,10 @@
+#include <ghcjs/rts.h>
 
 #ifdef GHCJS_TRACE_HSCORE
 function h$logHscore() { h$log.apply(h$log,arguments); }
-#define TRACE_PROC(args...) h$logHscore(args)
+#define TRACE_HSCORE(args...) h$logHscore(args)
 #else
-#define TRACE_PROC(args...)
+#define TRACE_HSCORE(args...)
 #endif
 
 function h$__hscore_sizeof_termios() {
