@@ -264,9 +264,8 @@ function h$initInfoTables ( depth      // depth in the base chain
                 return nextSignificand() * Math.pow(2, n1);
             }
         case 7:
-            TRACE_META("string arg: fixme implement");
-            throw "string arg";
-            return ""; // fixme haskell string
+	    TRACE_META("string arg");
+	    // no break, strings are UTF8 encoded binary
         case 8:
             TRACE_META("binary arg");
             n = next();
