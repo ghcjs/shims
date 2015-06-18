@@ -454,7 +454,8 @@ function h$unlockFile(fd) {
 
 
 // engine-dependent setup
-var h$base_readStdin, h$base_writeStderr, h$base_writeStdout;
+var h$base_readStdin , h$base_writeStderr, h$base_writeStdout;
+var h$base_closeStdin = null, h$base_closeStderr = null, h$base_closeStdout = null;
 var h$base_readFile,  h$base_writeFile,   h$base_closeFile;
 #ifndef GHCJS_BROWSER
 var h$base_stdin_waiting = new h$Queue();
@@ -513,6 +514,12 @@ if(h$isNode) {
         h$base_process_stdin();
     }
 
+    h$base_closeStdin = function(fd, fdo, c) {
+        TRACE_IO("close stdin");
+        // process.stdin.close(); fixme
+        c(0);
+    }
+
     h$base_writeFile = function(fd, fdo, buf, buf_offset, n, c) {
         var pos = typeof fdo.pos === 'number' ? fdo.pos : null;
         TRACE_IO("base_writeFile: " + fd + " " + pos + " " + buf_offset + " " + n);
@@ -539,9 +546,21 @@ if(h$isNode) {
         h$base_writeFile(1, fdo, buf, buf_offset, n, c);
     }
 
+    h$base_closeStdout = function(fd, fdo, c) {
+        TRACE_IO("close stdout");
+	// not actually closed, fixme?
+        c(0);
+    }
+
     h$base_writeStderr = function(fd, fdo, buf, buf_offset, n, c) {
         TRACE_IO("write stderr");
         h$base_writeFile(2, fdo, buf, buf_offset, n, c);
+    }
+
+    h$base_closeStderr = function(fd, fdo, c) {
+        TRACE_IO("close stderr");
+	// not actually closed, fixme?
+        c(0);
     }
 
     process.stdin.on('readable', h$base_process_stdin);
@@ -604,9 +623,9 @@ if(h$isNode) {
 }
 #endif
 
-var h$base_stdin_fd  = { read:  h$base_readStdin };
-var h$base_stdout_fd = { write: h$base_writeStdout };
-var h$base_stderr_fd = { write: h$base_writeStderr };
+var h$base_stdin_fd  = { read:  h$base_readStdin,   close: h$base_closeStdin  };
+var h$base_stdout_fd = { write: h$base_writeStdout, close: h$base_closeStdout };
+var h$base_stderr_fd = { write: h$base_writeStderr, close: h$base_closeStderr };
 
 var h$base_fdN = -1; // negative file descriptors are 'virtual'
 var h$base_fds = [h$base_stdin_fd, h$base_stdout_fd, h$base_stderr_fd];
