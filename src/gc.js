@@ -173,9 +173,9 @@ function h$gc(t) {
 #ifdef GHCJS_TRACE_GC
     h$marked = 0;
     TRACE_GC("gc: " + (t!==null?h$threadString(t):"null"));
-#endif
-    TRACE_GC("full gc");
     var start = Date.now();
+#endif
+    TRACE_GC("full gc of thread " + h$threadString(t));
     h$resetRegisters();
     h$resetResultVars();
     h$gcMark = 5-h$gcMark;
@@ -186,33 +186,42 @@ function h$gc(t) {
         h$follow(a, a.length-1);
     }
     TRACE_GC("scanning threads, runnable: " + h$threads.length() + " blocked: " + h$blocked.size() + " t: " + t);
-    if(t !== null) h$markThread(t);
+
+    // mark al runnable threads and the running thread
+    if(t !== null) {
+	h$markThread(t);
+	h$resetThread(t);
+    }
     var nt, runnable = h$threads.iter();
-    while((nt = runnable()) !== null) h$markThread(nt);
+    while((nt = runnable()) !== null) {
+	h$markThread(nt);
+	h$resetThread(nt);
+    }
+    
+    // some blocked threads are always considered reachable, mark them
+    //   - delayed threads
+    //   - threads blocked on async FFI
     var iter = h$blocked.iter();
     while((nt = iter.next()) !== null) {
-        if(!(nt.blockedOn instanceof h$MVar) || (nt.stack && nt.stack[nt.sp] === h$unboxFFIResult)) {
+        if(nt.delayed ||
+	   (nt.blockedOn instanceof h$MVar && nt.stack && nt.stack[nt.sp] === h$unboxFFIResult)) {
             h$markThread(nt);
         }
+	h$resetThread(nt);
     }
     TRACE_GC("scanning permanent retention roots");
     iter = h$extraRoots.iter();
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
-    // now we've marked all the regular Haskell data, continue marking
-    // weak references and everything retained by DOM retainers
+    // now we've marked all the regular Haskell data, continue marking weak references
     h$markRetained();
 
-    // now all running threads and threads blocked on something that's
-    // not an MVar operation have been marked, including other threads
+    // now all running threads and threads blocked on something that's excpected
+    // to make them runnable at some point have been marked, including other threads
     // they reference through their ThreadId
 
-    // clean up threads waiting on unreachable MVars:
-    // throw an exception to a thread (which brings it back
-    // to life), then scan it. Killing one thread might be enough
-    // since the killed thread could make other threads reachable again.
-    h$finalizeMVars();
-    h$markRetained();
+    // clean up threads waiting on unreachable synchronization primitives
+    h$resolveDeadlocks();
 
     // now everything has been marked, bring out your dead references
 
@@ -227,14 +236,13 @@ function h$gc(t) {
     h$clearWeaks();
     h$scannedWeaks = [];
 
-    h$finalizeDom();    // remove all unreachable DOM retainers
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
 
     var now = Date.now();
     h$lastGc = now;
 #ifdef GHCJS_TRACE_GC
-    h$gcTime += time;
     var time = now - start;
+    h$gcTime += time;
     TRACE_GC("time: " + time + "ms");
     TRACE_GC("time (total): " + h$gcTime + "ms");
     TRACE_GC("marked objects: " + h$marked);
@@ -275,10 +283,7 @@ function h$markThread(t) {
     var mark = h$gcMark;
     TRACE_GC("marking thread: " + h$threadString(t));
     if(IS_MARKED(t)) return;
-    MARK_OBJ(t);
-    if(t.stack === null) return;  // thread finished
-    h$follow(t.stack, t.sp);
-    h$resetThread(t);
+    h$follow(t);
 }
 
 #define ADDW(x) work[w++] = x;
@@ -376,14 +381,15 @@ function h$follow(obj, sp) {
             } else if(c instanceof h$MVar) {
                 TRACE_GC("marking MVar");
                 MARK_OBJ(c);
-                /*
-                   only push the values in the queues, not the waiting threads
-
-                   the threads will be scanned after threads waiting on unreachable
-                   MVars have been cleaned up
-                 */
                 iter = c.writers.iter();
-                while((ii = iter()) !== null) ADDW(ii[1]);
+                while((ii = iter()) !== null) {
+		    ADDW(ii[1]); // value
+		    ADDW(ii[0]); // thread
+		}
+		iter = c.readers.iter();
+		while((ii = iter()) !== null) {
+		    ADDW(ii);
+		}
                 if(c.val !== null && !IS_MARKED(c.val)) ADDW(c.val);
             } else if(c instanceof h$MutVar) {
                 TRACE_GC("marking MutVar");
@@ -393,23 +399,42 @@ function h$follow(obj, sp) {
                 TRACE_GC("marking TVar");
                 MARK_OBJ(c);
                 ADDW(c.val);
+		iter = c.blocked.iter();
+		while((ii = iter.next()) !== null) {
+		    ADDW(ii);
+		}
+		if(c.invariants) {
+		    iter = c.invariants.iter();
+		    while((ii = iter.next()) !== null) {
+			ADDW(ii);
+		    }
+		}
             } else if(c instanceof h$Thread) {
                 TRACE_GC("marking Thread");
                 MARK_OBJ(c);
                 if(c.stack) {
-                    for(i=c.sp;i>=0;i--) ADDW(c.stack[i]);
+                    for(i=c.sp;i>=0;i--) {
+			ADDW(c.stack[i]);
+		    }
                 }
+		for(i=0;i<c.excep.length;i++) {
+		    ADDW(c.excep[i]);
+		}
             } else if(c instanceof h$Transaction) {
-                /* - the accessed TVar values don't need to be marked
-                   - parents are also on the stack, so they should've been marked already
-                */
+                // - the accessed TVar values don't need to be marked
+                // - parents are also on the stack, so they should've been marked already
                 TRACE_GC("marking STM transaction");
                 MARK_OBJ(c);
-                for(i=c.invariants.length-1;i>=0;i--) ADDW(c.invariants[i]);
+                for(i=c.invariants.length-1;i>=0;i--) {
+		    ADDW(c.invariants[i].action);
+		}
                 ADDW(c.action);
                 iter = c.tvars.iter();
-                while((ii = iter.next()) !== null) ADDW(ii);
-            } else if(c instanceof Array && c.__ghcjsArray) { // only for Haskell arrays with lifted values
+                while((ii = iter.nextVal()) !== null) {
+		    ADDW(ii.val);
+		}
+            } else if(c instanceof Array && c.__ghcjsArray) {
+		// only for Haskell arrays with lifted values
                 MARK_OBJ(c);
                 TRACE_GC("marking array");
                 for(i=0;i<c.length;i++) {
@@ -462,34 +487,45 @@ function h$resetThread(t) {
     TRACE_GC("h$resetThread: " + (Date.now()-start) + "ms");
 }
 
+/*
+   Post exceptions to all threads that are waiting on an unreachable synchronization
+   object and haven't been marked reachable themselves.
 
-function h$finalizeMVars() {
-    TRACE_GC("finalizing MVars");
-    var kill, i, t, iter;
+   All woken up threads are marked.
+ */
+function h$resolveDeadlocks() {
+    TRACE_GC("resolving deadlocks");
+    var kill, t, iter, bo, m = h$gcMark;
     do {
+	// deal with unreachable blocked threads: kill an unreachable thread and restart the process
 	kill = null;
 	iter = h$blocked.iter();
 	while((t = iter.next()) !== null) {
-            if(t.status === THREAD_BLOCKED && t.blockedOn instanceof h$MVar) {
-		// if h$unboxFFIResult is the top of the stack, then we cannot kill
-		// the thread since it's waiting for async FFI
-		if(t.blockedOn.m !== h$gcMark && t.stack[t.sp] !== h$unboxFFIResult) {
-		    kill = t;
-		} else  {
-		    h$markThread(t);
-		}
+	    // we're done if the thread is already reachable
+	    if(t.m === m) continue;
+
+	    // check what we're blocked on
+	    bo = t.blockedOn;
+            if(bo instanceof h$MVar) {
+		// blocked on MVar
+		if(bo.m === m) throw "assertion failed: thread should have been marked";
+		// MVar unreachable
+		kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar;
+		break;
+	    } else if(t.blockedOn instanceof h$TVarsWaiting) {
+		// blocked in STM transaction
+		kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnSTM;
+		break;
+	    } else {
+		// blocked on something else, we can't do anything
 	    }
         }
-	if(kill && kill.blockedOn.m !== h$gcMark) {
-	    h$killThread(kill, h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar);
-	    h$markThread(kill);
+	if(kill) {
+	    h$killThread(t, kill);
+	    h$markThread(t);
+	    h$markRetained();
 	}
     } while(kill);
-}
-
-// clear DOM retainers
-function h$finalizeDom() {
-  // fixme
 }
 
 // reset unreferenced CAFs to their initial value
