@@ -67,7 +67,7 @@ function h$directory_copyPermissions(file1, file2, c) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         h$fs.stat(file1, function(err1, fs) {
-            if(err) {
+            if(err1) {
                 h$handleErrnoC(err1, -1, 0, c);
             } else {
                 h$fs.chmod(file2, fs.mode, function(err2) {
