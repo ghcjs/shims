@@ -23,7 +23,9 @@ function h$unsupported(status, c) {
 }
 
 function h$strerror(err) {
-    if(err === 12456) return h$encodeUtf8("operation unsupported on this platform");
+    if(err === 12456) {
+	RETURN_UBX_TUP2(h$encodeUtf8("operation unsupported on this platform"), 0);
+    }
 #ifdef GHCJS_BROWSER
     RETURN_UBX_TUP2(h$encodeUtf8("unknown error"), 0);
 #else
