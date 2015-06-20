@@ -144,7 +144,19 @@ function h$process_runInteractiveProcess( cmd, args, workingDir, env
         }
 
         var procObj;
-        var child = h$child.spawn(cmd, args, options);
+        var child;
+	// node.js on Windows x86 sometimes throw an EBADF exception when process.stdin is invalid,
+	// retry with ignored stdin when this happens
+	try {
+	    child = h$child.spawn(cmd, args, options);
+	} catch(e) {
+	    if(e.toString().indexOf('EBADF') !== -1 && options.stdio[0] === process.stdin) {
+		options.stdio[0] = 'ignore';
+		child = h$child.spawn(cmd, args, options);
+	    } else {
+		throw e;
+	    }
+	}
         child.on('exit', function(code, sig) {
             TRACE_PROCESS("process finished: " + code + " " + sig);
             procObj.exit = code;
