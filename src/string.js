@@ -664,7 +664,12 @@ function h$throwJSException(e) {
   // create a JSException object and  wrap it in a SomeException
   // adding the Exception dictionary
   var someE = MK_SOMEEXCEPTION(HS_JSEXCEPTION_EXCEPTION,
-                               MK_JSEXCEPTION(e, e.toString));
+#ifdef GHCJS_PROF
+			       MK_JSEXCEPTION(e, h$toHsString(e.toString(), h$CCS_SYSTEM))
+#else
+                               MK_JSEXCEPTION(e, h$toHsString(e.toString()))
+#endif
+			      );
   return h$throw(someE, true);
 }
 
