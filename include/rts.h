@@ -54,10 +54,10 @@
 
 // GHC.Integer.GMP.Internals
 #ifdef GHCJS_PROF
-#define MK_INTEGER_S(i) (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i), h$CCS_SYSTEM));
+#define MK_INTEGER_S(i) (h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i), h$CCS_SYSTEM));
 #define MK_INTEGER_J(i) (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, (i), h$CCS_SYSTEM));
 #else
-#define MK_INTEGER_S(i) (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i)));
+#define MK_INTEGER_S(i) (h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i)));
 #define MK_INTEGER_J(i) (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, (i)));
 #endif
 
@@ -130,20 +130,20 @@
 #define MK_DATA1_1(val) (h$c1(h$data1_e, (val), h$CCS_SYSTEM))
 #define MK_DATA1_2(val1,val2) (h$c2(h$data1_e, (val1), (val2), h$CCS_SYSTEM))
 #define MK_DATA2_1(val) (h$c1(h$data2_e, (val), h$CCS_SYSTEM))
-#define MK_DATA2_2(val1,val2) (h$c1(h$data1_e, (val1), (val2), h$CCS_SYSTEM))
+#define MK_DATA2_2(val1,val2) (h$c2(h$data1_e, (val1), (val2), h$CCS_SYSTEM))
 #define MK_SELECT1(val) (h$c1(h$select1_e, (val), h$CCS_SYSTEM))
 #define MK_SELECT2(val) (h$c1(h$select2_e, (val), h$CCS_SYSTEM))
 #define MK_AP1(f,x) (h$c1(h$ap1_e, (f), (x), h$CCS_SYSTEM))
-#define MK_AP2(f,x,y) (h$c1(h$ap2_e, (f), (x), (y), h$CCS_SYSTEM))
+#define MK_AP2(f,x,y) (h$c2(h$ap2_e, (f), (x), (y), h$CCS_SYSTEM))
 #else
 #define MK_DATA1_1(val) (h$c1(h$data1_e, (val)))
-#define MK_DATA1_2(val1,val2) (h$c1(h$data1_e, (val1), (val2)))
+#define MK_DATA1_2(val1,val2) (h$c2(h$data1_e, (val1), (val2)))
 #define MK_DATA2_1(val) (h$c1(h$data2_e, (val)))
-#define MK_DATA2_2(val1,val2) (h$c1(h$data2_e, (val1), (val2)))
+#define MK_DATA2_2(val1,val2) (h$c2(h$data2_e, (val1), (val2)))
 #define MK_SELECT1(val) (h$c1(h$select1_e, (val)))
 #define MK_SELECT2(val) (h$c1(h$select2_e, (val)))
 #define MK_AP1(f,x) (h$c1(h$ap1_e,(f),(x)))
-#define MK_AP2(f,x,y) (h$c1(h$ap2_e,(f),(x),(y)))
+#define MK_AP2(f,x,y) (h$c2(h$ap2_e,(f),(x),(y)))
 #endif
 
 // unboxed tuple returns
