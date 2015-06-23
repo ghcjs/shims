@@ -949,7 +949,11 @@ function h$main(a) {
 
 function h$doneMain() {
 #ifndef GHCJS_BROWSER
-  h$exitProcess(0);
+  if(global && global.h$GHCJSi) {
+    global.h$GHCJSi.done(h$currentThread);
+  } else {
+    h$exitProcess(0);
+  }
 #endif
   h$finishThread(h$currentThread);
   return h$reschedule;
