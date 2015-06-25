@@ -690,10 +690,6 @@ function h$actualMainLoop() {
 #ifndef GHCJS_NO_CATCH_MAINLOOP
         } catch(e) {
             // uncaught exception in haskell code, kill thread
-            // fixme: would we ever need to remove the thread from queues?
-            h$currentThread.status = THREAD_DIED;
-            h$currentThread.stack = null;
-            h$currentThread = null;
 #ifdef GHCJS_PROF
             h$reportCurrentCcs();
 #endif
@@ -706,6 +702,9 @@ function h$actualMainLoop() {
                 h$stack = null;
                 h$reportMainLoopException(e, false);
             }
+            h$finishThread(h$currentThread);
+            h$currentThread.status = THREAD_DIED;
+	    h$currentThread = null;
         }
 #endif
     } while(true);
