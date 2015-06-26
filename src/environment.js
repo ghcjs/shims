@@ -173,7 +173,9 @@ function h$errorMsg(pat) {
     str = str.replace(/%s/, arguments[i]);
   }
 #ifndef GHCJS_BROWSER
-  if(h$isNode) {
+  if(global && global.h$GHCJSi) {
+    // ignore message
+  } else if(h$isNode) {
     process.stderr.write(str);
   } else if (h$isJsShell && typeof printErr !== 'undefined') {
     if(str.length) printErr(stripTrailingNewline(str));

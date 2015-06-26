@@ -929,7 +929,7 @@ function h$main(a) {
   //TRACE_SCHEDULER("sched: starting main thread");
     t.stack[0] = h$doneMain_e;
 #ifndef GHCJS_BROWSER
-  if(!h$isBrowser) {
+  if(!h$isBrowser && !(global && global.h$GHCJSi)) {
     t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler;
   }
 #endif
@@ -949,7 +949,9 @@ function h$main(a) {
 function h$doneMain() {
 #ifndef GHCJS_BROWSER
   if(global && global.h$GHCJSi) {
-    global.h$GHCJSi.done(h$currentThread);
+    if(h$currentThread.stack) {
+      global.h$GHCJSi.done(h$currentThread);
+    }
   } else {
     h$exitProcess(0);
   }
