@@ -19,6 +19,9 @@ var h$isNode    = false; // runtime is node.js
 var h$isJsShell = false; // runtime is SpiderMonkey jsshell
 var h$isJsCore  = false; // runtime is JavaScriptCore jsc
 var h$isBrowser = false; // running in browser or everything else
+
+var h$isGHCJSi  = false; // Code is GHCJSi (browser or node)
+
 // load all required node.js modules
 if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
     h$isNode = true;
@@ -40,6 +43,9 @@ if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof requi
     h$isJsCore = true;
 } else {
     h$isBrowser = true;
+}
+if(typeof global !== 'undefined' && global.h$GHCJSi) {
+  h$isGHCJSi = true;
 }
 #endif
 

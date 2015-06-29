@@ -173,7 +173,7 @@ function h$errorMsg(pat) {
     str = str.replace(/%s/, arguments[i]);
   }
 #ifndef GHCJS_BROWSER
-  if(global && global.h$GHCJSi) {
+  if(h$isGHCJSi) {
     // ignore message
   } else if(h$isNode) {
     process.stderr.write(str);
