@@ -23,7 +23,7 @@ var h$isBrowser = false; // running in browser or everything else
 var h$isGHCJSi  = false; // Code is GHCJSi (browser or node)
 
 // load all required node.js modules
-if(typeof process !== undefined && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
+if(typeof process !== 'undefined' && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
     h$isNode = true;
     // we have to use these names for the closure compiler externs to work
     var fs            = require('fs');
