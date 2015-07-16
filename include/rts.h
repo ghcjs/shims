@@ -62,7 +62,7 @@
 #endif
 
 // Data.Maybe.Maybe
-#define HS_NOTHING 
+#define HS_NOTHING
 #define IS_NOTHING(x) ((x).f === h$baseZCGHCziBaseziNothing_con_e)
 #define IS_JUST(x) ((x).f === h$baseZCGHCziBaseziJust_con_e)
 #define JUST_VAL(x) ((x).d1)
@@ -96,8 +96,7 @@
 // Data.Text.Lazy
 #define LAZY_TEXT_IS_CHUNK(x) ((x).f.a === 2)
 #define LAZY_TEXT_IS_NIL(x) ((x).f.a. === 1)
-#define LAZY_TEXT_CHUNK_HEAD(x) ((x).d1)
-#define LAZY_TEXT_CHUNK_TAIL(x) ((x).d2)
+#define LAZY_TEXT_CHUNK_TAIL(x) ((x).d2.d3)
 
 // black holes
 // can we skip the indirection for black holes?
