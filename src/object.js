@@ -1,3 +1,5 @@
+#include <ghcjs/rts.h>
+
 // JS Objects stuff
 
 function h$isFloat (n) {
@@ -60,4 +62,52 @@ function h$flattenObj(o) {
         l[i++] = [prop, o[prop]];
     }
     return l;
+}
+
+/*
+
+  build an object from key/value pairs:
+    var obj = h$buildObject(key1, val1, key2, val2, ...);
+
+  note: magic name:
+    invocations of this function are replaced by object literals wherever
+    possible
+
+ */
+function h$buildObject() {
+    var r = {}, l = arguments.length;
+    for(var i = 0; i < l; i += 2) {
+        var k = arguments[i], v = arguments[i+1];
+        r[k] = v;
+    }
+    return r;
+}
+
+// same as above, but from a list: [k1,v1,k2,v2,...]
+function h$buildObjectFromList(xs) {
+    var r = {}, k, v, t;
+    while(IS_CONS(xs)) {
+        xs = CONS_TAIL(xs);
+        t = CONS_TAIL(xs);
+        if(IS_CONS(t)) {
+            k  = CONS_HEAD(xs);
+            v  = CONS_HEAD(t);
+            xs = CONS_TAIL(t);
+            r[k] = v;
+        } else {
+            return r;
+        }
+    }
+    return r;
+}
+
+// same as above, but from a list of tuples [(k1,v1),(k2,v2),...]
+function h$buildObjectFromTupList(xs) {
+    var r = {};
+    while(IS_CONS(xs)) {
+	var h = CONS_HEAD(xs);
+	xs = CONS_TAIL(xs);
+	r[JSREF_VAL(TUP2_1(h))] = JSREF_VAL(TUP2_2(h));
+    }
+    return r;
 }
