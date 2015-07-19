@@ -80,7 +80,7 @@ var h$extensibleRetentionCallbacks = [];
 
 /*
    after registering an extensible extension root f,
-   f() is called at the start of each gc invocation and is
+   f(currentMark) is called at the start of each gc invocation and is
    expected to return an array with Haskell heap objects
    to be treated as extra roots.
  */
@@ -188,8 +188,8 @@ function h$gc(t) {
     var i;
     TRACE_GC("scanning extensible retention roots")
     for(i=h$extensibleRetentionRoots.length-1;i>=0;i--) {
-        var a = h$extensibleRetentionRoots[i]();
-        h$follow(a, a.length-1);
+      var a = h$extensibleRetentionRoots[i](h$gcMark);
+      if(a) h$follow(a, a.length-1);
     }
     TRACE_GC("scanning threads, runnable: " + h$threads.length() + " blocked: " + h$blocked.size() + " t: " + t);
 
@@ -445,7 +445,9 @@ function h$follow(obj, sp) {
                 TRACE_GC("marking array");
                 for(i=0;i<c.length;i++) {
                     var x = c[i];
-                    if(typeof x === 'object' && x !== null && !IS_MARKED(x)) ADDW(x);
+                    if(typeof x === 'object' && x !== null && !IS_MARKED(x)) {
+		        ADDW(x);
+		    }
                 }
             } else if(typeof c === 'object') {
                 TRACE_GC("extensible retention marking");
@@ -459,7 +461,9 @@ function h$follow(obj, sp) {
                     extensibleMatched = true;
 #endif
                     if(x !== true) {
-                        for(j=x.length-1;j>=0;j--) ADDW(x[j]);
+                      for(j=x.length-1;j>=0;j--) {
+		          ADDW(x[j]);
+		      }
                     }
                     break;
                 }
