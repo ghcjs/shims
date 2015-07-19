@@ -944,34 +944,53 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
          };
 }
 
+/* 
+   A StableName is represented as either a h$StableName object (for most heap objects)
+   or a number (for heap objects with unboxed representation)
+
+   Holding on to a StableName does not keep the original object alive.
+ */
 var h$stableNameN = 1;
 /** @constructor */
 function h$StableName(m) {
-    this.m = m;
-    this.s = null;
+  this.m = m;
+  this.s = null;
 }
 
 function h$makeStableName(x) {
-    if(typeof x === 'object') {
-        if(typeof x.m !== 'object') {
-            x.m = new h$StableName(x.m);
-        }
-        return x.m;
-    } else {
-        return new h$StableName(0);
+  if(typeof x === 'number') {
+    return x;
+  } else if(IS_WRAPPED_NUMBER(x)) {
+    return UNWRAP_NUMBER(x);
+  } else if(typeof x === 'object') {
+    if(typeof x.m !== 'object') {
+      x.m = new h$StableName(x.m);
     }
+    return x.m;
+  } else {
+    throw new Error("h$makeStableName: invalid argument");
+  }
 }
 
 function h$stableNameInt(s) {
+  if(typeof s === 'number') {
+    if(s!=s) return 999999; // NaN
+    var s0 = s|0;
+    if(s0 === s) return s0;
+    h$convertDouble[0] = s;
+    return h$convertInt[0] ^ h$convertInt[1];
+  } else {
     var x = s.s;
     if(x === null) {
-        x = s.s = h$stableNameN = (h$stableNameN+1)|0;
+      x = s.s = h$stableNameN = (h$stableNameN+1)|0;
     }
     return x;
+  }
 }
 
 function h$eqStableName(s1o,s2o) {
-    return s1o === s2o ? 1 : 0;
+  if(s1o!=s1o && s2o!=s2o) return 1; // NaN
+  return s1o === s2o ? 1 : 0;
 }
 
 function h$makeStablePtr(v) {
