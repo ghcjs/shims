@@ -486,6 +486,7 @@ function h$resetThread(t) {
     var start = Date.now();
 #endif
     var stack = t.stack;
+    if(!stack) return;
     var sp = t.sp;
     if(stack.length - sp > sp && stack.length > 100) {
         t.stack = t.stack.slice(0,sp+1);

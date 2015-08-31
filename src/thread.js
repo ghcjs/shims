@@ -845,6 +845,7 @@ function h$runBlackholeThreadSync(bh) {
   var currentBh  = bh;
   // we don't handle async exceptions here, don't run threads with pending exceptions
   if(BLACKHOLE_TID(bh).excep.length > 0) {
+    TRACE_SCHEDULER("aborting due to queued async exceptions");
     return false;
   }
   h$currentThread = BLACKHOLE_TID(bh);
@@ -857,7 +858,7 @@ function h$runBlackholeThreadSync(bh) {
   TRACE_SCHEDULER("switched thread status running: " + (h$currentThread.status === THREAD_RUNNING));
   try {
     while(true) {
-      while(c !== h$reschedule && IS_BLACHOLE(currentBh)) {
+      while(c !== h$reschedule && IS_BLACKHOLE(currentBh)) {
         c = c();
         c = c();
         c = c();
