@@ -396,6 +396,11 @@ function h$follow(obj, sp) {
 		while((ii = iter()) !== null) {
 		    ADDW(ii);
 		}
+	        if(c.waiters) {
+		  for(i=c.waiters.length-1;i>=0;i--) {
+		    ADDW(c.waiters[i]);
+		  }
+		}
                 if(c.val !== null && !IS_MARKED(c.val)) ADDW(c.val);
             } else if(c instanceof h$MutVar) {
                 TRACE_GC("marking MutVar");
