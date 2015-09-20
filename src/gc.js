@@ -518,7 +518,7 @@ function h$resolveDeadlocks() {
 	iter = h$blocked.iter();
 	while((t = iter.next()) !== null) {
 	    // we're done if the thread is already reachable
-	    if(t.m === m) continue;
+	    if(h$isMarked(t)) continue;
 
 	    // check what we're blocked on
 	    bo = t.blockedOn;
