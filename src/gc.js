@@ -511,20 +511,20 @@ function h$resetThread(t) {
  */
 function h$resolveDeadlocks() {
     TRACE_GC("resolving deadlocks");
-    var kill, t, iter, bo, m = h$gcMark;
+    var kill, t, iter, bo, mark = h$gcMark;
     do {
 	// deal with unreachable blocked threads: kill an unreachable thread and restart the process
 	kill = null;
 	iter = h$blocked.iter();
 	while((t = iter.next()) !== null) {
 	    // we're done if the thread is already reachable
-	    if(h$isMarked(t)) continue;
+	    if(IS_MARKED(t)) continue;
 
 	    // check what we're blocked on
 	    bo = t.blockedOn;
             if(bo instanceof h$MVar) {
 		// blocked on MVar
-		if(bo.m === m) throw "assertion failed: thread should have been marked";
+		if(bo.m === mark) throw "assertion failed: thread should have been marked";
 		// MVar unreachable
 		kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar;
 		break;
