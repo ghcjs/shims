@@ -1,4 +1,5 @@
 // weak reference support
+#include <ghcjs/rts.h>
 
 // contains all pending finalizers
 var h$finalizers = new h$Set();
