@@ -10,19 +10,42 @@ function h$hsprimitive_memmove(dst_d, dst_o, doff, src_d, src_o, soff, len) {
   }
 }
 
-#define MEMSET(TYPE, SIZE, PROP)                             \
+#define MEMSETADDR(TYPE, SIZE, PROP) \
 function h$hsprimitive_memset_ ## TYPE (p_d, p_o, off, n, x) { \
-  var start = (p_o >> SIZE) + off;                           \
-  if(n > 0) p_d.PROP.fill(x, start, start + n);              \
+  var start = (p_o >> SIZE) + off;                          \
+  if(n > 0) { \
+    if(p_d.PROP.fill) p_d.PROP.fill(x, start, start + n); \
+    else for(var i=start; i<start+n; i++) p_d.PROP[i] = x; \
+  } \
 }
 
-MEMSET(Word8,  0, u8)
-MEMSET(Word16, 1, u1)
-MEMSET(Word32, 2, i3)
-MEMSET(Word,   2, i3)
-MEMSET(Float,  2, f3)
-MEMSET(Double, 3, f6)
-MEMSET(Char,   2, i3)
+#define MEMSETBA(TYPE, PROP) \
+function h$hsprimitive_memsetba_ ## TYPE (p_d, off, n, x) { \
+  if(n > 0) { \
+    if(p_d.PROP.fill) p_d.PROP.fill(x, off, off + n); \
+    else for(var i=off; i<off+n; i++) p_d.PROP[i] = x; \
+  } \
+}
+
+MEMSETBA(Word8,  u8)
+MEMSETBA(Word16, u1)
+MEMSETBA(Word32, i3)
+MEMSETBA(Word,   i3)
+MEMSETBA(Float,  f3)
+MEMSETBA(Double, f6)
+MEMSETBA(Char,   i3)
+
+MEMSETADDR(Word8,  0, u8)
+MEMSETADDR(Word16, 1, u1)
+MEMSETADDR(Word32, 2, i3)
+MEMSETADDR(Word,   2, i3)
+MEMSETADDR(Float,  2, f3)
+MEMSETADDR(Double, 3, f6)
+MEMSETADDR(Char,   2, i3)
+
+function h$hsprimitive_memsetba_Word64(p_d, off, n, x_1, x_2) {
+  h$hsprimitive_memset_Word64(p_d, 0, off, n, x_1, x_2);
+}
 
 function h$hsprimitive_memset_Word64(p_d, p_o, off, n, x_1, x_2) {
   var start = (p_o >> 3) + off;
