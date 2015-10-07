@@ -914,7 +914,7 @@ function h$newByteArray(len) {
 
   Since IO has kind * -> *, you cannot return IO ByteArray#
   from a foreign import, even with the UnliftedFFITypes
-  extension. Return a JSRef instead and use unsafeCoerce
+  extension. Return a JSVal instead and use unsafeCoerce
   to convert it to a Data.Primitive.ByteArray.ByteArray or
   Data.Primitive.ByteArray.MutableByteArray (primitive package)
   and pattern match on the constructor to get the
@@ -922,7 +922,7 @@ function h$newByteArray(len) {
 
   These types have the same runtime representation (a data
   constructor with one regular (one JavaScript variable)
-  field) as a JSRef, so the conversion is safe, as long
+  field) as a JSVal, so the conversion is safe, as long
   as everything is fully evaluated.
 */
 function h$wrapBuffer(buf, unalignedOk, offset, length) {
@@ -1090,14 +1090,14 @@ function h$makeCallbackApply(/* retain, */ n, f, extraArgs, fun) {
   if(n === 1) {
     c = function(x) {
       var args = extraArgs.slice(0);
-      var action = MK_AP1(fun, MK_JSREF(x));
+      var action = MK_AP1(fun, MK_JSVAL(x));
       args.unshift(action);
       return f.apply(this, args);
     }
   } else if (n === 2) {
     c = function(x,y) {
       var args = extraArgs.slice(0);
-      var action = MK_AP2(fun, MK_JSREF(x), MK_JSREF(y));
+      var action = MK_AP2(fun, MK_JSVAL(x), MK_JSVAL(y));
       args.unshift(action);
       return f.apply(this, args);
     }
