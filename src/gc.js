@@ -220,7 +220,7 @@ function h$gc(t) {
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
     // now we've marked all the regular Haskell data, continue marking weak references
-    h$markRetained();
+    var toFinalize = h$markRetained();
 
     // now all running threads and threads blocked on something that's excpected
     // to make them runnable at some point have been marked, including other threads
@@ -229,7 +229,7 @@ function h$gc(t) {
     // clean up threads waiting on unreachable synchronization primitives
     h$resolveDeadlocks();
 
-    h$finalizeWeaks();
+    h$finalizeWeaks(toFinalize);
     h$weakPointerList = [];
 
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
@@ -248,6 +248,7 @@ function h$gc(t) {
 function h$markRetained() {
     var iter, marked, w, mark = h$gcMark;
     var newList = [];
+    var toFinalize = [];
 
     /*
       2. Scan the Weak Pointer List. If a weak pointer object has a key that is
@@ -263,7 +264,7 @@ function h$markRetained() {
 	    if (w === null) {
 		continue;
 	    }
-	    if (w.keym.m === mark) {
+	    if (IS_MARKED(w.keym)) {
 		TRACE_GC("recursively marking weak: " + h$collectProps(c.finalizer));
 
 		if (w.val !== null && !IS_MARKED(w.val)) {
@@ -302,14 +303,13 @@ function h$markRetained() {
 
 	TRACE_GC("mark retained iteration 2/2");
 
-	// FIXME: we should set v.val to null ??? aka tombstone
-	//if (w.val !== null && !IS_MARKED(w.val)) {
-	//  w.val = null;
-        //}
-
-	if (w.finalizer !== null) {
-	    if (!IS_MARKED(w.finalizer)) {
+	if (IS_MARKED(w)) {
+	    if(w.val !== null) {
+		w.val = null;
+	    }
+	    if (w.finalizer !== null && !IS_MARKED(w.finalizer)) {
 		h$follow(w.finalizer);
+		toFinalize.push(w.finalizer);
 	    }
 	}
     }
@@ -327,6 +327,8 @@ function h$markRetained() {
 	    MARK_OBJ(w);
 	}
     }
+
+    return toFinalize;
 }
 
 function h$markThread(t) {

@@ -14,20 +14,10 @@ function h$traceWeak() { h$log.apply(h$log, arguments) }
 #endif
 
 // called by the GC after marking the heap
-function h$finalizeWeaks() {
+function h$finalizeWeaks(toFinalize) {
     var mark = h$gcMark;
-    TRACE_WEAK("finalizeWeaks: " + mark + " " + h$finalizers.size());
-    var i, w, toFinalize = [];
-    var iter = h$finalizers.iter();
-    while((w = iter.next()) !== null) {
-        TRACE_WEAK("checking weak with finalizer: " + h$stableNameInt(w.m));
-        TRACE_WEAK("finalizer mark: " + w.m.m + " - " + mark);
-        if((w.m.m&3) !== mark) {
-            iter.remove();
-            toFinalize.push(w);
-            TRACE_WEAK("finalizer scheduled");
-        }
-    }
+    var i, w;
+
     TRACE_WEAK("to finalize: " + toFinalize.length);
     // start a finalizer thread if any finalizers need to be run
     if(toFinalize.length > 0) {
@@ -45,8 +35,6 @@ function h$finalizeWeaks() {
         }
         h$wakeupThread(t);
     }
-    return toFinalize;
-
 }
 
 // clear references for reachable weak refs with unreachable keys
