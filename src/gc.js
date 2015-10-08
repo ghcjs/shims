@@ -262,6 +262,7 @@ function h$markRetained() {
 	for (var i = 0; i < h$weakPointerList.length; ++i) {
 	    w = h$weakPointerList[i];
 	    if (w === null) {
+		// don't handle items deleted in earlier iteration
 		continue;
 	    }
 	    if (IS_MARKED(w.keym)) {
@@ -276,7 +277,10 @@ function h$markRetained() {
 		}
 
 		newList.push(w);
+		// instead of removing the item from the h$weakpointerList
+		// we set it to null if we push it to newList.
 		h$weakPointerList[i] = null;
+
 		marked = true;
 	    }
 	}
@@ -298,6 +302,7 @@ function h$markRetained() {
     for (var i = 0; i < h$weakPointerList.length; ++i) {
 	w = h$weakPointerList[i];
 	if (w === null) {
+	    // don't handle items deleted in step 2
 	    continue;
 	}
 
