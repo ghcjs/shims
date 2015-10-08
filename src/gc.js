@@ -248,7 +248,6 @@ function h$gc(t) {
 function h$markRetained() {
     var iter, marked, w, mark = h$gcMark;
     var newList = [];
-    var toFinalize = [];
 
     /*
       2. Scan the Weak Pointer List. If a weak pointer object has a key that is
@@ -303,12 +302,12 @@ function h$markRetained() {
 
 	TRACE_GC("mark retained iteration 2/2");
 
-	if (w.val !== null) {
-	    // FIXME: we should set v.val to null ??? aka tombstone
-	}
+	// FIXME: we should set v.val to null ??? aka tombstone
+	//if (w.val !== null && !IS_MARKED(w.val)) {
+	//  w.val = null;
+        //}
 
 	if (w.finalizer !== null) {
-	    toFinalize.push(w.finalizer);
 	    if (!IS_MARKED(w.finalizer)) {
 		h$follow(w.finalizer);
 	    }
@@ -328,8 +327,6 @@ function h$markRetained() {
 	    MARK_OBJ(w);
 	}
     }
-
-    return toFinalize;
 }
 
 function h$markThread(t) {
