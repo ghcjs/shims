@@ -4,8 +4,7 @@
 // contains all pending finalizers
 var h$finalizers = new h$Set();
 
-// filled at scan time, weak refs with possible work to do
-var h$scannedWeaks = [];
+var h$weakPointerList = [];
 
 #ifdef GHCJS_TRACE_WEAK
 function h$traceWeak() { h$log.apply(h$log, arguments) }
