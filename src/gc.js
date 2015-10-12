@@ -57,6 +57,7 @@ function h$traceGC() { h$log.apply(h$log, arguments); }
 
 // these macros use a local mark variable
 #define IS_MARKED(obj) ((typeof obj.m === 'number' && (obj.m & 3) === mark) || (typeof obj.m === 'object' && ((obj.m.m & 3) === mark)))
+#define IS_MARKED_M(obj) ((obj.m & 3) === mark)
 #define MARK_OBJ(obj) if(typeof obj.m === 'number') obj.m = (obj.m&-4)|mark; else obj.m.m = (obj.m.m & -4)|mark;
 
 var h$gcMark = 2; // 2 or 3 (objects initialized with 0)
@@ -220,7 +221,7 @@ function h$gc(t) {
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
     // now we've marked all the regular Haskell data, continue marking weak references
-    h$markRetained();
+    var toFinalize = h$markRetained();
 
     // now all running threads and threads blocked on something that's excpected
     // to make them runnable at some point have been marked, including other threads
@@ -229,18 +230,7 @@ function h$gc(t) {
     // clean up threads waiting on unreachable synchronization primitives
     h$resolveDeadlocks();
 
-    // now everything has been marked, bring out your dead references
-
-    // run finalizers for all weak references with unreachable keys
-    var finalizers = h$finalizeWeaks();
-    h$clearWeaks();
-    for(i=0;i<finalizers.length;i++) {
-        var fin = finalizers[i].finalizer;
-        if(fin !== null && !IS_MARKED(fin)) h$follow(fin);
-    }
-    h$markRetained();
-    h$clearWeaks();
-    h$scannedWeaks = [];
+    h$finalizeWeaks(toFinalize);
 
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
 
@@ -256,33 +246,85 @@ function h$gc(t) {
 }
 
 function h$markRetained() {
-    var iter, marked, c, mark = h$gcMark;
+    var iter, marked, w, i, mark = h$gcMark;
+    var newList = [];
+    var toFinalize = [];
+
+    /*
+      2. Scan the Weak Pointer List. If a weak pointer object has a key that is
+      marked (i.e. reachable), then mark all heap reachable from its value
+      or its finalizer, and move the weak pointer object to a new list
+    */
     do {
-        TRACE_GC("mark retained iteration");
+        TRACE_GC("mark retained iteration 1/2");
         marked = false;
-        // mark all finalizers of weak references where the key is reachable
-        iter = h$finalizers.iter();
-        while((c = iter.next()) !== null) {
-            if(!IS_MARKED(c.finalizer) && c.m.m === mark) {
-                TRACE_GC("recursively marking weak finalizer: " + h$collectProps(c.finalizer));
-                h$follow(c.finalizer);
+
+        for (i = 0; i < h$weakPointerList.length; ++i) {
+            w = h$weakPointerList[i];
+            if (w === null) {
+                // don't handle items deleted in earlier iteration
+                continue;
+            }
+            if (IS_MARKED_M(w.keym)) {
+                if (w.val !== null && !IS_MARKED(w.val)) {
+                    h$follow(w.val);
+                }
+
+                if (w.finalizer !== null && !IS_MARKED(w.finalizer)) {
+                    h$follow(w.finalizer);
+                }
+
+                newList.push(w);
+                // instead of removing the item from the h$weakpointerList
+                // we set it to null if we push it to newList.
+                h$weakPointerList[i] = null;
+
                 marked = true;
             }
         }
 
-        // mark weak values for reachable keys
-        for(var i=h$scannedWeaks.length-1;i>=0;i--) {
-            var w = h$scannedWeaks[i];
-            if(w.keym.m === mark && w.val !== null && !IS_MARKED(w.val)) {
-                TRACE_GC("marking weak value");
-                h$follow(w.val);
-                marked = true;
-            }
-        }
-        // continue for a next round if we have marked something more
-        // note: this will be slow for very deep chains of weak refs,
-        // change this if that becomes a problem.
+        /*
+           3. Repeat from step (2), until a complete scan of Weak Pointer List finds
+              no weak pointer object with a marked keym.
+        */
     } while(marked);
+
+
+    /*
+      4. Scan the Weak Pointer List again. If the weak pointer object is reachable
+         then tombstone it. If the weak pointer object has a finalizer then move
+         it to the Finalization Pending List, and mark all the heap reachable
+         from the finalizer. If the finalizer refers to the key (and/or value),
+         this step will "resurrect" it.
+    */
+
+    for (i = 0; i < h$weakPointerList.length; ++i) {
+        w = h$weakPointerList[i];
+        if (w === null) {
+            // don't handle items deleted in step 2
+            continue;
+        }
+
+        TRACE_GC("mark retained iteration 2/2");
+        if(w.val !== null) {
+            w.val = null;
+        }
+        if(w.finalizer !== null && !IS_MARKED(w.finalizer)) {
+            TRACE_GC("following finalizer");
+            h$follow(w.finalizer);
+            toFinalize.push(w);
+        }
+    }
+
+    /*
+       5. The list accumulated in step (3) becomes the new Weak Pointer List.
+          Mark any unreachable weak pointer objects on this list as reachable.
+    */
+    h$weakPointerList = newList;
+
+    // marking the weak pointer objects as reachable is not necessary
+
+    return toFinalize;
 }
 
 function h$markThread(t) {
@@ -375,14 +417,6 @@ function h$follow(obj, sp) {
                     for(var i=0;i<s.length;i++) ADDW(s[i]);
                 }
             } else if(c instanceof h$Weak) {
-                TRACE_GC("marking weak reference");
-                if(c.keym.m === mark) {
-                    if(c.val !== null && !IS_MARKED(c.val)) ADDW(c.val);
-                } else {
-                    // fixme we should keep separate arrays for
-                    // value mark pending / cleanup pending?
-                    if(c.val !== null) h$scannedWeaks.push(c);
-                }
                 MARK_OBJ(c);
             } else if(c instanceof h$MVar) {
                 TRACE_GC("marking MVar");
