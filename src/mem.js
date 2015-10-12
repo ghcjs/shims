@@ -1066,26 +1066,19 @@ var h$freeHaskellFunctionPtr = function () {
 var h$extraRootsN = 0;
 var h$extraRoots = new h$Set();
 
-// 
-// var h$domRoots = new h$Set();
-
-function h$makeCallback(/* retain, */ f, extraArgs, action) {
+function h$makeCallback(f, extraArgs, action) {
     var args = extraArgs.slice(0);
     args.unshift(action);
     var c = function() {
         return f.apply(this, args);
     }
-    // if(retain === true) {
-        c._key = ++h$extraRootsN;
-        c.root = action;
-        h$extraRoots.add(c);
-    // } else if(retain) { // DOM retain
-
-    // } 
+    c._key = ++h$extraRootsN;
+    c.root = action;
+    h$extraRoots.add(c);
     return c;
 }
 
-function h$makeCallbackApply(/* retain, */ n, f, extraArgs, fun) {
+function h$makeCallbackApply(n, f, extraArgs, fun) {
   var c;
   if(n === 1) {
     c = function(x) {
@@ -1101,18 +1094,19 @@ function h$makeCallbackApply(/* retain, */ n, f, extraArgs, fun) {
       args.unshift(action);
       return f.apply(this, args);
     }
+  } else if (n === 3) {
+    c = function(x,y,z) {
+      var args = extraArgs.slice(0);
+      var action = MK_AP1(MK_AP2(fun, MK_JSREF(x), MK_JSREF(y)), MK_JSREF(z));
+      args.unshift(action);
+      return f.apply(this, args);
+    }
   } else {
     throw new Error("h$makeCallbackApply: unsupported arity");
   }
-  // if(retain === true) {
-      c.root = fun;
-      c._key = ++h$extraRootsN;
-      h$extraRoots.add(c);
-  // } else if(retain) {
-    // fixme: retain this while `retain' is in some DOM
-  // } else {
-    // no retainer
-  // }
+  c.root = fun;
+  c._key = ++h$extraRootsN;
+  h$extraRoots.add(c);
   return c;
 }
 
