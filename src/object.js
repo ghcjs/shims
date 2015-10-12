@@ -107,7 +107,7 @@ function h$buildObjectFromTupList(xs) {
     while(IS_CONS(xs)) {
 	var h = CONS_HEAD(xs);
 	xs = CONS_TAIL(xs);
-	r[JSREF_VAL(TUP2_1(h))] = JSREF_VAL(TUP2_2(h));
+	r[JSVAL_VAL(TUP2_1(h))] = JSVAL_VAL(TUP2_2(h));
     }
     return r;
 }

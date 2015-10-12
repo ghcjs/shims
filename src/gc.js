@@ -110,7 +110,7 @@ function h$unregisterExtensibleRetentionRoot(f) {
      - false          call other extension callbacks with this object
 
   Use -DGHCJS_TRACE_GC_UNKNOWN to find the JavaScript objects reachable
-  (through JSRef) on the Haskell heap for which none of the registered
+  (through JSVal) on the Haskell heap for which none of the registered
   extensible retention callbacks has returned true or an array.
  */
 function h$registerExtensibleRetention(f) {

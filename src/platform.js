@@ -2,7 +2,7 @@
 /* platform-specific setup */
 
 // top-level debug initialization needs this. declare it in case we aren't in the same file as out.js
-function h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e() { return h$stack[h$sp]; };
+function h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e() { return h$stack[h$sp]; };
 
 /*
    if browser mode is active (GHCJS_BROWSER is defined), all the runtime platform

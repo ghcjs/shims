@@ -562,11 +562,11 @@ function h$fromHsString(str) {
     return xs;
 }
 
-// list of JSRef to array, list must have been completely forced first
-function h$fromHsListJSRef(xs) {
+// list of JSVal to array, list must have been completely forced first
+function h$fromHsListJSVal(xs) {
     var arr = [];
     while(IS_CONS(xs)) {
-        arr.push(JSREF_VAL(CONS_HEAD(xs)));
+        arr.push(JSVAL_VAL(CONS_HEAD(xs)));
         xs = CONS_TAIL(xs);
     }
     return arr;
@@ -631,15 +631,15 @@ function h$toHsList(arr) {
   return r;
 }
 
-// array of JS values to Haskell list of JSRef
+// array of JS values to Haskell list of JSVal
 #ifdef GHCJS_PROF
-function h$toHsListJSRef(arr, cc) {
+function h$toHsListJSVal(arr, cc) {
 #else
-function h$toHsListJSRef(arr) {
+function h$toHsListJSVal(arr) {
 #endif
     var r = HS_NIL;
     for(var i=arr.length-1;i>=0;i--) {
-	r = MK_CONS_CC(MK_JSREF(arr[i]), r, cc);
+	r = MK_CONS_CC(MK_JSVAL(arr[i]), r, cc);
     }
     return r;
 }
