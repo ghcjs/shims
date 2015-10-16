@@ -711,6 +711,7 @@ function h$actualMainLoop() {
 }
 
 function h$reportMainLoopException(e, isMainThread) {
+    if(e instanceof h$ThreadAbortedError) return;
     var main = isMainThread ? " main" : "";
     h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
     if(e.stack) h$log(e.stack)
@@ -961,18 +962,34 @@ function h$doneMain() {
   return h$reschedule;
 }
 
+/** @constructor */
+function h$ThreadAbortedError(code) {
+    this.code = code;
+}
+
+h$ThreadAbortedError.prototype.toString = function() {
+    return "Thread aborted, exit code: " + this.code;
+}
+
 function h$exitProcess(code) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
 	process.exit(code);
     } else if(h$isJsShell) {
-	quit(code);
+        quit(code);
     } else if(h$isJsCore) {
-	if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
+        if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
         if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
         // jsc does not support returning a nonzero value, print it instead
         if(code !== 0) debug("GHCJS JSC exit status: " + code);
         quit();
+    } else {
+#endif
+      if(h$currentThread) {
+          h$finishThread(h$currentThread);
+          throw new h$ThreadAbortedError(code);
+      }
+#ifndef GHCJS_BROWSER
     }
 #endif
 }
