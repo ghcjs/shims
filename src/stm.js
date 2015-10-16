@@ -198,9 +198,8 @@ function h$stmSuspendRetry() {
     }
     var waiting = new h$TVarsWaiting(tvs);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread, waiting);
     h$p2(waiting, h$stmResumeRetry_e);
-    return h$reschedule;
+    return h$blockThread(h$currentThread, waiting);
 }
 
 function h$stmCatchRetry(a,b) {

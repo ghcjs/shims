@@ -132,15 +132,13 @@ function h$threadStatus(t) {
 function h$waitRead(fd) {
   h$fds[fd].waitRead.push(h$currentThread);
   h$currentThread.interruptible = true;
-  h$blockThread(h$currentThread,fd,[h$waitRead,fd]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,fd,[h$waitRead,fd]);
 }
 
 function h$waitWrite(fd) {
   h$fds[fd].waitWrite.push(h$currentThread);
   h$currentThread.interruptible = true;
-  h$blockThread(h$currentThread,fd,[h$waitWrite,fd]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,fd,[h$waitWrite,fd]);
 }
 
 // threadDelay support:
@@ -163,8 +161,7 @@ function h$delayThread(time) {
   TRACE_SCHEDULER("delaying " + h$threadString(h$currentThread) + " " + ms + "ms (" + (now+ms) + ")");
   h$delayed.add(now+ms, h$currentThread);
   h$currentThread.delayed = true;
-  h$blockThread(h$currentThread, h$delayed,[h$resumeDelayThread]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread, h$delayed,[h$resumeDelayThread]);
 }
 
 function h$resumeDelayThread() {
@@ -201,12 +198,11 @@ function h$killThread(t, ex) {
       return h$stack ? h$stack[h$sp] : null;
     } else {
       t.excep.push([h$currentThread,ex]);
-      h$blockThread(h$currentThread,t,null);
       h$currentThread.interruptible = true;
       h$sp += 2;
       h$stack[h$sp-1] = h$r1;
       h$stack[h$sp] = h$return;
-      return h$reschedule;
+      return h$blockThread(h$currentThread,t,null);
     }
   }
 }
@@ -400,6 +396,9 @@ function h$finishThread(t) {
 
 function h$blockThread(t,o,resume) {
     TRACE_SCHEDULER("sched: blocking: " + h$threadString(t));
+    if(t !== h$currentThread) {
+        throw "h$blockThread: blocked thread is not the current thread";
+    }
     if(o === undefined || o === null) {
         throw ("h$blockThread, no block object: " + h$threadString(t));
     }
@@ -408,6 +407,23 @@ function h$blockThread(t,o,resume) {
     t.retryInterrupted = resume;
     t.sp = h$sp;
     h$blocked.add(t);
+    if(t.isSynchronous) {
+        if(t.continueAsync) {
+	    t.isSynchronous = false;
+	    t.continueAsync = false;
+	    return h$reschedule;
+        } else {
+            TRACE_SCHEDULER("blocking synchronous thread: exception");
+            t.sp += 2;
+            h$sp += 2;
+            t.stack[t.sp-1] = h$ghcjszmprimZCGHCJSziPrimziInternalziwouldBlock;
+            t.stack[t.sp]   = h$raiseAsync_frame;
+            h$forceWakeupThread(t);
+            return h$raiseAsync_frame;
+	}
+    } else {
+        return h$reschedule;
+    }
 }
 
 // the main scheduler, called from h$mainLoop
@@ -417,6 +433,12 @@ var h$lastGc = Date.now();
 var h$gcInterval = GHCJS_GC_INTERVAL; // ms
 function h$scheduler(next) {
     TRACE_SCHEDULER("sched: scheduler: " + h$sp);
+    // if we have a running synchronous thread, the only thing we can do is continue
+    if(h$currentThread &&
+       h$currentThread.isSynchronous &&
+       h$currentThread.status === THREAD_RUNNING) {
+        return next;
+    }
     var now = Date.now();
     h$wakeupDelayed(now);
     // find the next runnable thread in the run queue
@@ -639,7 +661,7 @@ function h$actualMainLoop() {
             return;
         }
         // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
-        if(Date.now() - start > h$busyYield) {
+        if(!h$currentThread.isSynchronous && Date.now() - start > h$busyYield) {
             TRACE_SCHEDULER("yielding to js");
             if(c !== h$reschedule) h$suspendCurrentThread(c);
             h$next = h$currentThread;
@@ -1062,8 +1084,7 @@ function h$takeMVar(mv) {
   } else {
     mv.readers.enqueue(h$currentThread);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$takeMVar,mv]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$takeMVar,mv]);
   }
 }
 
@@ -1087,8 +1108,7 @@ function h$readMVar(mv) {
       mv.waiters = [h$currentThread];
     }
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$readMVar,mv]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$readMVar,mv]);
   } else {
     h$r1 = mv.val;
     return h$stack[h$sp];
@@ -1100,8 +1120,7 @@ function h$putMVar(mv,val) {
   if(mv.val !== null) {
     mv.writers.enqueue([h$currentThread,val]);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$putMVar,mv,val]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$putMVar,mv,val]);
   } else {
     h$notifyMVarFull(mv,val);
     return h$stack[h$sp];
@@ -1168,8 +1187,7 @@ function h$blockOnBlackhole(c) {
   } else {
     BLACKHOLE_QUEUE(c).push(h$currentThread);
   }
-  h$blockThread(h$currentThread,c,[h$resumeBlockOnBlackhole,c]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,c,[h$resumeBlockOnBlackhole,c]);
 }
 
 function h$resumeBlockOnBlackhole(c) {
