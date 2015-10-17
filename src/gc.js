@@ -325,9 +325,12 @@ function h$markRetained() {
         if(w.val !== null) {
             w.val = null;
         }
-        if(w.finalizer !== null && !IS_MARKED(w.finalizer)) {
-            TRACE_GC("following finalizer");
-            h$follow(w.finalizer);
+
+        if(w.finalizer !== null) {
+            if(!IS_MARKED(w.finalizer)) {
+                TRACE_GC("following finalizer");
+                h$follow(w.finalizer);
+            }
             toFinalize.push(w);
         }
     }
