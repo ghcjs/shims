@@ -220,16 +220,13 @@ function h$gc(t) {
     iter = h$extraRoots.iter();
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
-    // now we've marked all the regular Haskell data, continue marking weak references
-    var toFinalize = h$markRetained();
-
-    // now all running threads and threads blocked on something that's excpected
-    // to make them runnable at some point have been marked, including other threads
-    // they reference through their ThreadId
-
     // clean up threads waiting on unreachable synchronization primitives
-    h$resolveDeadlocks();
+    do {
+        h$markWeaks();
+    } while(h$resolveDeadlocks());
 
+    // clean up unreachable weak refs
+    var toFinalize = h$markRetained();
     h$finalizeWeaks(toFinalize);
 
     h$finalizeCAFs();   // restore all unreachable CAFs to unevaluated state
@@ -244,6 +241,27 @@ function h$gc(t) {
     TRACE_GC("marked objects: " + h$marked);
 #endif
 }
+
+function h$markWeaks() {
+  var i, w, marked, mark = h$gcMark;
+  do {
+    marked = false;
+    for (i = 0; i < h$weakPointerList.length; ++i) {
+      w = h$weakPointerList[i];
+      if (IS_MARKED_M(w.keym)) {
+	if (w.val !== null && !IS_MARKED(w.val)) {
+          h$follow(w.val);
+	  marked = true;
+	}
+	if (w.finalizer !== null && !IS_MARKED(w.finalizer)) {
+          h$follow(w.finalizer);
+	  marked = true;
+	}
+      }
+    }
+  } while(marked);
+}
+
 
 function h$markRetained() {
     var iter, marked, w, i, mark = h$gcMark;
@@ -545,7 +563,7 @@ function h$resetThread(t) {
  */
 function h$resolveDeadlocks() {
     TRACE_GC("resolving deadlocks");
-    var kill, t, iter, bo, mark = h$gcMark;
+    var kill, killed = false, t, iter, bo, mark = h$gcMark;
     do {
 	// deal with unreachable blocked threads: kill an unreachable thread and restart the process
 	kill = null;
@@ -571,11 +589,12 @@ function h$resolveDeadlocks() {
 	    }
         }
 	if(kill) {
-	    h$killThread(t, kill);
-	    h$markThread(t);
-	    h$markRetained();
+            h$killThread(t, kill);
+            h$markThread(t);
+            killed = true;
 	}
     } while(kill);
+    return killed;
 }
 
 // reset unreferenced CAFs to their initial value
