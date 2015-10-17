@@ -17,6 +17,7 @@ before_install:
     - export PATH=$HOME/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/1.22/bin:/opt/alex/3.1.4/bin:/opt/happy/1.19.5/bin:$PATH
 
 install:
+    - travis_retry cabal update
     - mkdir _ghcjs_deps
     - cd _ghcjs_deps
     - git clone https://github.com/ghcjs/ghcjs.git
