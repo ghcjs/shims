@@ -221,9 +221,7 @@ function h$gc(t) {
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
     // clean up threads waiting on unreachable synchronization primitives
-    do {
-        h$markWeaks();
-    } while(h$resolveDeadlocks());
+    h$resolveDeadlocks();
 
     // clean up unreachable weak refs
     var toFinalize = h$markRetained();
@@ -563,38 +561,37 @@ function h$resetThread(t) {
  */
 function h$resolveDeadlocks() {
     TRACE_GC("resolving deadlocks");
-    var kill, killed = false, t, iter, bo, mark = h$gcMark;
+    var kill, t, iter, bo, mark = h$gcMark;
     do {
-	// deal with unreachable blocked threads: kill an unreachable thread and restart the process
-	kill = null;
-	iter = h$blocked.iter();
-	while((t = iter.next()) !== null) {
-	    // we're done if the thread is already reachable
-	    if(IS_MARKED(t)) continue;
+        h$markWeaks();
+        // deal with unreachable blocked threads: kill an unreachable thread and restart the process
+        kill = null;
+        iter = h$blocked.iter();
+        while((t = iter.next()) !== null) {
+            // we're done if the thread is already reachable
+            if(IS_MARKED(t)) continue;
 
-	    // check what we're blocked on
-	    bo = t.blockedOn;
+            // check what we're blocked on
+            bo = t.blockedOn;
             if(bo instanceof h$MVar) {
-		// blocked on MVar
-		if(bo.m === mark) throw "assertion failed: thread should have been marked";
-		// MVar unreachable
-		kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar;
-		break;
-	    } else if(t.blockedOn instanceof h$TVarsWaiting) {
-		// blocked in STM transaction
-		kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnSTM;
-		break;
-	    } else {
-		// blocked on something else, we can't do anything
-	    }
+                // blocked on MVar
+                if(bo.m === mark) throw "assertion failed: thread should have been marked";
+                // MVar unreachable
+                kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar;
+                break;
+            } else if(t.blockedOn instanceof h$TVarsWaiting) {
+                // blocked in STM transaction
+                kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnSTM;
+                break;
+            } else {
+                // blocked on something else, we can't do anything
+            }
         }
-	if(kill) {
+        if(kill) {
             h$killThread(t, kill);
             h$markThread(t);
-            killed = true;
-	}
+        }
     } while(kill);
-    return killed;
 }
 
 // reset unreferenced CAFs to their initial value
