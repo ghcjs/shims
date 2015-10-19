@@ -409,9 +409,9 @@ function h$blockThread(t,o,resume) {
     h$blocked.add(t);
     if(t.isSynchronous) {
         if(t.continueAsync) {
-	    t.isSynchronous = false;
-	    t.continueAsync = false;
-	    return h$reschedule;
+            t.isSynchronous = false;
+            t.continueAsync = false;
+            return h$reschedule;
         } else {
             TRACE_SCHEDULER("blocking synchronous thread: exception");
             t.sp += 2;
@@ -420,7 +420,7 @@ function h$blockThread(t,o,resume) {
             t.stack[t.sp]   = h$raiseAsync_frame;
             h$forceWakeupThread(t);
             return h$raiseAsync_frame;
-	}
+        }
     } else {
         return h$reschedule;
     }
@@ -977,7 +977,9 @@ function h$doneMain() {
       global.h$GHCJSi.done(h$currentThread);
     }
   } else {
+#endif
     h$exitProcess(0);
+#ifndef GHCJS_BROWSER
   }
 #endif
   h$finishThread(h$currentThread);
@@ -1007,10 +1009,11 @@ function h$exitProcess(code) {
         quit();
     } else {
 #endif
-      if(h$currentThread) {
-          h$finishThread(h$currentThread);
-          throw new h$ThreadAbortedError(code);
-      }
+        if(h$currentThread) {
+            h$finishThread(h$currentThread);
+            h$stack = null;
+            throw new h$ThreadAbortedError(code);
+        }
 #ifndef GHCJS_BROWSER
     }
 #endif

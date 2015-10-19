@@ -636,8 +636,8 @@ function h$shutdownHaskellAndExit(code, fast) {
     if(h$isNode) console.log(h$logBuffer);
     if(h$isJsShell || h$isJsCore) print(h$logBuffer);
 #endif
-    h$exitProcess(code);
 #endif
+    h$exitProcess(code);
 }
 
 // RAND_MAX = 32767
