@@ -407,23 +407,7 @@ function h$blockThread(t,o,resume) {
     t.retryInterrupted = resume;
     t.sp = h$sp;
     h$blocked.add(t);
-    if(t.isSynchronous) {
-        if(t.continueAsync) {
-            t.isSynchronous = false;
-            t.continueAsync = false;
-            return h$reschedule;
-        } else {
-            TRACE_SCHEDULER("blocking synchronous thread: exception");
-            t.sp += 2;
-            h$sp += 2;
-            t.stack[t.sp-1] = h$ghcjszmprimZCGHCJSziPrimziInternalziwouldBlock;
-            t.stack[t.sp]   = h$raiseAsync_frame;
-            h$forceWakeupThread(t);
-            return h$raiseAsync_frame;
-        }
-    } else {
-        return h$reschedule;
-    }
+    return h$reschedule;
 }
 
 // the main scheduler, called from h$mainLoop
@@ -708,6 +692,11 @@ function h$actualMainLoop() {
                     c = c();
 #endif
                 }
+	        if(c === h$reschedule &&
+		   h$currentThread.isSynchronous &&
+		   h$currentThread.status === THREAD_BLOCKED) {
+		  c = h$handleBlockedSyncThread(c);
+	        }
             }
 #ifndef GHCJS_NO_CATCH_MAINLOOP
         } catch(e) {
@@ -737,6 +726,42 @@ function h$reportMainLoopException(e, isMainThread) {
     var main = isMainThread ? " main" : "";
     h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
     if(e.stack) h$log(e.stack)
+}
+
+
+function h$handleBlockedSyncThread(c) {
+  TRACE_SCHEDULER("handling blocked sync thread");
+  /*
+    if we have a blocked synchronous thread,
+    and it's blocked on a black hole, first try to clear
+    it.
+   */
+  var bo = h$currentThread.blockedOn;
+  if(h$currentThread.status === THREAD_BLOCKED &&
+     IS_BLACKHOLE(bo) &&
+     h$runBlackholeThreadSync(bo)) {
+    TRACE_SCHEDULER("blackhole succesfully removed");
+    c = h$stack[h$sp];
+  }
+  /*
+    if still blocked, then either fall back to async,
+    or throw a WouldBlock exception
+   */
+  if(h$currentThread.status === THREAD_BLOCKED) {
+    if(h$currentThread.continueAsync) {
+      h$currentThread.isSynchronous = false;
+      h$currentThread.continueAsync = false;
+    } else {
+      TRACE_SCHEDULER("blocking synchronous thread: exception");
+      h$sp += 2;
+      h$currentThread.sp = h$sp;
+      h$stack[h$sp-1] = h$ghcjszmprimZCGHCJSziPrimziInternalziwouldBlock;
+      h$stack[h$sp]   = h$raiseAsync_frame;
+      h$forceWakeupThread(h$currentThread);
+      c = h$raiseAsync_frame;
+    }
+  }
+  return c;
 }
 
 // run the supplied IO action in a new thread
@@ -809,28 +834,12 @@ function h$runSync(a, cont) {
         break;
       } else {
         TRACE_SCHEDULER("h$runSync: thread NOT finished");
-      }
-      var b = t.blockedOn;
-      if(IS_BLACKHOLE(b)) {
-        var bhThread = BLACKHOLE_TID(b);
-        if(bhThread === ct || bhThread === t) { // hit a blackhole from running thread or ourselves
-          TRACE_SCHEDULER("h$runSync: NonTermination");
-          c = h$throw(h$baseZCControlziExceptionziBasezinonTermination, false);
-        } else { // blackhole from other thread, steal it if thread is running
-          // switch to that thread
-          if(h$runBlackholeThreadSync(b)) {
-            TRACE_SCHEDULER("h$runSync: blackhole succesfully removed");
-            c = h$stack[h$sp];
-          } else {
-            TRACE_SCHEDULER("h$runSync: blackhole not removed, failing");
-            blockedOn = b;
-            throw false;
-          }
-        }
-      } else {
-        TRACE_SCHEDULER("h$runSync: blocked on something other than a blackhole");
-        blockedOn = b;
-        throw false;
+	if(t.status === THREAD_BLOCKED) {
+	  c = h$handleBlockedSyncThread(c);
+	}
+	if(t.status === THREAD_BLOCKED) {
+	  throw false;
+	}
       }
     }
   } catch(e) { excep = e; }
