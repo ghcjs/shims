@@ -78,6 +78,8 @@ function h$Thread() {
     this.isSynchronous = false;
     this.continueAsync = false;
     this.m = 0;                   // gc mark
+    this.result            = null;
+    this.resultIsException = false;
 #ifdef GHCJS_PROF
     this.ccs = h$CCS_SYSTEM;      // cost-centre stack
 #endif
@@ -605,120 +607,144 @@ var h$mainLoopImmediate = null; // immediate id if main loop has been scheduled 
 var h$mainLoopTimeout = null;   // timeout id if main loop has been scheduled with a timeout
 var h$mainLoopFrame = null;   // timeout id if main loop has been scheduled with an animation frame
 var h$running = false;
-var h$next = null;
+var h$nextThread = null;
 function h$mainLoop() {
 #ifdef GHCJS_PROF
     h$runProf(h$actualMainLoop);
 }
 function h$actualMainLoop() {
 #endif
-    if(h$running) return;
-    h$clearScheduleMainLoop();
-    if(h$currentThread) {
-	h$scheduleMainLoop();
-	return;
+  if(h$running) return;
+  h$clearScheduleMainLoop();
+  if(h$currentThread) {
+    h$scheduleMainLoop();
+    return;
+  }
+  h$running = true;
+  h$runInitStatic();
+  h$currentThread = h$nextThread;
+#ifdef GHCJS_PROF
+  h$reportCurrentCcs();
+#endif
+  if(h$nextThread !== null) {
+    h$stack = h$currentThread.stack;
+    h$sp    = h$currentThread.sp;
+  }
+  var c = null;
+  var start = Date.now();
+  do {
+    c = h$scheduler(c);
+    if(c === null) { // no running threads
+      h$nextThread = null;
+      h$running = false;
+      h$currentThread = null;
+#ifdef GHCJS_PROF
+      h$reportCurrentCcs();
+#endif
+      h$scheduleMainLoop();
+      return;
     }
-    h$running = true;
-    h$runInitStatic();
-    h$currentThread = h$next;
+    // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
+    if(!h$currentThread.isSynchronous && Date.now() - start > h$busyYield) {
+      TRACE_SCHEDULER("yielding to js");
+      if(c !== h$reschedule) h$suspendCurrentThread(c);
+      h$nextThread = h$currentThread;
+      h$currentThread = null;
+#ifdef GHCJS_PROF
+      h$reportCurrentCcs();
+#endif
+      h$running = false;
+      if(h$animationFrameMainLoop) {
+        h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
+      } else {
+        h$mainLoopImmediate = setImmediate(h$mainLoop);
+      }
+      return;
+    }
+#ifdef GHCJS_NO_CATCH_MAINLOOP
+    // for debugging purposes only, may leave threads in inconsistent state!
+    c = h$runThreadSlice(c);
+#else
+    c = h$runThreadSliceCatch(c);
+#endif
+  } while(true);
+}
+
+function h$runThreadSliceCatch(c) {
+  try {
+    return h$runThreadSlice(c);
+  } catch(e) {
+    // uncaught exception in haskell code, kill thread
 #ifdef GHCJS_PROF
     h$reportCurrentCcs();
 #endif
-    if(h$next !== null) {
-        h$stack = h$currentThread.stack;
-        h$sp    = h$currentThread.sp;
+    c = null;
+    if(h$stack && h$stack[0] === h$doneMain_e) {
+      h$stack = null;
+      h$reportMainLoopException(e, true);
+      h$doneMain_e();
+    } else {
+      h$stack = null;
+      h$reportMainLoopException(e, false);
     }
-    var c = null;
-    var count;
-    var start = Date.now();
-    do {
-        c = h$scheduler(c);
-        var scheduled = Date.now();
-        if(c === null) { // no running threads
-            h$next = null;
-            h$running = false;
-	    h$currentThread = null;
-#ifdef GHCJS_PROF
-            h$reportCurrentCcs();
-#endif
-            h$scheduleMainLoop();
-            return;
-        }
-        // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
-        if(!h$currentThread.isSynchronous && Date.now() - start > h$busyYield) {
-            TRACE_SCHEDULER("yielding to js");
-            if(c !== h$reschedule) h$suspendCurrentThread(c);
-            h$next = h$currentThread;
-            h$currentThread = null;
-#ifdef GHCJS_PROF
-            h$reportCurrentCcs();
-#endif
-            h$running = false;
-            if(h$animationFrameMainLoop) {
-                h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
-            } else {
-                h$mainLoopImmediate = setImmediate(h$mainLoop);
-            }
-            return;
-        }
-        // preemptively schedule threads after 10*GHCJS_SCHED_CHECK calls
-        // but not before the end of the scheduling quantum
-#ifndef GHCJS_NO_CATCH_MAINLOOP
-        try {
-#endif
-            while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
-                count = 0;
-                while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
+    h$finishThread(h$currentThread);
+    h$currentThread.status = THREAD_DIED;
+    h$currentThread = null;
+  }
+  return h$reschedule;
+}
+
+/*
+  run thread h$currentThread for a single time slice
+
+     - c: the next function to call from the trampoline
+
+  returns:
+    the next function to call in this thread
+
+  preconditions:
+    h$currentThread is the thread to run
+    h$stack         is the stack of this thread
+    h$sp            is the stack pointer
+  
+    any global variables needed to pass arguments have been set
+    the caller has to update the thread state object
+ */
+function h$runThreadSlice(c) {
+  var count, scheduled = Date.now();
+  while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
+    count = 0;
+    while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
 #if defined(GHCJS_TRACE_CALLS) || defined(GHCJS_TRACE_STACK)
-		    h$traceCallsTicks++;
-		    if(h$traceCallsTicks % 1000000 === 0) h$log("ticks: " + h$traceCallsTicks);
+      h$traceCallsTicks++;
+      if(h$traceCallsTicks % 1000000 === 0) h$log("ticks: " + h$traceCallsTicks);
 #endif
 #ifdef GHCJS_TRACE_CALLS
-                    if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logCall(c);
+      if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logCall(c);
 #endif
 #ifdef GHCJS_TRACE_STACK
-                    if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logStack(c);
+      if(h$traceCallsDelay >= 0 && h$traceCallsTicks >= h$traceCallsDelay) h$logStack(c);
 #endif
-                    c = c();
+      c = c();
 #if !defined(GHCJS_TRACE_CALLS) && !defined(GHCJS_TRACE_STACK) && !defined(GHCJS_SCHED_DEBUG)
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
 #endif
-                }
-	        if(c === h$reschedule &&
-		   h$currentThread.isSynchronous &&
-		   h$currentThread.status === THREAD_BLOCKED) {
-		  c = h$handleBlockedSyncThread(c);
-	        }
-            }
-#ifndef GHCJS_NO_CATCH_MAINLOOP
-        } catch(e) {
-            // uncaught exception in haskell code, kill thread
-#ifdef GHCJS_PROF
-            h$reportCurrentCcs();
-#endif
-            c = null;
-            if(h$stack && h$stack[0] === h$doneMain_e) {
-                h$stack = null;
-                h$reportMainLoopException(e, true);
-                h$doneMain_e();
-            } else {
-                h$stack = null;
-                h$reportMainLoopException(e, false);
-            }
-            h$finishThread(h$currentThread);
-            h$currentThread.status = THREAD_DIED;
-	    h$currentThread = null;
-        }
-#endif
-    } while(true);
+    }
+    if(c === h$reschedule &&
+       h$currentThread.isSynchronous &&
+       h$currentThread.status === THREAD_BLOCKED) {
+      c = h$handleBlockedSyncThread(c);
+    }
+  }
+  return c;
 }
 
 function h$reportMainLoopException(e, isMainThread) {
@@ -773,32 +799,119 @@ function h$run(a) {
   return t;
 }
 
-// try to run the supplied IO action synchronously, running the
-// thread to completion, unless it blocks,
-// for example by taking an MVar or threadDelay
+/** @constructor */
+function h$WouldBlock() {
+  
+}
 
-// returns the thing the thread blocked on, null if the thread ran to completion
+h$WouldBlock.prototype.toString = function() {
+  return "Haskell Operation would block";
+}
 
-// cont :: bool, continue thread asynchronously after h$runSync returns
+/** @constructor */
+function h$HaskellException(msg) {
+  this._msg = msg;
+}
+
+h$HaskellException.prototype.toString = function() {
+  return this._msg;
+}
+
+function h$setCurrentThreadResultWouldBlock() {
+  h$currentThread.result = new h$WouldBlock();
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultJSException(e) {
+  h$currentThread.result = e;
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultHaskellException(msg) {
+  h$currentThread.result = new h$HaskellException(msg);
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultValue(v) {
+  h$currentThread.result = v;
+  h$currentThread.resultIsException = false;
+}
+
+/*
+   run a Haskell (IO JSVal) action synchronously, returning
+   the result. Uncaught Haskell exceptions are thrown as a
+   h$HaskellException. If the action could not finish due to
+   blocking, a h$WouldBlock exception is thrown instead.
+
+     - a:    the (IO JSVal) action
+     - cont: continue async if blocked
+         (the call to h$runSyncReturn would still throw h$WouldBlock,
+          since there would be no return value)
+
+   returns: the result of the IO action
+ */
+function h$runSyncReturn(a, cont) {
+  var t = new h$Thread();
+  TRACE_SCHEDULER("h$runSyncReturn created thread: " + h$threadString(t));
+  var aa = MK_AP1(h$ghcjszmprimZCGHCJSziPrimziInternalzisetCurrentThreadResultValue, a);
+  h$runSyncAction(t, aa, cont);
+  if(t.status === THREAD_FINISHED) {
+    if(t.resultIsException) {
+      throw t.result;
+    } else {
+      return t.result;
+    }
+  } else if(t.status === THREAD_BLOCKED) {
+    throw new h$WouldBlock();
+  } else {
+    throw new Error("h$runSyncReturn: Unexpected thread status: " + t.status)
+  }
+}
+
+/*
+   run a Haskell IO action synchronously, ignoring the result
+   or any exception in the Haskell code
+     
+     - a:    the IO action
+     - cont: continue async if blocked
+
+   returns: true if the action ran to completion, false otherwise
+
+   throws: any uncaught Haskell or JS exception except WouldBlock
+ */
 function h$runSync(a, cont) {
+  var t = new h$Thread();
+  TRACE_SCHEDULER("h$runSync created thread: " + h$threadString(t));
+  h$runSyncAction(t, a, cont);
+  if(t.resultIsException) {
+    if(t.result instanceof h$WouldBlock) {
+      return false;
+    } else {
+      throw t.result;
+    }
+  }
+  return t.status === THREAD_FINISHED;
+}
+
+function h$runSyncAction(t, a, cont) {
   h$runInitStatic();
   var c = h$return;
-  var t = new h$Thread();
+  t.stack[2] = h$ghcjszmprimZCGHCJSziPrimziInternalzisetCurrentThreadResultException;
+  t.stack[4] = h$ap_1_0;
+  t.stack[5] = a;
+  t.stack[6] = h$return;
+  t.sp = 6;
+  t.status = THREAD_RUNNING;
 #ifdef GHCJS_PROF
-  t.ccs = h$currentThread.ccs; // TODO: not sure about this
+  // fixme this looks wrong
+  // t.ccs = h$currentThread.ccs; // TODO: not sure about this
 #endif
   t.isSynchronous = true;
   t.continueAsync = cont;
   var ct = h$currentThread;
   var csp = h$sp;
   var cr1 = h$r1; // do we need to save more than this?
-  t.stack[4] = h$ap_1_0;
-  t.stack[5] = a;
-  t.stack[6] = h$return;
-  t.sp = 6;
-  t.status = THREAD_RUNNING;
-  var excep = null;
-  var blockedOn = null;
+  var caught = false, excep = null;
   h$currentThread = t;
   h$stack = t.stack;
   h$sp = t.sp;
@@ -806,43 +919,16 @@ function h$runSync(a, cont) {
   h$reportCurrentCcs();
 #endif
   try {
-    while(true) {
-      TRACE_SCHEDULER("h$runSync: entering main loop");
-      while(c !== h$reschedule) {
-#ifdef GHCJS_TRACE_CALLS
-        h$logCall(c);
-#endif
-#ifdef GHCJS_TRACE_STACK
-        h$logStack();
-#endif
-        c = c();
-#if !defined(GHCJS_TRACE_CALLS) && !defined(GHCJS_TRACE_STACK) && !defined(GHCJS_SCHED_DEBUG)
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-#endif
-      }
-      TRACE_SCHEDULER("h$runSync: main loop exited");
-      if(t.status === THREAD_FINISHED) {
-        TRACE_SCHEDULER("h$runSync: thread finished");
-        break;
-      } else {
-        TRACE_SCHEDULER("h$runSync: thread NOT finished");
-	if(t.status === THREAD_BLOCKED) {
-	  c = h$handleBlockedSyncThread(c);
-	}
-	if(t.status === THREAD_BLOCKED) {
-	  throw false;
-	}
-      }
+    c = h$runThreadSlice(c);
+    if(c !== h$reschedule) {
+      throw new Error("h$runSyncAction: h$reschedule expected");
     }
-  } catch(e) { excep = e; }
+  } catch(e) {
+    h$finishThread(h$currentThread);
+    h$currentThread.status = THREAD_DIED;
+    caught = true;
+    excep = e;
+  }
   if(ct !== null) {
     h$currentThread = ct;
     h$stack = ct.stack;
@@ -853,17 +939,14 @@ function h$runSync(a, cont) {
     h$stack = null;
   }
 #ifdef GHCJS_PROF
+  // fixme?
   h$reportCurrentCcs();
 #endif
   if(t.status !== THREAD_FINISHED && !cont) {
     h$removeThreadBlock(t);
     h$finishThread(t);
   }
-  if(excep) {
-    throw excep;
-  }
-  return blockedOn;
-  TRACE_SCHEDULER("h$runSync: finishing");
+  if(caught) throw excep;
 }
 
 // run other threads synchronously until the blackhole is 'freed'
@@ -874,8 +957,9 @@ function h$runBlackholeThreadSync(bh) {
   var sp = h$sp;
   var success = false;
   var bhs = [];
-  var currentBh  = bh;
-  // we don't handle async exceptions here, don't run threads with pending exceptions
+  var currentBh = bh;
+  // we don't handle async exceptions here,
+  // don't run threads with pending exceptions
   if(BLACKHOLE_TID(bh).excep.length > 0) {
     TRACE_SCHEDULER("aborting due to queued async exceptions");
     return false;
@@ -897,7 +981,9 @@ function h$runBlackholeThreadSync(bh) {
         c = c();
         c = c();
       }
-      if(c === h$reschedule) { // perhaps new blackhole, then continue with that thread, otherwise fail
+      if(c === h$reschedule) {
+	// perhaps new blackhole, then continue with that thread,
+	// otherwise fail
         if(IS_BLACKHOLE(h$currentThread.blockedOn)) {
           TRACE_SCHEDULER("following another black hole");
           bhs.push(currentBh);
@@ -997,11 +1083,11 @@ function h$doneMain() {
 
 /** @constructor */
 function h$ThreadAbortedError(code) {
-    this.code = code;
+  this.code = code;
 }
 
 h$ThreadAbortedError.prototype.toString = function() {
-    return "Thread aborted, exit code: " + this.code;
+  return "Thread aborted, exit code: " + this.code;
 }
 
 function h$exitProcess(code) {
