@@ -1097,7 +1097,7 @@ function h$makeCallbackApply(n, f, extraArgs, fun) {
   } else if (n === 3) {
     c = function(x,y,z) {
       var args = extraArgs.slice(0);
-      var action = MK_AP1(MK_AP2(fun, MK_JSREF(x), MK_JSREF(y)), MK_JSREF(z));
+      var action = MK_AP1(MK_AP2(fun, MK_JSVAL(x), MK_JSVAL(y)), MK_JSVAL(z));
       args.unshift(action);
       return f.apply(this, args);
     }
