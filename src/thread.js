@@ -712,7 +712,9 @@ function h$runThreadSliceCatch(c) {
  */
 function h$runThreadSlice(c) {
   var count, scheduled = Date.now();
-  while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
+  while(c !== h$reschedule &&
+        (h$currentThread.isSynchronous ||
+         (Date.now() - scheduled < h$schedQuantum))) {
     count = 0;
     while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
 #if defined(GHCJS_TRACE_CALLS) || defined(GHCJS_TRACE_STACK)
