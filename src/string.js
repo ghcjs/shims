@@ -665,11 +665,11 @@ function h$throwJSException(e) {
   // adding the Exception dictionary
   var someE = MK_SOMEEXCEPTION(HS_JSEXCEPTION_EXCEPTION,
 #ifdef GHCJS_PROF
-			       MK_JSEXCEPTION(e, h$toHsString(e.toString(), h$CCS_SYSTEM))
+                               MK_JSEXCEPTION(MK_JSVAL(e), h$toHsString(e.toString(), h$CCS_SYSTEM))
 #else
-                               MK_JSEXCEPTION(e, h$toHsString(e.toString()))
+                               MK_JSEXCEPTION(MK_JSVAL(e), h$toHsString(e.toString()))
 #endif
-			      );
+                              );
   return h$throw(someE, true);
 }
 
