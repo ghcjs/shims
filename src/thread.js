@@ -75,10 +75,11 @@ function h$Thread() {
     this.blockedOn = null;        // object on which thread is blocked
     this.retryInterrupted = null; // how to retry blocking operation when interrupted
     this.transaction = null;      // for STM
+    this.noPreemption  = false;
     this.isSynchronous = false;
     this.continueAsync = false;
-    this.m = 0;                   // gc mark
-    this.result            = null;
+    this.m = 0;                     // gc mark
+    this.result            = null;  // result value (used for GHCJS.Foreign.Callback)
     this.resultIsException = false;
 #ifdef GHCJS_PROF
     this.ccs = h$CCS_SYSTEM;      // cost-centre stack
@@ -713,7 +714,7 @@ function h$runThreadSliceCatch(c) {
 function h$runThreadSlice(c) {
   var count, scheduled = Date.now();
   while(c !== h$reschedule &&
-        (h$currentThread.isSynchronous ||
+        (h$currentThread.noPreemption || h$currentThread.isSynchronous ||
          (Date.now() - scheduled < h$schedQuantum))) {
     count = 0;
     while(c !== h$reschedule && ++count < GHCJS_SCHED_CHECK) {
@@ -741,7 +742,7 @@ function h$runThreadSlice(c) {
 #endif
     }
     if(c === h$reschedule &&
-       h$currentThread.isSynchronous &&
+       (h$currentThread.noPreemption || h$currentThread.isSynchronous) &&
        h$currentThread.status === THREAD_BLOCKED) {
       c = h$handleBlockedSyncThread(c);
     }
@@ -750,17 +751,17 @@ function h$runThreadSlice(c) {
 }
 
 function h$reportMainLoopException(e, isMainThread) {
-    if(e instanceof h$ThreadAbortedError) return;
-    var main = isMainThread ? " main" : "";
-    h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
-    if(e.stack) h$log(e.stack)
+  if(e instanceof h$ThreadAbortedError) return;
+  var main = isMainThread ? " main" : "";
+  h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
+  if(e.stack) h$log(e.stack);
 }
 
 
 function h$handleBlockedSyncThread(c) {
   TRACE_SCHEDULER("handling blocked sync thread");
   /*
-    if we have a blocked synchronous thread,
+    if we have a blocked synchronous/non-preemptible thread,
     and it's blocked on a black hole, first try to clear
     it.
    */
@@ -775,11 +776,11 @@ function h$handleBlockedSyncThread(c) {
     if still blocked, then either fall back to async,
     or throw a WouldBlock exception
    */
-  if(h$currentThread.status === THREAD_BLOCKED) {
+  if(h$currentThread.isSynchronous && h$currentThread.status === THREAD_BLOCKED) {
     if(h$currentThread.continueAsync) {
       h$currentThread.isSynchronous = false;
       h$currentThread.continueAsync = false;
-    } else {
+    } else if(h$currentThread.isSynchronous) {
       TRACE_SCHEDULER("blocking synchronous thread: exception");
       h$sp += 2;
       h$currentThread.sp = h$sp;
@@ -787,7 +788,7 @@ function h$handleBlockedSyncThread(c) {
       h$stack[h$sp]   = h$raiseAsync_frame;
       h$forceWakeupThread(h$currentThread);
       c = h$raiseAsync_frame;
-    }
+    } // otherwise a non-preemptible thread, keep it in the same state
   }
   return c;
 }
@@ -866,7 +867,7 @@ function h$runSyncReturn(a, cont) {
   } else if(t.status === THREAD_BLOCKED) {
     throw new h$WouldBlock();
   } else {
-    throw new Error("h$runSyncReturn: Unexpected thread status: " + t.status)
+    throw new Error("h$runSyncReturn: Unexpected thread status: " + t.status);
   }
 }
 
@@ -1037,7 +1038,8 @@ function h$runBlackholeThreadSync(bh) {
 
 function h$syncThreadState(tid) {
   return (tid.isSynchronous ? 1 : 0) |
-         ((tid.continueAsync || !tid.isSynchronous) ? 2 : 0);
+    ((tid.continueAsync || !tid.isSynchronous) ? 2 : 0) |
+    ((tid.noPreemption || tid.isSynchronous) ? 4 : 0);
 }
 
 // run the supplied IO action in a main thread
