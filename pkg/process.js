@@ -45,6 +45,20 @@ function h$process_pipeFd(pipe, write) {
         fd.chunk      = { buf: null, pos: 0, processing: false };
         fd.eof        = false;
         fd.err        = null;
+
+        // this is a workaround for some versions of node.js incorrectly flushing streams,
+        // leading to data loss when processes exit quickly. see GHCJS #453
+        pipe.on('data', function(buf) {
+            if(fd.chunk.buf) {
+                fd.chunk.buf = Buffer.concat([fd.chunk.buf, buf]);
+            } else {
+                fd.chunk.buf = buf;
+            }
+            h$process_process_pipe(fd, pipe);
+        });
+        pipe.pause();
+        // end workaround
+
         pipe.on('readable', function() {
             TRACE_PROCESS("pipe " + fdN + " readable");
             h$process_process_pipe(fd, pipe);
