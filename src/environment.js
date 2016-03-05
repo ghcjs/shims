@@ -74,6 +74,9 @@ h$programArgs = [ "a.js" ];
 #else
 if(h$isNode) {
     h$programArgs = process.argv.slice(1);
+} else if(h$isJvm) {
+    h$programArgs = h$getGlobal(this).arguments.slice(0);
+    h$programArgs.unshift("a.js");
 } else if(h$isJsShell && typeof h$getGlobal(this).scriptArgs !== 'undefined') {
     h$programArgs = h$getGlobal(this).scriptArgs.slice(0);
     h$programArgs.unshift("a.js");
