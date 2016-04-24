@@ -1,8 +1,8 @@
 function h$get_current_timezone_seconds(t, pdst_v, pdst_o, pname_v, pname_o) {
     var d      = new Date(t);
     var now    = new Date();
-    var jan    = new Date(now.getFullYear(),0,1);
-    var jul    = new Date(now.getFullYear(),0,7);
+    var jan    = new Date(now.getFullYear(),1,1);
+    var jul    = new Date(now.getFullYear(),7,1);
     var stdOff = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
     var isDst  = d.getTimezoneOffset() < stdOff;
     var tzo    = d.getTimezoneOffset();
