@@ -110,6 +110,11 @@ function h$threadString(t) {
 }
 
 function h$fork(a, inherit) {
+  h$r1 = h$forkThread(a, inherit);
+  return h$yield();
+}
+
+function h$forkThread(a, inherit) {
   var t = new h$Thread();
   TRACE_SCHEDULER("sched: forking: " + h$threadString(t));
   if(inherit && h$currentThread) {
@@ -320,6 +325,7 @@ function h$forceWakeupThread(t) {
 }
 
 function h$removeThreadBlock(t) {
+  var i;
   if(t.status === THREAD_BLOCKED) {
     var o = t.blockedOn;
     if(o === null || o === undefined) {
@@ -330,7 +336,7 @@ function h$removeThreadBlock(t) {
       t.delayed = false;
     } else if(o instanceof h$MVar) {
       TRACE_SCHEDULER("blocked on MVar");
-      TRACE_SCHEDULER("MVar before: " + o.readers.length() + " " + o.writers.length());
+      TRACE_SCHEDULER("MVar before: " + o.readers.length() + " " + o.writers.length() + " " + o.waiters.length);
       // fixme this is rather inefficient
       var r, rq = new h$Queue();
       while((r = o.readers.dequeue()) !== null) {
@@ -342,7 +348,15 @@ function h$removeThreadBlock(t) {
       }
       o.readers = rq;
       o.writers = wq;
-      TRACE_SCHEDULER("MVar after: " + o.readers.length() + " " + o.writers.length());
+      if(o.waiters) {
+        var wa = [], wat;
+        for(i=0;i<o.waiters.length;i++) {
+          wat = o.waiters[i];
+          if(wat !== t) wa.push(wat);
+        }
+        o.waiters = wa;
+      }
+      TRACE_SCHEDULER("MVar after: " + o.readers.length() + " " + o.writers.length() + " " + o.waiters.length);
 /*    } else if(o instanceof h$Fd) {
       TRACE_SCHEDULER("blocked on fd");
       h$removeFromArray(o.waitRead,t);
@@ -352,7 +366,7 @@ function h$removeThreadBlock(t) {
       // set thread (first in pair) to null, exception will still be delivered
       // but this thread not woken up again
       // fixme: are these the correct semantics?
-      for(var i=0;i<o.excep.length;i++) {
+      for(i=0;i<o.excep.length;i++) {
         if(o.excep[i][0] === t) {
           o.excep[i][0] = null;
           break;
@@ -797,7 +811,7 @@ function h$handleBlockedSyncThread(c) {
 // returns immediately, thread is started in background
 function h$run(a) {
   TRACE_SCHEDULER("sched: starting thread");
-  var t = h$fork(a, false);
+  var t = h$forkThread(a, false);
   h$startMainLoop();
   return t;
 }
@@ -1155,6 +1169,7 @@ function h$notifyMVarFull(mv,val) {
   if(mv.waiters && mv.waiters.length > 0) {
     for(var i=0;i<mv.waiters.length;i++) {
       var w = mv.waiters[i];
+      TRACE_SCHEDULER("notifyMVarFull: notifying waiter: " + h$threadString(w));
       w.sp += 2;
       w.stack[w.sp-1] = val;
       w.stack[w.sp]   = h$return;

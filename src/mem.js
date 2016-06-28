@@ -222,7 +222,8 @@ function h$initInfoTables ( depth      // depth in the base chain
     }
     function nextArg() {
         var o = next();
-        var n, n1, n2;
+        var n, n1, n2, d0, d1, d2, d3;
+        var isString = false;
         switch(o) {
         case 0:
             TRACE_META("bool arg: false");
@@ -258,19 +259,28 @@ function h$initInfoTables ( depth      // depth in the base chain
                 return 0/0;
             case 5:
                 n1 = nextInt();
-                return nextSignificand() * Math.pow(2, n1)
+                var ns = nextSignificand();
+              if(n1 > 600) {
+                return ns * Math.pow(2,n1-600) * Math.pow(2,600);
+              } else if(n1 < -600) {
+                return ns * Math.pow(2,n1+600) * Math.pow(2,-600);
+              } else {
+                return ns * Math.pow(2, n1);
+              }
             default:
                 n1 = n - 36;
                 return nextSignificand() * Math.pow(2, n1);
             }
         case 7:
-	    TRACE_META("string arg");
-	    // no break, strings are UTF8 encoded binary
+            TRACE_META("string arg");
+            isString = true;
+            // no break, strings are null temrinated UTF8 encoded binary with
         case 8:
             TRACE_META("binary arg");
             n = next();
-            var ba = h$newByteArray(n);
+            var ba = h$newByteArray(isString ? (n+1) : n);
             var b8 = ba.u8;
+            if(isString) b8[n] = 0;
             var p  = 0;
             while(n > 0) {
                 switch(n) {
@@ -327,7 +337,7 @@ function h$initInfoTables ( depth      // depth in the base chain
         ot = 0;
         break;
       case 1: // fun
-        ot           = 1
+        ot           = 1;
         var arity    = next();
         var skipRegs = next()-1;
         if(skipRegs === -1) throw "h$initInfoTables: unknown register info for function";

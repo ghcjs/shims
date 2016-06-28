@@ -36,7 +36,7 @@ if(typeof process !== 'undefined' && (typeof h$TH !== 'undefined' || (typeof req
     var h$child       = child_process;
     var h$process     = process;
     var h$processConstants = process['binding']('constants');
-} else if(typeof snarf !== 'undefined' && typeof evalInFrame !== 'undefined' && typeof countHeap !== 'undefined') {
+} else if(typeof snarf !== 'undefined' && typeof print !== 'undefined' && typeof quit !== 'undefined') {
     h$isJsShell = true;
     this.console = { log: this.print };
 } else if(typeof numberOfDFGCompiles !== 'undefined' && typeof jscStack !== 'undefined') {

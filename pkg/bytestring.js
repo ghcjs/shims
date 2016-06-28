@@ -67,7 +67,6 @@ function h$fps_memcpy_offsets(dst_d, dst_o, dst_off
 
 var h$_hs_bytestring_digits = [48,49,50,51,52,53,54,55,56,57,97,98,99,100,101,102]; // 0123456789abcdef
 var h$_hs_bytestring_l10 = goog.math.Long.fromBits(10, 0);
-var h$_hs_bytestring_b10 = h$bigFromInt(10);
 
 // signed integers
 function h$_hs_bytestring_int_dec(x, buf_d, buf_o) {
@@ -164,17 +163,16 @@ function h$_hs_bytestring_uint_dec(x, buf_d, buf_o) {
 }
 
 function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
-    var b10 = h$_hs_bytestring_b10;
     var c, ptr = buf_o, next_free;
     var bu8 = buf_d.u8;
-    var x = h$bigFromWord64(x_a, x_b), x_tmp;
+    var x = h$ghcjsbn_mkBigNat_ww(x_a, x_b), q = [], r = [];
 
     // encode positive number as little-endian decimal
     do {
-        x_tmp = x;
-        x = x.divide(b10);
-        bu8[ptr++] = h$_hs_bytestring_digits[x_tmp.subtract(x.multiply(b10))];
-    } while(x.signum() !== 0);
+        h$ghcjsbn_quotRem_bw(q, r, x, 10);
+        x = q;
+        bu8[ptr++] = h$_hs_bytestring_digits[h$ghcjsbn_toInt_b(r)];
+    } while(!h$ghcjsbn_isZero_b(x));
 
     // reverse written digits;
     next_free = ptr--;

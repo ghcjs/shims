@@ -266,7 +266,7 @@ function h$setLocalTVar(t, tv, v) {
     if(t.tvars.has(tv)) {
         t.tvars.get(tv).val = v;
     } else {
-        t.tvars.put(tv, new h$WrittenTVar(tv, v))
+        t.tvars.put(tv, new h$WrittenTVar(tv, v));
     }
 }
 

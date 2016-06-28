@@ -1,5 +1,7 @@
 #include <ghcjs/rts.h>
 
+// #define GHCJS_TRACE_ARITH 1
+
 #ifdef GHCJS_TRACE_ARITH
 function h$logArith() { h$log.apply(h$log,arguments); }
 #define TRACE_ARITH(args...) h$logArith(args)
@@ -109,10 +111,14 @@ function h$hs_gtInt64(a1,a2,b1,b2) {
 }
 
 function h$hs_quotWord64(a1,a2,b1,b2) {
-  var a = h$bigFromWord64(a1,a2);
-  var b = h$bigFromWord64(b1,b2);
-  var c = a.divide(b);
-  RETURN_UBX_TUP2(c.shiftRight(32).intValue(), c.intValue());
+  // var a = h$ghcjsbn_mkBigNat_ww(a1,a2); // bigFromWord64(a1,a2);
+  // var b = h$ghcjsbn_mkBigNat_ww(b1,b2); // bigFromWord64(b1,b2);
+  var q = h$ghcjsbn_quot_bb(h$ghcjsbn_mkBigNat_ww(a1,a2),
+                            h$ghcjsbn_mkBigNat_ww(b1,b2));
+  return h$ghcjsbn_toWord64_b(q); // this should return the tuple
+  //RETURN_UBX_TUP2(h$ghcjsbn_toWord_b(h$ghcjsbn_shr_b(q, 32))
+  //  a.divide(b);
+  // RETURN_UBX_TUP2(c.shiftRight(32).intValue(), c.intValue());
 }
 
 function h$hs_timesInt64(a1,a2,b1,b2) {
@@ -189,42 +195,54 @@ function h$hs_gtWord64(a1,a2,b1,b2) {
 }
 
 function h$hs_remWord64(a1,a2,b1,b2) {
-  var a = h$bigFromWord64(a1,a2);
-  var b = h$bigFromWord64(b1,b2);
-  var c = a.mod(b);
-  RETURN_UBX_TUP2(c.shiftRight(32).intValue(), c.intValue());
+  /* var a = h$bigFromWord64(a1,a2);
+     var b = h$bigFromWord64(b1,b2);
+     var c = a.mod(b); */
+  var r = h$ghcjsbn_rem_bb(h$ghcjsbn_mkBigNat_ww(a1,a2)
+                           ,h$ghcjsbn_mkBigNat_ww(b1,b2));
+  return h$ghcjsbn_toWord64_b(r);
+  // RETURN_UBX_TUP2(c.shiftRight(32).intValue(), c.intValue());
 }
 
 function h$hs_uncheckedIShiftL64(a1,a2,n) {
+  TRACE_ARITH("hs_uncheckedIShiftL64 " + a1 + " " + a2 + " " + n);
   var num = new goog.math.Long(a2,a1).shiftLeft(n);
+  TRACE_ARITH("hs_uncheckedIShiftL64 result " + num.getHighBits() + " " + num.getLowBits());
   RETURN_UBX_TUP2(num.getHighBits(), num.getLowBits());
 }
 
 function h$hs_uncheckedIShiftRA64(a1,a2,n) {
+  TRACE_ARITH("hs_uncheckedShiftRA64 " + a1 + " " + a2 + " " + n);
   var num = new goog.math.Long(a2,a1).shiftRight(n);
   RETURN_UBX_TUP2(num.getHighBits(), num.getLowBits());
 }
 
 // always nonnegative n?
 function h$hs_uncheckedShiftL64(a1,a2,n) {
+  TRACE_ARITH("hs_uncheckedShiftL64 " + a1 + " " + a2 + " " + n);
   n &= 63;
+  TRACE_ARITH("hs_uncheckedShiftL64 n " + n);
   if(n == 0) {
+    TRACE_ARITH("hs_uncheckedShiftL64 zero");
     RETURN_UBX_TUP2(a1, a2);
   } else if(n < 32) {
+    TRACE_ARITH("hs_uncheckedShiftL64 sm32");
     RETURN_UBX_TUP2((a1 << n) | (a2 >>> (32-n)), a2 << n);
   } else {
+    TRACE_ARITH("hs_uncheckedShiftL64 result " + ((a2 << (n-32))|0) + " " + 0);
     RETURN_UBX_TUP2(((a2 << (n-32))|0), 0);
   }
 }
 
 function h$hs_uncheckedShiftRL64(a1,a2,n) {
+  TRACE_ARITH("hs_uncheckedShiftRL64 " + a1 + " " + a2 + " " + n);
   n &= 63;
   if(n == 0) {
     RETURN_UBX_TUP2(a1, a2);
   } else if(n < 32) {
     RETURN_UBX_TUP2(a1 >>> n, (a2 >>> n ) | (a1 << (32-n)));
   } else {
-    RETURN_UBX_TUP2(0, a1 >>> (n-32));
+    RETURN_UBX_TUP2(0, (a1 >>> (n-32))|0);
   }
 }
 
@@ -264,10 +282,15 @@ function h$remWord32(a,b) {
 }
 
 function h$quotRem2Word32(a1,a2,b) {
-  var a = h$bigFromWord64(a1,a2);
+/*  var a = h$bigFromWord64(a1,a2);
   var b = h$bigFromWord(b);
-  var d = a.divide(b);
-  RETURN_UBX_TUP2(d.intValue(), a.subtract(b.multiply(d)).intValue());
+ var d = a.divide(b); */
+  /* var a = h$ghcjsbn_mkBigNat_ww(a1,a2);
+  var b = h$ghcjsbn_mkBigNat_w(b); */
+  var q = [], r = [];
+  h$ghcjsbn_quotRem_bb(q,r,h$ghcjsbn_mkBigNat_ww(a1,a2),h$ghcjsbn_mkBigNat_w(b));
+  RETURN_UBX_TUP2(h$ghcjsbn_toWord_b(q), h$ghcjsbn_toWord_b(r));
+  // RETURN_UBX_TUP2(d.intValue(), a.subtract(b.multiply(d)).intValue());
 }
 
 function h$wordAdd2(a,b) {
@@ -394,25 +417,25 @@ function h$decodeDouble2IntArray(d) {
 	RETURN_UBX_TUP4(1, -1572864, 0, 972);
     }
     h$convertDouble[0] = d;
-    TRACE_ARITH("decodeDouble2IntArray binary: " + h$convertInt[0].toString(2) + " " + h$convertInt[1].toString(2));
+  TRACE_ARITH("decodeDouble2IntArray binary: " + h$convertInt[0].toString(2) + " " + h$convertInt[1].toString(2));
     var i1 = h$convertInt[1];
     var ret1, ret2 = h$convertInt[0], ret3;
     var exp = (i1&2146435072)>>>20;
-    if(exp === 0) { // denormal or zero
-        if((i1&2147483647) === 0 && ret2 === 0) {
-            ret1 = 0;
-            ret3 = 0;
-        } else {
-            h$convertDouble[0] = d*9007199254740992;
-            i1 = h$convertInt[1];
-            ret1 = (i1&1048575)|1048576;
-            ret2 = h$convertInt[0];
-            ret3 = ((i1&2146435072)>>>20)-1128;
-        }
+  if(exp === 0) { // denormal or zero
+    if((i1&2147483647) === 0 && ret2 === 0) {
+      ret1 = 0;
+      ret3 = 0;
     } else {
-        ret3 = exp-1075;
-        ret1 = (i1&1048575)|1048576;
+      h$convertDouble[0] = d*9007199254740992;
+      i1 = h$convertInt[1];
+      ret1 = (i1&1048575)|1048576;
+      ret2 = h$convertInt[0];
+      ret3 = ((i1&2146435072)>>>20)-1128;
     }
+  } else {
+    ret3 = exp-1075;
+    ret1 = (i1&1048575)|1048576;
+  }
     TRACE_ARITH("decodeDouble2IntArray: exp: " + ret3 + " significand: " + ret1 + " " + ret2);
     RETURN_UBX_TUP4(i1<0?-1:1,ret1,ret2,ret3);
 }
@@ -496,7 +519,7 @@ function h$popCnt32(x) {
    return h$popCntTab[x&0xFF] +
           h$popCntTab[(x>>>8)&0xFF] +
           h$popCntTab[(x>>>16)&0xFF] +
-          h$popCntTab[(x>>>24)&0xFF]
+          h$popCntTab[(x>>>24)&0xFF];
 }
 
 function h$popCnt64(x1,x2) {

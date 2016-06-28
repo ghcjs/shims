@@ -12,3 +12,18 @@ function h$get_current_timezone_seconds(t, pdst_v, pdst_o, pname_v, pname_o) {
     pname_v.arr[pname_o] = [h$encodeUtf8("UTC" + offstr), 0];
     return (3600-60*tzo)|0;
 }
+
+function h$clock_gettime(when, p_d, p_o) {
+/*  h$log("clock_gettime");
+  h$log(when);
+  h$log(p_d);
+  h$log(p_o); */
+
+  var o  = p_o >> 2,
+      t  = Date.now ? Date.now() : new Date().getTime(),
+      tf = Math.floor(t),
+      tn = 1000000000 * (t - tf);
+  p_d.i3[o]   = tf|0;
+  p_d.i3[o+1] = tn|0;
+  return 0;
+}

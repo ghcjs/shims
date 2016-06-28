@@ -307,14 +307,24 @@ function h$directory_getFileOrSymlinkStatus(file, c) {
         h$unsupported(null, c);
 }
 
+function h$directory_getFileStatusAccessTime(fs) {
+  TRACE_DIRECTORY("getFileStatusAccessTime: " + fs.atime.getTime());
+  return fs.atime.getTime();
+}
+
 function h$directory_getFileStatusModificationTime(fs) {
-    TRACE_DIRECTORY("getFileStatusModificationTime: " + fs.mtime.getTime());
-    return fs.mtime.getTime();
+  TRACE_DIRECTORY("getFileStatusModificationTime: " + fs.mtime.getTime());
+  return fs.mtime.getTime();
 }
 
 function h$directory_getFileStatusIsDirectory(fs) {
-    TRACE_DIRECTORY("getFileStatusIsDirectory: " + fs + " " + fs.isDirectory());
-    return fs.isDirectory();
+  TRACE_DIRECTORY("getFileStatusIsDirectory: " + fs + " " + fs.isDirectory());
+  return fs.isDirectory();
+}
+
+function h$directory_getFileStatusIsSymbolicLink(fs) {
+  TRACE_DIRECTORY("getFileStatusIsSymbolicLink: " + fs + " " + fs.isSymbolicLink());
+  return fs.isSymbolicLink();
 }
 
 // fixme this doesn't really belong here
