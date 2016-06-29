@@ -1,8 +1,8 @@
 function h$get_current_timezone_seconds(t, pdst_v, pdst_o, pname_v, pname_o) {
-    var d      = new Date(t);
+    var d      = new Date(t * 1000);
     var now    = new Date();
     var jan    = new Date(now.getFullYear(),0,1);
-    var jul    = new Date(now.getFullYear(),0,1);
+    var jul    = new Date(now.getFullYear(),6,1);
     var stdOff = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
     var isDst  = d.getTimezoneOffset() < stdOff;
     var tzo    = d.getTimezoneOffset();
@@ -10,7 +10,7 @@ function h$get_current_timezone_seconds(t, pdst_v, pdst_o, pname_v, pname_o) {
     if(!pname_v.arr) pname_v.arr = [];
     var offstr = tzo < 0 ? ('+' + (tzo/-60)) : ('' + (tzo/-60));
     pname_v.arr[pname_o] = [h$encodeUtf8("UTC" + offstr), 0];
-    return (3600-60*tzo)|0;
+    return (-60*tzo)|0;
 }
 
 function h$clock_gettime(when, p_d, p_o) {

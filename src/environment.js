@@ -28,23 +28,27 @@ function h$log() {
   h$logBuffer.push(s);
   if(h$logBuffer.length > h$logBufferSize) h$logBuffer = h$logBuffer.slice(h$logBufferShrink);
 #else
+  try {
 #ifndef GHCJS_BROWSER
-  if(h$glbl) {
-    if(h$glbl.console && h$glbl.console.log) {
-      h$glbl.console.log.apply(h$glbl.console,arguments);
+    if(h$glbl) {
+      if(h$glbl.console && h$glbl.console.log) {
+        h$glbl.console.log.apply(h$glbl.console,arguments);
+      } else {
+        h$glbl.print.apply(this,arguments);
+      }
     } else {
-      h$glbl.print.apply(this,arguments);
-    }
-  } else {
-    if(typeof console !== 'undefined') {
+      if(typeof console !== 'undefined') {
 #endif
-      console.log.apply(console, arguments);
+        console.log.apply(console, arguments);
 #ifndef GHCJS_BROWSER
-    } else if(typeof print !== 'undefined') {
-      print.apply(null, arguments);
+      } else if(typeof print !== 'undefined') {
+        print.apply(null, arguments);
+      }
     }
-  }
 #endif
+  } catch(ex) {
+    // ignore console.log exceptions (for example for IE9 when console is closed)
+  }
 #endif
 #ifdef GHCJS_LOG_JQUERY
   // if we have jquery, add to <div id='output'> element
@@ -74,6 +78,9 @@ h$programArgs = [ "a.js" ];
 #else
 if(h$isNode) {
     h$programArgs = process.argv.slice(1);
+} else if(h$isJvm) {
+    h$programArgs = h$getGlobal(this).arguments.slice(0);
+    h$programArgs.unshift("a.js");
 } else if(h$isJsShell && typeof h$getGlobal(this).scriptArgs !== 'undefined') {
     h$programArgs = h$getGlobal(this).scriptArgs.slice(0);
     h$programArgs.unshift("a.js");

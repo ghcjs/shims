@@ -16,6 +16,7 @@ function h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e() { return h$stack[h$sp]; };
 */
 #ifndef GHCJS_BROWSER
 var h$isNode    = false; // runtime is node.js
+var h$isJvm     = false; // runtime is JVM
 var h$isJsShell = false; // runtime is SpiderMonkey jsshell
 var h$isJsCore  = false; // runtime is JavaScriptCore jsc
 var h$isBrowser = false; // running in browser or everything else
@@ -36,6 +37,13 @@ if(typeof process !== 'undefined' && (typeof h$TH !== 'undefined' || (typeof req
     var h$child       = child_process;
     var h$process     = process;
     var h$processConstants = process['binding']('constants');
+} else if(typeof Java !== 'undefined') {
+    h$isJvm = true;
+    this.console = {
+      log: function(s) {
+        java.lang.System.out.print(s);
+      }
+    };
 } else if(typeof snarf !== 'undefined' && typeof print !== 'undefined' && typeof quit !== 'undefined') {
     h$isJsShell = true;
     this.console = { log: this.print };

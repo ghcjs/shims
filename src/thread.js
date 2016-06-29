@@ -1112,6 +1112,8 @@ function h$exitProcess(code) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
 	process.exit(code);
+    } else if(h$isJvm) {
+        java.lang.System.exit(code);
     } else if(h$isJsShell) {
         quit(code);
     } else if(h$isJsCore) {

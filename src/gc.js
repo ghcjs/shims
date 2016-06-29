@@ -361,7 +361,7 @@ function h$markThread(t) {
 // big object, not handled by 0..7 cases
 // keep out of h$follow to prevent deopt
 function h$followObjGen(c, work, w) {
-   work.push(c.d1);
+   ADDW(c.d1);
    var d = c.d2;
    for(var x in d) {
 //              if(d.hasOwnProperty(x)) {
