@@ -834,6 +834,27 @@ function h$setField(o,n,v) {
     case 100:
         o.d2.d100 = v;
         return;
+    case 101:
+        o.d2.d101 = v;
+        return;
+    case 102:
+        o.d2.d102 = v;
+        return;
+    case 103:
+        o.d2.d103 = v;
+        return;
+    case 104:
+        o.d2.d104 = v;
+        return;
+    case 105:
+        o.d2.d105 = v;
+        return;
+    case 106:
+        o.d2.d106 = v;
+        return;
+    case 107:
+        o.d2.d107 = v;
+        return;
     default:
         throw ("h$setField: setter not implemented for field: " + n);
     }
