@@ -157,17 +157,17 @@ function h$base_open(file, file_off, how, mode, c) {
         var acc  = how & h$base_o_accmode;
         // passing a number lets node.js use it directly as the flags (undocumented)
         if(acc === h$base_o_rdonly) {
-            flags = h$processConstants['O_RDONLY'];
+            flags = h$processConstants['fs']['O_RDONLY'];
         } else if(acc === h$base_o_wronly) {
-            flags = h$processConstants['O_WRONLY'];
+            flags = h$processConstants['fs']['O_WRONLY'];
         } else { // r+w
-            flags = h$processConstants['O_RDWR'];
+            flags = h$processConstants['fs']['O_RDWR'];
         }
         off = (how & h$base_o_append) ? -1 : 0;
-        flags = flags | ((how & h$base_o_trunc)  ? h$processConstants['O_TRUNC']  : 0)
-                      | ((how & h$base_o_creat)  ? h$processConstants['O_CREAT']  : 0)
-                      | ((how & h$base_o_excl)   ? h$processConstants['O_EXCL']   : 0)
-                      | ((how & h$base_o_append) ? h$processConstants['O_APPEND'] : 0);
+        flags = flags | ((how & h$base_o_trunc)  ? h$processConstants['fs']['O_TRUNC']  : 0)
+                      | ((how & h$base_o_creat)  ? h$processConstants['fs']['O_CREAT']  : 0)
+                      | ((how & h$base_o_excl)   ? h$processConstants['fs']['O_EXCL']   : 0)
+                      | ((how & h$base_o_append) ? h$processConstants['fs']['O_APPEND'] : 0);
         h$fs.open(fp, flags, mode, function(err, fd) {
             if(err) {
                 h$handleErrnoC(err, -1, 0, c);
