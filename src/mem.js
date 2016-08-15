@@ -25,15 +25,15 @@ function h$sti(i,c,xs) {
 
 // static init, caf
 #ifdef GHCJS_PROF
-function h$stc(i,c,ccs) {
+function h$stc(i,c,xs,ccs) {
 #else
-function h$stc(i,c) {
+function h$stc(i,c,xs) {
 #endif
     i.f = c;
 #ifdef GHCJS_PROF
     i.cc = ccs;
 #endif
-    h$init_closure(i,[]);
+    h$init_closure(i,xs);
     h$CAFs.push(i);
     h$CAFsReset.push(i.f);
 }
@@ -395,11 +395,44 @@ function h$initInfoTables ( depth      // depth in the base chain
           break;
       case 1: // staticfun
           o.f = nextEntry();
-          TRACE_META("staticFun");
+        TRACE_META("staticFun");
+        n = next();
+        TRACE_META("args: " + n);
+        if(n === 0) {
+          o.d1 = null;
+          o.d2 = null;
+        } else if(n === 1) {
+          o.d1 = nextArg();
+          o.d2 = null;
+        } else if(n === 2) {
+          o.d1 = nextArg();
+          o.d2 = nextArg();
+        } else {
+          for(j=0;j<n;j++) {
+            h$setField(o, j, nextArg());
+          }
+        }
+
           break;
       case 2:  // staticThunk
           TRACE_META("staticThunk");
-          o.f = nextEntry();
+        o.f = nextEntry();
+        n = next();
+        TRACE_META("args: " + n);
+        if(n === 0) {
+          o.d1 = null;
+          o.d2 = null;
+        } else if(n === 1) {
+          o.d1 = nextArg();
+          o.d2 = null;
+        } else if(n === 2) {
+          o.d1 = nextArg();
+          o.d2 = nextArg();
+        } else {
+          for(j=0;j<n;j++) {
+            h$setField(o, j, nextArg());
+          }
+        }
           h$CAFs.push(o);
           h$CAFsReset.push(o.f);
           break;

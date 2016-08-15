@@ -174,7 +174,7 @@ function h$delayThread(time) {
 
 function h$resumeDelayThread() {
   h$r1 = false;
-  return h$stack[h$sp];
+  return h$rs(); // stack[h$sp];
 }
 
 function h$yield() {
@@ -1359,3 +1359,6 @@ function h$makeMVarListener(mv, stopProp, stopImmProp, preventDefault) {
   return f;
 }
 
+function h$rs() {
+  return h$stack[h$sp];
+}
