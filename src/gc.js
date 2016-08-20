@@ -597,6 +597,12 @@ function h$resolveDeadlocks() {
     } while(kill);
 }
 
+// register a CAF (after initialising the heap object)
+function h$addCAF(o) {
+  h$CAFs.push(o);
+  h$CAFsReset.push([o.f, o.d1, o.d2]);
+}
+
 // reset unreferenced CAFs to their initial value
 function h$finalizeCAFs() {
     if(h$retainCAFs) return;
@@ -608,11 +614,11 @@ function h$finalizeCAFs() {
         var c = h$CAFs[i];
         if(c.m & 3 !== mark) {
             var cr = h$CAFsReset[i];
-            if(c.f !== cr) { // has been updated, reset it
+            if(c.f !== cr[0]) { // has been updated, reset it
                 TRACE_GC("resetting CAF: " + cr.n);
-                c.f = cr;
-                c.d1 = null;
-                c.d2 = null;
+                c.f = cr[0];
+                c.d1 = cr[1];
+                c.d2 = cr[2];
             }
         }
     }

@@ -34,8 +34,7 @@ function h$stc(i,c,xs) {
     i.cc = ccs;
 #endif
     h$init_closure(i,xs);
-    h$CAFs.push(i);
-    h$CAFsReset.push(i.f);
+    h$addCAF(i);
 }
 
 #ifdef GHCJS_PROF
@@ -433,8 +432,7 @@ function h$initInfoTables ( depth      // depth in the base chain
             h$setField(o, j, nextArg());
           }
         }
-          h$CAFs.push(o);
-          h$CAFsReset.push(o.f);
+          h$addCAF(o);
           break;
       case 3: // staticPrim false, no init
           TRACE_META("staticBool false");
