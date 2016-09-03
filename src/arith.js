@@ -372,22 +372,22 @@ function h$decodeFloatIntArray(d) {
     }
     h$convertFloat[0] = d;
     var i = h$convertInt[0];
-    var exp = (i&2139095040) >> 23;
+    var exp = (i >> 23) & 0xff;
+    var sgn = 2 * (i >> 31) + 1;
     var s   = i&8388607;
     if(exp === 0) { // zero or denormal
         if(s === 0) {
             TRACE_ARITH("decodeFloatIntArray s: 0 e: 0");
-	    RETURN_UBX_TUP2(0, 0);
+            RETURN_UBX_TUP2(0, 0);
         } else {
             h$convertFloat[0] = d*8388608;
             i = h$convertInt[0];
-            TRACE_ARITH("decodeFloatIntArray s: " + ((((i&8388607)<<7)|(i&2147483648))>>7) +  " e: " + ((i&2139095040) >> 23) - 173);
-	    RETURN_UBX_TUP2((((i&8388607)<<7)|(i&2147483648))>>7
-			   ,((i&2139095040) >> 23) - 173)
+            TRACE_ARITH("decodeFloatIntArray s: " + (sgn * (i&8388607)) +  " e: " + ((i&2139095040) >> 23) - 173);
+            RETURN_UBX_TUP2(sgn*(i&8388607), ((i&2139095040) >> 23) - 173)
         }
     } else {
-        TRACE_ARITH("decodeFloatIntArray s: " + ((((s|8388608)<<7)|(i&2147483648))>>7) +  " e: " + (exp-150));
-        RETURN_UBX_TUP2((((s|8388608)<<7)|(i&2147483648))>>7, exp - 150);
+      TRACE_ARITH("decodeFloatIntArray s: " + (sgn * (s|8388608)) +  " e: " + (exp-150));
+      RETURN_UBX_TUP2(sgn * (s|8388608), exp - 150);
     }
 }
 
