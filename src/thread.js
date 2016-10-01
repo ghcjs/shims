@@ -602,7 +602,16 @@ function h$startMainLoop() {
         }
 #ifndef GHCJS_BROWSER
     } else {
-        while(true) h$mainLoop();
+      while(true) {
+        // the try/catch block appears to prevent a crash with
+        // Safari on iOS 10, even though this path is never taken
+        // in a browser.
+        try {
+          h$mainLoop();
+        } catch(e) {
+          throw e;
+        }
+      }
     }
 #endif
 }
