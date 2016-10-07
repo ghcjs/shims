@@ -178,11 +178,15 @@ function h$resumeDelayThread() {
 }
 
 function h$yield() {
-  h$sp += 2;
-  h$stack[h$sp-1] = h$r1;
-  h$stack[h$sp] = h$return;
-  h$currentThread.sp = h$sp;
-  return h$reschedule;
+  if(h$currentThread.isSynchronous) {
+    return h$stack[h$sp];
+  } else {
+    h$sp += 2;
+    h$stack[h$sp-1] = h$r1;
+    h$stack[h$sp] = h$return;
+    h$currentThread.sp = h$sp;
+    return h$reschedule;
+  }
 }
 
 // raise the async exception in the thread if not masked
