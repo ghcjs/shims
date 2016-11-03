@@ -1,5 +1,3 @@
-#define GHCJS_STRUCTS_ASSERTS 1
-
 /*
   simple set with reasonably fast iteration though an array, which may contain nulls
   elements must be objects that have a unique _key property
