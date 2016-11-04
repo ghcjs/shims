@@ -519,7 +519,7 @@ function h$writePtrPtrU32(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off + 4 * x];
-  arr[0].dv.putInt32(arr[1] + y, v);
+  arr[0].dv.setInt32(arr[1] + y, v);
 }
 
 // unsigned char** ptr[x][y] = v
@@ -527,7 +527,7 @@ function h$writePtrPtrU8(ptr, ptr_off, v, x, y) {
   x = x || 0;
   y = y || 0;
   var arr = ptr.arr[ptr_off+ 4 * x];
-  arr[0].dv.putUint8(arr[1] + y, v);
+  arr[0].dv.setUint8(arr[1] + y, v);
 }
 
 // convert JavaScript String to a Haskell String
