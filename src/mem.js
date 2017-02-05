@@ -666,9 +666,6 @@ function h$setField(o,n,v) {
     case 45:
         o.d2.d45 = v;
         return;
-    case 45:
-        o.d2.d45 = v;
-        return;
     case 46:
         o.d2.d46 = v;
         return;
