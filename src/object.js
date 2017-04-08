@@ -45,17 +45,6 @@ function h$typeOf(o) {
     }
 }
 
-function h$listProps(o) {
-    if (!(o instanceof Object)) {
-        return [];
-    }
-    var l = [], i = 0;
-    for (var prop in o) {
-        l[i++] = prop;
-    }
-    return l;
-}
-
 function h$flattenObj(o) {
     var l = [], i = 0;
     for (var prop in o) {
