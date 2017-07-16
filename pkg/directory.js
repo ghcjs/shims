@@ -44,6 +44,14 @@ function h$directory_setPermissions(file, perms, c) {
             if(err) {
                 h$handleErrnoC(err, -1, 0, c);
             } else {
+                var r = perms & 1;
+                var w = perms & 2;
+                var x = perms & 4;
+                var search = perms & 8;
+                var m  = fs.mode;
+                m = r ? (m | 292) : (m & ~292);
+                m = w ? (m | 146) : (m & ~146);
+                m = (x || search) ? (m | 73) : (m & ~73);
                 h$fs.chmod(file, perms, function(err) {
                     h$handleErrnoC(err, -1, 0, c);
                 });
