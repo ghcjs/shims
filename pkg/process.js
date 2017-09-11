@@ -227,7 +227,7 @@ function h$process_commandToProcess(cmd, args) {
             } else {
                 // fixme need to escape stuff
                 var r = [cmd];
-                r.push(args);
+                r = r.concat(args);
                 return r;
             }
         } else {  // non-windows
@@ -235,7 +235,7 @@ function h$process_commandToProcess(cmd, args) {
                 return ["/bin/sh", "-c", cmd];
             } else {
                 var r = [cmd];
-                r.push(args);
+                r = r.concat(args);
                 return r;
             }
         }
