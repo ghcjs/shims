@@ -1006,6 +1006,26 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
          };
 }
 
+var h$arrayBufferCounter = 0;
+
+function h$arrayBufferId(a) {
+  if (a.__ghcjsArrayBufferId === undefined)
+    a.__ghcjsArrayBufferId = h$arrayBufferCounter++;
+  return a.__ghcjsArrayBufferId;
+}
+
+function h$comparePointer(a1,o1,a2,o2) {
+  var i1 = h$arrayBufferId(a1.buf);
+  var i2 = h$arrayBufferId(a2.buf);
+  if (i1 === i2) {
+    var bo1 = a1.dv.byteOffset + o1;
+    var bo2 = a2.dv.byteOffset + o2;
+    return bo1 === bo2 ? 0 : (bo1 < bo2 ? -1 : 1);
+  }
+  else
+    return i1 < i2 ? -1 : 1;
+}
+
 /* 
    A StableName is represented as either a h$StableName object (for most heap objects)
    or a number (for heap objects with unboxed representation)
