@@ -46,6 +46,7 @@ function h$setErrno(e) {
       if(es.indexOf('EMFILE') !== -1)       return CONST_EMFILE;
       if(es.indexOf('EPIPE') !== -1)        return CONST_EPIPE;
       if(es.indexOf('EAGAIN') !== -1)       return CONST_EAGAIN;
+      if(es.indexOf('EACCES') !== -1)       return CONST_EACCES;
       if(es.indexOf('Bad argument') !== -1) return CONST_ENOENT; // fixme?
       throw ("setErrno not yet implemented: " + e);
 
@@ -54,7 +55,7 @@ function h$setErrno(e) {
 }
 
 var h$errorStrs =  { CONST_E2BIG:   "too big"
-                   , CONST_EACCESS: "no access"
+                   , CONST_EACCES: "no access"
                    , CONST_EINVAL:  "invalid"
                    , CONST_EBADF:   "bad file descriptor"
                    , CONST_ENOTDIR: "not a directory"

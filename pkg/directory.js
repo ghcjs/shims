@@ -52,7 +52,7 @@ function h$directory_setPermissions(file, perms, c) {
                 m = r ? (m | 292) : (m & ~292);
                 m = w ? (m | 146) : (m & ~146);
                 m = (x || search) ? (m | 73) : (m & ~73);
-                h$fs.chmod(file, function(err) {
+                h$fs.chmod(file, perms, function(err) {
                     h$handleErrnoC(err, -1, 0, c);
                 });
             }
@@ -110,6 +110,18 @@ function h$directory_removeFile(file, c) {
 #ifndef GHCJS_BROWSER
     if(h$isNode) {
         h$fs.unlink(file, function(err) {
+            h$handleErrnoC(err,-1,0,c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
+}
+
+function h$directory_renamePath(path1, path2, c) {
+    TRACE_DIRECTORY("renamePath: " + path1 + " " + path2);
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.rename(path1, path2, function(err) {
             h$handleErrnoC(err,-1,0,c);
         });
     } else
@@ -327,6 +339,12 @@ function h$directory_getFileStatusIsSymbolicLink(fs) {
   return fs.isSymbolicLink();
 }
 
+function h$directory_getFileStatusSize(fs) {
+  TRACE_DIRECTORY("getFileStatusSize: " + fs + " " + fs.size);
+  return fs.size;
+}
+
+
 // fixme this doesn't really belong here
 function h$chmod(path_d, path_o, m) {
 #ifndef GHCJS_BROWSER
@@ -341,3 +359,14 @@ function h$chmod(path_d, path_o, m) {
 }
 
 
+// I used it to run test suite
+function h$directory_symlink(target, path, c) {
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        h$fs.symlink(target, path, function(err, s) {
+            h$handleErrnoC(err, null, s, c);
+        });
+    } else
+#endif
+        h$unsupported(-1, c);
+}
