@@ -212,7 +212,7 @@ function h$initInfoTables ( depth      // depth in the base chain
     function nextIndexed(msg, stack, o) {
         var n = (o === undefined) ? next() : o;
         var i = depth;
-        while(n > stack[i].length) {
+        while(n >= stack[i].length) {
             n -= stack[i].length;
             i--;
             if(i < 0) throw (msg + ": cannot find item " + n + ", stack length: " + stack.length + " depth: " + depth);
