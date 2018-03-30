@@ -240,27 +240,6 @@ function h$gc(t) {
 #endif
 }
 
-function h$markWeaks() {
-  var i, w, marked, mark = h$gcMark;
-  do {
-    marked = false;
-    for (i = 0; i < h$weakPointerList.length; ++i) {
-      w = h$weakPointerList[i];
-      if (IS_MARKED_M(w.keym)) {
-	if (w.val !== null && !IS_MARKED(w.val)) {
-          h$follow(w.val);
-	  marked = true;
-	}
-	if (w.finalizer !== null && !IS_MARKED(w.finalizer)) {
-          h$follow(w.finalizer);
-	  marked = true;
-	}
-      }
-    }
-  } while(marked);
-}
-
-
 function h$markRetained() {
     var iter, marked, w, i, mark = h$gcMark;
     var newList = [];
@@ -321,18 +300,21 @@ function h$markRetained() {
             continue;
         }
 
-        TRACE_GC("mark retained iteration 2/2");
-        if(w.val !== null) {
-            w.val = null;
-        }
 
-        if(w.finalizer !== null) {
-            if(!IS_MARKED(w.finalizer)) {
-                TRACE_GC("following finalizer");
-                h$follow(w.finalizer);
-            }
-            toFinalize.push(w);
-        }
+        TRACE_GC("mark retained iteration 2/2");
+	if(IS_MARKED_M(w)) {
+	    if(w.val !== null) {
+		w.val = null;
+	    }
+
+	    if(w.finalizer !== null) {
+		if(!IS_MARKED(w.finalizer)) {
+		    TRACE_GC("following finalizer");
+		    h$follow(w.finalizer);
+		}
+		toFinalize.push(w);
+	    }
+	}
     }
 
     /*
@@ -341,7 +323,9 @@ function h$markRetained() {
     */
     h$weakPointerList = newList;
 
-    // marking the weak pointer objects as reachable is not necessary
+    for (i = 0; i < h$weakPointerList.length; ++i) {
+	MARK_OBJ(h$weakPointerList[i]);
+    }
 
     return toFinalize;
 }
@@ -435,8 +419,6 @@ function h$follow(obj, sp) {
                     TRACE_GC("adding static marks");
                     for(var i=0;i<s.length;i++) ADDW(s[i]);
                 }
-            } else if(c instanceof h$Weak) {
-                MARK_OBJ(c);
             } else if(c instanceof h$MVar) {
                 TRACE_GC("marking MVar");
                 MARK_OBJ(c);
@@ -566,7 +548,6 @@ function h$resolveDeadlocks() {
     TRACE_GC("resolving deadlocks");
     var kill, t, iter, bo, mark = h$gcMark;
     do {
-        h$markWeaks();
         // deal with unreachable blocked threads: kill an unreachable thread and restart the process
         kill = null;
         iter = h$blocked.iter();
