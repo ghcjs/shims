@@ -155,6 +155,25 @@ function h$getenv(name, name_off) {
     RETURN_UBX_TUP2(null, 0);
 }
 
+function h$putenv(name, name_off) {
+    TRACE_ENV("putenv");
+#ifndef GHCJS_BROWSER
+    if(h$isNode) {
+        var nv = h$decodeUtf8z(name, name_off).split('=', 2);
+        if(nv.length !== 2) return 0;
+        var n = nv[0];
+        var v = nv[1];
+        if (v !== '') {
+            process.env[n] = v;
+        }
+        else {
+            delete process.env[n];
+        }
+    }
+#endif
+    return 0;
+}
+
 function h$errorBelch() {
   h$log("### errorBelch: do we need to handle a vararg function here?");
 }
