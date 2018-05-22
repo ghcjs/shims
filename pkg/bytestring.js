@@ -165,13 +165,14 @@ function h$_hs_bytestring_uint_dec(x, buf_d, buf_o) {
 function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
     var c, ptr = buf_o, next_free;
     var bu8 = buf_d.u8;
-    var x = h$ghcjsbn_mkBigNat_ww(x_a, x_b), q = [], r = [];
+    var x = h$ghcjsbn_mkBigNat_ww(x_a, x_b), q = [], r;
 
     // encode positive number as little-endian decimal
     do {
-        h$ghcjsbn_quotRem_bw(q, r, x, 10);
+        r = h$ghcjsbn_quotRem_bw(q, x, 10);
         x = q;
-        bu8[ptr++] = h$_hs_bytestring_digits[h$ghcjsbn_toInt_b(r)];
+        q = [];
+        bu8[ptr++] = h$_hs_bytestring_digits[r];
     } while(!h$ghcjsbn_isZero_b(x));
 
     // reverse written digits;
