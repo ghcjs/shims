@@ -595,6 +595,7 @@ function h$toHsStringMU8(arr, cc) {
 function h$toHsStringMU8(arr) {
 #endif
     var accept = false, b, n = 0, cp = 0, r = HS_NIL;
+    var i = arr.length - 1;
     while(i >= 0) {
         b = arr[i];
         if(!(b & 128)) {
